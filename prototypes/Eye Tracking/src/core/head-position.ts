@@ -17,6 +17,29 @@ const MIN_SAMPLES = 5;
 const RECOVERY_FACTOR = .6;
 const STABILITY_FACTOR = .4;
 
+/**
+ * Image-geometry head pose from MediaPipe's normalized face landmarks (x, y in 0..1 of the frame).
+ * Eye centres come from the four eye-corner landmarks, so blinks and gaze do not move them.
+ * X, Y and span are in image widths; yaw/pitch ratios are the nose-tip offset from the eye midpoint
+ * in eye spans (not angles). Returns null when the geometry is degenerate.
+ */
+export function headPoseFromLandmarks(landmarks: readonly { x: number; y: number }[], frame: { width: number; height: number }): HeadPose | null {
+  if (landmarks.length < 478 || !(frame.width > 0) || !(frame.height > 0)) return null;
+  const aspect = frame.height / frame.width;
+  const mid = (a: number, b: number) => ({ x: (landmarks[a].x + landmarks[b].x) / 2, y: (landmarks[a].y + landmarks[b].y) / 2 });
+  const right = mid(33, 133), left = mid(263, 362), nose = landmarks[4];
+  const dx = left.x - right.x, dy = (left.y - right.y) * aspect, span = Math.hypot(dx, dy);
+  if (!(span > 1e-6)) return null;
+  const centre = { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 };
+  return readHeadPose({
+    centerX: centre.x, centerY: centre.y * aspect, span, roll: Math.atan2(dy, dx),
+    yawRatio: (nose.x - centre.x) / span, pitchRatio: ((nose.y - centre.y) * aspect) / span,
+  });
+}
+
+/** Learning from selections is only trustworthy while the head is where the offsets were measured. */
+export function allowsLearning(feedback: HeadFeedback): boolean { return feedback.kind === 'setup' || feedback.kind === 'matched'; }
+
 export function readHeadPose(value: unknown): HeadPose | null {
   if (typeof value !== 'object' || value === null) return null;
   if (!('centerX' in value) || typeof value.centerX !== 'number' || !Number.isFinite(value.centerX) || value.centerX < 0 || value.centerX > 1

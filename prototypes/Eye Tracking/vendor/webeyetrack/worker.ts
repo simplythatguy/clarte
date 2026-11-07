@@ -5,6 +5,8 @@ import { installLocalNetworkBoundary } from '../../src/core/network';
 installLocalNetworkBoundary();
 let engine: CalibrationEngine | null = null;
 let busy = false;
+// Development replay recording is only reachable when the page initializes the worker in development.
+let development = false;
 self.onmessage = async ({ data }: MessageEvent<unknown>) => {
   if (!data || typeof data !== 'object' || !('id' in data) || typeof data.id !== 'number' || !('type' in data) || !('payload' in data)) return;
   const { id, type, payload } = data;
@@ -20,6 +22,7 @@ self.onmessage = async ({ data }: MessageEvent<unknown>) => {
       try { await tracker.initialize(`${self.location.origin}/vendor/webeyetrack`); }
       catch (error) { tracker.dispose(); throw error; }
       engine = new CalibrationEngine(tracker);
+      development = !!payload && typeof payload === 'object' && 'development' in payload && payload.development === true;
       value = { backend: tf.getBackend() };
     } else {
       if (!engine) throw new Error('Tracker is not initialized');
@@ -30,6 +33,11 @@ self.onmessage = async ({ data }: MessageEvent<unknown>) => {
       } else if (type === 'train') value = await engine.train();
       else if (type === 'exportCalibration') value = engine.exportCalibration();
       else if (type === 'restoreCalibration') value = engine.restoreCalibration(payload);
+      else if (type === 'recording' && development && payload && typeof payload === 'object' && 'enabled' in payload && typeof payload.enabled === 'boolean') { engine.setRecording(payload.enabled); value = engine.replayCount; }
+      else if (type === 'record' && development && payload && typeof payload === 'object' && 'at' in payload && typeof payload.at === 'number' && 'x' in payload && typeof payload.x === 'number' && 'y' in payload && typeof payload.y === 'number') {
+        value = await engine.record(payload.at, payload.x, payload.y);
+      } else if (type === 'replayCount' && development) value = engine.replayCount;
+      else if (type === 'exportReplay' && development) value = engine.exportReplay();
       else if (type === 'dispose') { engine.dispose(); engine = null; value = null; }
       else throw new Error('Invalid local tracker request');
     }

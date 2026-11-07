@@ -1,6 +1,6 @@
 {
   "kind": "prototype-source-content-fingerprint",
-  "sourceSha256": "914a7cf50c6d77fdb4d7fa6c755fcc3338d29751c4426429f804c617cb08b7fc",
+  "sourceSha256": "92ab63653c8860e57e7f457811dd2065707accb0fa1732c8d1e1a3c2a6d6cd88",
   "files": [
     {
       "path": ".gitignore",
@@ -14,18 +14,18 @@
     },
     {
       "path": "README.md",
-      "bytes": 6589,
-      "sha256": "3c3278b8c4d09e2fb410d9731862a161ce4987a7f372895aace51cf17f72dd0d"
+      "bytes": 7375,
+      "sha256": "6231a30479cafd193837c7bf691a51ea2d4eea605d96e454594a33d71c1fde35"
     },
     {
       "path": "docs/IMPORT-SOURCE.json",
-      "bytes": 99344,
-      "sha256": "c01056ddf4dff1c9b22eee29831763ce3747c9fa424005bc60c21c26c9eefb1e"
+      "bytes": 101431,
+      "sha256": "b7fec875e8ef58e9143c4ed91623a46d1f1595a6fc8ba56275798c0f354e506e"
     },
     {
       "path": "docs/IMPORT.md",
-      "bytes": 6730,
-      "sha256": "7fedafc5858b4ea045691eeadb0424c0e0e8d049fe2a7f3886b893707f7be87f"
+      "bytes": 8326,
+      "sha256": "0907188cb60dc2b70f80852fd8a9a41fd0987bca324d8f325f2e12cf0e73a4ad"
     },
     {
       "path": "docs/MINIMAL-FLOW.md",
@@ -519,8 +519,8 @@
     },
     {
       "path": "public/vendor/webeyetrack/BUILD.json",
-      "bytes": 243704,
-      "sha256": "c5f96a216741a89554f2c73e89b8fc6aebf83012fde158243187850c62c26a3a"
+      "bytes": 243843,
+      "sha256": "8b528c8f39be44f916e53d33761dd2b79306f03fd6e2dbbae8c967411af20b93"
     },
     {
       "path": "public/vendor/webeyetrack/licenses/APACHE-2.0.txt",
@@ -974,8 +974,8 @@
     },
     {
       "path": "public/vendor/webeyetrack/worker.js",
-      "bytes": 1154668,
-      "sha256": "144adc706a0df673994aaed1dc2106ceac7c90fa68522d37d14bb2fb24c4ee03"
+      "bytes": 1157736,
+      "sha256": "2473495f19c6167f2b6dee10580c76f1c6efb81a2531941fc455c3bc5b145f20"
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.LEGAL.txt",
@@ -984,8 +984,8 @@
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.map",
-      "bytes": 6188058,
-      "sha256": "097cd14789f54475f35e7275c1f8d81ca1cc6593ca1dde4da02735f719bdb2fa"
+      "bytes": 6205262,
+      "sha256": "28953ae13ababd6f339fa2e4265b2bf4ce7bfe98f64266cb0d2d0966154be350"
     },
     {
       "path": "public/vendor/webgazer.js",
@@ -1079,13 +1079,18 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 41752,
-      "sha256": "078ab97ec5a237ee0b70fc654e5140e8fd355e9218dd0ea55ccb7791b50f63a7"
+      "bytes": 47930,
+      "sha256": "85d62abce001627bf18fac7d577ee5af5aec65e7492f09f916973d7a5052b2c0"
     },
     {
       "path": "src/components/Calibration.tsx",
       "bytes": 2455,
       "sha256": "502fbadea38ee36b1b40266ebdb3699ee6687cc0e03f1e67bc6568fba9b6af53"
+    },
+    {
+      "path": "src/components/CheckReport.tsx",
+      "bytes": 3107,
+      "sha256": "db77007806d3b9354d922dc56d4ca7a1f17bb75bb3a6d543874c4cf7314b09a3"
     },
     {
       "path": "src/components/HeadPosition.tsx",
@@ -1104,8 +1109,8 @@
     },
     {
       "path": "src/components/Settings.tsx",
-      "bytes": 3664,
-      "sha256": "252ff1950b1c611a9d8d7dd6af71a7cb402f1d1b7d1e35cbaa3adc6c796fad50"
+      "bytes": 5473,
+      "sha256": "e01d33bd1000c1095672ae3b4d1f3e33f67de3fd8471ee3fe6053f7059c72d24"
     },
     {
       "path": "src/components/StagePage.tsx",
@@ -1128,9 +1133,19 @@
       "sha256": "9ba34b2c1326da3fc7e285a7a11d7efff1c0d6ad58247e8a6bb54edb0a8ae7e0"
     },
     {
+      "path": "src/core/calibration-models.ts",
+      "bytes": 9755,
+      "sha256": "0ed49c1f09201bd44eae3da26e37b537757a613739d2cbe24c974567a62f3ee6"
+    },
+    {
       "path": "src/core/calibration.ts",
       "bytes": 8093,
       "sha256": "0d72d78d2d8cc53daf8e1c235f943ffee3a3303bdac5ec240a1dbe32deb9cd5e"
+    },
+    {
+      "path": "src/core/check-report.ts",
+      "bytes": 4851,
+      "sha256": "796383253fca3a600db9f9c826e0cf5ae1459cb42a272dc0bc33a7ee4491ccac"
     },
     {
       "path": "src/core/dwell.ts",
@@ -1149,8 +1164,8 @@
     },
     {
       "path": "src/core/head-position.ts",
-      "bytes": 6642,
-      "sha256": "8fb70a5f6398df4b7bd0840c15bc7dbb1e344fa4f3c8bff47ed293876bc8e4da"
+      "bytes": 8151,
+      "sha256": "aa3a71a40e07a237c9030a54ca81c00b9e9343665a767c58364658d9473991d4"
     },
     {
       "path": "src/core/lifecycle.ts",
@@ -1163,19 +1178,34 @@
       "sha256": "a6175c012ce7960fee6b221ae98d7cb905c8bd8cb34745323b58ed9a85a2bd2e"
     },
     {
+      "path": "src/core/one-euro.ts",
+      "bytes": 2828,
+      "sha256": "d290406aa5a6dc873431b2d3413881bf6d445c921807e7fdae5d66dda10802cc"
+    },
+    {
+      "path": "src/core/replay-file.ts",
+      "bytes": 2253,
+      "sha256": "438cb3ffa9e18e85274a41eea1fac020eee96e766ed63e75a04697f78b4aba6d"
+    },
+    {
       "path": "src/core/saved-calibration.ts",
       "bytes": 6057,
       "sha256": "7ff5c5f829f33a2149cd60371f2c2bb8c165f3b1e232f92f541b1a3772ef3aee"
     },
     {
       "path": "src/core/selection-learning.ts",
-      "bytes": 5942,
-      "sha256": "4d19f2afbb3ef9a7db3bcdcbb4247f2b4adb7f36bec6a8b848d6af28440bd653"
+      "bytes": 6789,
+      "sha256": "4eabad6de162c40339893c84328c5705637c558e5815b62e2a82878e5bd1e1f5"
     },
     {
       "path": "src/core/speech.ts",
       "bytes": 415,
       "sha256": "5c16b580f500191af06b8e3949ddd03042cb583e8246edb672e115acc36c828e"
+    },
+    {
+      "path": "src/core/target-classifier.ts",
+      "bytes": 8357,
+      "sha256": "00685c62de4151cb58430a7085b00bd9d6d53ae4cdf88828719bab864ec6e291"
     },
     {
       "path": "src/core/target-snap.ts",
@@ -1184,18 +1214,18 @@
     },
     {
       "path": "src/core/tracking.ts",
-      "bytes": 3035,
-      "sha256": "7d53da48216d6cd3f197e8ece7bfafb836279414b0755df1b273b7e51f96392e"
+      "bytes": 3173,
+      "sha256": "4070885f73bcfde2c1cfe39fcdb8421a44f38f8f8f6273cc00f7d913b7e738cc"
     },
     {
       "path": "src/core/validation.ts",
-      "bytes": 11480,
-      "sha256": "7d0e9565570649e6e9903d37eac573ba55d0af813272dc07a65ae19cbfb22b3e"
+      "bytes": 12255,
+      "sha256": "ed5d2cfe3d25062bafda082d30d7ffbd3c70a581bc9e2a1cacea4038cc971ceb"
     },
     {
       "path": "src/core/webeyetrack.ts",
-      "bytes": 13241,
-      "sha256": "cd93a3672cd650367de876b47ed873127d4be639b2d40e31c92e48bc02b564b8"
+      "bytes": 15973,
+      "sha256": "102e4531566bc21a51d390312b3308fb4e9608c2f9f43ea3c0d787c6ebcb9e3e"
     },
     {
       "path": "src/core/webgazer.ts",
@@ -1209,8 +1239,8 @@
     },
     {
       "path": "src/core/worker-engine.ts",
-      "bytes": 5198,
-      "sha256": "5f6349acb9f16eb9eb049f567446b043253c3e549f56b297a29d9be09e6ee85e"
+      "bytes": 8788,
+      "sha256": "3f3ab6744e7c6ae5431d2bdec48c5052b86350f4ce6a67e5bb7b81ecac9fd349"
     },
     {
       "path": "src/main.tsx",
@@ -1219,8 +1249,8 @@
     },
     {
       "path": "src/styles.css",
-      "bytes": 6179,
-      "sha256": "9e30f3c44aa5dd583ef3521b38b2b953c80094eeb88d9346aaffa82b6055fa3e"
+      "bytes": 7272,
+      "sha256": "0ba2114817a3dc0e3f98b1bf6d26bf335e83d8ebd2bbbce6713d22aa2a96f604"
     },
     {
       "path": "tests/app.test.mjs",
@@ -1231,6 +1261,11 @@
       "path": "tests/blink.test.ts",
       "bytes": 4789,
       "sha256": "5107d1e9da3cfe4b70463fb4291d29f011d818cd1e1dfa2435af94fd402db5f8"
+    },
+    {
+      "path": "tests/calibration-models.test.ts",
+      "bytes": 10921,
+      "sha256": "c13533922d946c42ea36f4f50a3fb88f8707e4130f46ab3becd9be93cbb373d9"
     },
     {
       "path": "tests/calibration.test.ts",
@@ -1273,6 +1308,11 @@
       "sha256": "6163f3d34c62777284ff619c7f6e68a49163cd9335603a6d3e0e4e819cde5fd3"
     },
     {
+      "path": "tests/one-euro.test.ts",
+      "bytes": 8267,
+      "sha256": "65c0b282ef03126afce3aa7b9fcc513f75a486909a9fbf6bc26403003313db2f"
+    },
+    {
       "path": "tests/privacy.test.ts",
       "bytes": 1550,
       "sha256": "323ddb612158553c7773bbf64d9d85780906ea25ba8f29875e544f2ecf0ef5ce"
@@ -1283,6 +1323,11 @@
       "sha256": "1af3698c840689e361ca0ec21bbae36949f9abb58dd61b96c17f6d0ee3407559"
     },
     {
+      "path": "tests/replay.test.ts",
+      "bytes": 6074,
+      "sha256": "76ea1214e45c23a0696359603b0d41e75cad1ffdcba417cc1ea2249a2dca786c"
+    },
+    {
       "path": "tests/saved-calibration.test.ts",
       "bytes": 5529,
       "sha256": "d377f50fd0c806cacd1f9fc7fe8997c828e0da6a7852736bd5f87fcaa1a926f4"
@@ -1291,6 +1336,11 @@
       "path": "tests/selection-accuracy.test.ts",
       "bytes": 5640,
       "sha256": "7e3fdff403a20dc09d03becd2d0becd973aaa63f1be6d6ac8fa81e26ae10f656"
+    },
+    {
+      "path": "tests/target-classifier.test.ts",
+      "bytes": 12190,
+      "sha256": "a75c3b2cb743a15c03b4edd2513612968ad2683ba8a3b5da0fb4ea8ab1120f1b"
     },
     {
       "path": "tests/validation.test.ts",
@@ -1314,8 +1364,8 @@
     },
     {
       "path": "tsconfig.json",
-      "bytes": 468,
-      "sha256": "5060b4795518e4b952780e061c58b7bd5e4704d906e7a8fd36d4c30bb6c7f4a9"
+      "bytes": 475,
+      "sha256": "f917c8bd6ca5efd29af85b1ac9f58a754bbfd5abfa131f1c1c11827b73cea904"
     },
     {
       "path": "tsconfig.worker.json",
@@ -2414,8 +2464,8 @@
     },
     {
       "path": "vendor/webeyetrack/worker.ts",
-      "bytes": 2480,
-      "sha256": "23410988b3b921ea9ad33f529648faa27e7b7ca0955c77c75d592a6c539a6635"
+      "bytes": 3447,
+      "sha256": "690098314a5edf95079c1db972ac750ef5cf6410aa6de289d6bfe7e774cb6adf"
     },
     {
       "path": "vendor/webgazer/LICENSE.md",

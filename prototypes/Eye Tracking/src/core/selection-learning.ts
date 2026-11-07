@@ -69,6 +69,20 @@ export class SelectionLearning {
     return { ...frame, point: frame.point ? clip(this.apply(frame.point, viewport)) : frame.point, rawPoint: frame.rawPoint ? this.apply(frame.rawPoint, viewport) : frame.rawPoint };
   }
 
+  /**
+   * Starts from a measured check instead of from nothing: each pair is the median uncorrected
+   * estimate at a known reference and that reference's position. Later selections outweigh it
+   * as they arrive. Returns how many pairs were accepted.
+   */
+  seed(pairs: { estimate: Point; target: Point }[], viewport: Viewport): number {
+    if (viewport.width <= 0 || viewport.height <= 0) return 0;
+    const usable = pairs.map((p, index) => ({ estimate: normalize(p.estimate, viewport), target: normalize(p.target, viewport), key: `check-${index}` }))
+      .filter(p => [p.estimate.x, p.estimate.y, p.target.x, p.target.y].every(Number.isFinite) && Math.hypot(p.estimate.x - p.target.x, p.estimate.y - p.target.y) <= .45);
+    this.pairs = usable.slice(-LEARNING.capacity);
+    this.transform = this.fit();
+    return usable.length;
+  }
+
   /** `estimates` are uncorrected screen points; returns whether the selection was learned. */
   learn(estimates: Point[], target: TargetRect, viewport: Viewport): boolean {
     const usable = estimates.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
