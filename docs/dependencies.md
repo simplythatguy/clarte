@@ -16,6 +16,7 @@ These skills are development tools for building Clarte, an application for givin
 | pr | None hard-required | Project language from GLOSSARY.md if present; real change/evidence | Original skill, agents metadata, and CREDITS.md included |
 | setup-matt-pocock-skills | Its tracker, label, and domain templates | Write access to the target repo; gh/glab only for a chosen hosted tracker | Included with all templates and agents metadata; not executed here |
 | lintapple-ui | None | Node >=22, Lint Apple/browser runner, running web app and matching policy | Original integration guidance with upstream README; npm version 0.1.24 verified during preparation |
+| emilkowalski/skills (17 skills: animate, animate-expo, animation-performance, animation-vocabulary, apple-design, ask-sonner, break-ui, choreograph, emil-design-eng, find-animation-opportunities, improve-animations, mobile-native, pick-ui-library, prototype, remove-animations, review-animations, write-swift) | Each skill's own SKILL.md plus its sibling reference files (RECIPES.md, STANDARDS.md, AUDIT.md, PLAN-TEMPLATE.md, CATALOG.md, PICKER.md, API.md) | A UI codebase to review or build; Motion, Base UI or Sonner only where a skill names them | Entire `skills/` tree of the upstream repository copied unchanged at the pinned commit; the upstream root MIT LICENSE copied into each skill folder as LICENSE.txt; root cheat sheets and README not copied |
 
 The planning and design folders include their local `bin` helpers where upstream provides them. Shared `gstack/bin`, libraries, browser engine, state, hooks, and compiled tools are external runtime dependencies. The runtime is intentionally installed from the exact upstream commit rather than copied piecemeal into a misleading partial installation.
 
@@ -71,6 +72,12 @@ Reviewed Anthropic's [requested frontend-design source](https://github.com/anthr
 `better-ui` supplies surface, optical alignment, icon, and motion details. All six linked recipes and the upstream agent metadata are included. The entrypoint names `better-typography`, `better-accessibility`, `better-layout`, and `better-colors` as companion domains, and refers to `better-interface`'s severity rules. It does not require loading those skills to execute its own polish checks, so they are not installed as transitive dependencies. Reduced-motion guidance and fallback recipes are already included; accessibility obligations still apply. Framework-specific snippets are alternatives for the consumer's existing stack, not a requirement to install every demonstrated library.
 
 Use `frontend-design` to establish visual direction, `design-html` for the inline HTML workflow, `better-ui` for detailed polish, and `lintapple-ui` for rendered measurements. The user's brief and deliberate project conventions take precedence over generic defaults. These are packaged instructions; no live UI build, browser inspection, or visual quality claim was produced while adding them.
+
+## Emil Kowalski's design-engineering skills
+
+Reviewed the [skills repository](https://github.com/emilkowalski/skills) README and every `skills/*/SKILL.md` at the commit recorded in `sources.lock.json`. The seventeen skills are prompt instructions for animation, motion review, choreography, performance, Apple-style design, UI breakage testing, prototyping and library choice; they call no runtime and install nothing. Each skill folder is an exact copy of the upstream folder with the upstream MIT license added as `LICENSE.txt`. The root cheat sheets are not copied because they duplicate the skills.
+
+Use `review-animations`, `choreograph`, `animation-performance` and `emil-design-eng` when reviewing or building the UI prototypes, alongside `better-ui`, `frontend-design` and the owner's `minimal-ui`. Where these skills and minimal-ui disagree about how much is on screen or what colour is for, minimal-ui wins; where they and the Clarte gaze research disagree about motion near armed targets, the research wins (nothing moves while a target is armed).
 
 ## Lint Apple
 
