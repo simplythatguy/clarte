@@ -54,7 +54,7 @@ Where the website and pinned source differ, use the pinned source for executable
 
 ## Inline HTML design
 
-`design-html` is the original upstream skill from the same pinned gstack commit as the planning skills. Its generated entrypoint, every section and manifest, and `vendor/pretext.js` are copied unchanged. Generator templates are omitted, as with the planning skills.
+`design-html` is the original upstream skill from the same pinned gstack commit as the planning skills. Its generated entrypoint, every section and manifest, and `vendor/pretext.js` are copied unchanged. Generator templates are omitted, as with the planning skills. Pretext's upstream license and third-party notices are also included beside the bundled code, with the license source revision recorded in the lockfile.
 
 The workflow generates Pretext-native HTML/CSS, opens a browser preview, captures verification screenshots, and refines the result. Its framework-integration path uses the project's package manager for `@chenglou/pretext`; the standalone path can embed the bundled vendor file. Shared gstack design, browser, configuration, and lint helpers remain runtime prerequisites supplied by the full pinned installation.
 
