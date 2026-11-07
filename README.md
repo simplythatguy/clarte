@@ -7,6 +7,8 @@ Skills for planning, inline HTML design, codebase cleanup, Sol review, and reada
 | `office-hours` | Understand the problem, challenge premises, compare approaches | [gstack](https://github.com/garrytan/gstack/tree/main/office-hours) |
 | `autoplan` | Sequential CEO → design → DX → engineering plan review | [gstack](https://github.com/garrytan/gstack/tree/main/autoplan) |
 | `design-html` | Generate and refine Pretext-native inline HTML/CSS | [gstack design-html](https://github.com/garrytan/gstack/tree/main/design-html) |
+| `frontend-design` | Choose a distinctive visual direction grounded in the brief | [Anthropic](https://github.com/anthropics/skills/tree/main/skills/frontend-design) |
+| `better-ui` | Polish surfaces, icons, and motion | [Jakub Krehel](https://github.com/jakubkrehel/skills/tree/main/skills/better-ui) |
 | `untangle-codebase` | Reduce hidden dependencies and unnecessary structure | [Caldo](https://github.com/caldoai/skills/tree/main/skills/untangle-codebase) |
 | `sol-loop` | Bounded GPT Sol review and repair loop | [tstack](https://github.com/t3dotgg/tstack/tree/main/skills/sol-loop) |
 | `pr` | Visual summary, concrete evidence, merge risk | [Matt Pocock](https://www.aihero.dev/skills-pr) |
@@ -38,13 +40,13 @@ Follow the [pinned setup instructions](docs/dependencies.md#gstack-runtime). Cod
 
 ### Inline HTML and UI
 
-`design-html` retains the original gstack workflow: design analysis, Pretext-native HTML/CSS generation, browser preview, and refinement. Its sections and bundled `vendor/pretext.js` are included. Like the planning skills, it requires the full pinned gstack runtime. Use `lintapple-ui` to check the rendered HTML against the project's design policy.
+`design-html` retains the original gstack workflow: design analysis, Pretext-native HTML/CSS generation, browser preview, and refinement. Its sections and bundled `vendor/pretext.js` are included. Like the planning skills, it requires the full pinned gstack runtime. Use `frontend-design` for visual direction, `better-ui` for detailed polish, and `lintapple-ui` to check the rendered HTML against the project's design policy. Preserve the brief and deliberate project conventions when generic recommendations differ. Both added design skills are standalone; `better-ui` includes all six linked recipe files and its agent metadata.
 
 `sol-loop` improves correctness through independent reviews; it does not tune the writer model or promise better results on every task. It requires access to an actual Sol reviewer through supported delegation.
 
 ## Sources and verification
 
-Read [the source/dependency audit](docs/dependencies.md) for mandatory versus optional dependencies, upstream website findings, and integration limits. [sources.lock.json](sources.lock.json) pins upstream commits and hashes of copied files. The upstream planning, inline HTML design, cleanup, Sol, PR, and Matt setup files are preserved; `lintapple-ui` is Clarte's integration skill.
+Read [the source/dependency audit](docs/dependencies.md) for mandatory versus optional dependencies, upstream website findings, and integration limits. [sources.lock.json](sources.lock.json) pins upstream commits and hashes of copied files. The upstream planning, inline HTML design, frontend design, UI polish, cleanup, Sol, PR, and Matt setup files are preserved; `lintapple-ui` is Clarte's integration skill.
 
 ```sh
 python3 scripts/validate.py
@@ -52,4 +54,4 @@ python3 scripts/validate.py
 
 This validates copied-file integrity, skill metadata, bundled phase/section files, and local Markdown links. It does not prove a live gstack review, HTML generation session, or rendered UI audit. No application UI is implemented in this repository.
 
-Upstream copyright, license texts, and third-party notices are retained in `licenses/` and each distributed skill. Clarte's original additions are MIT licensed; upstream material retains its original notices.
+Upstream copyright, license texts, and third-party notices are retained in `licenses/` and each distributed skill. Clarte's original additions are MIT licensed; upstream material retains its original notices. Anthropic's `frontend-design` is Apache-2.0 licensed; `better-ui` is MIT licensed.

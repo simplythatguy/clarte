@@ -9,6 +9,8 @@ Audited from the commits recorded in `sources.lock.json` and the first-party pag
 | office-hours | Its phase sections and shared preamble | Full gstack setup for brain/context, design discovery, runtime helpers, and host integration | Generated skill files copied, including all sections and local helpers; generator templates omitted |
 | autoplan | plan-ceo-review; plan-eng-review; plan-design-review when UI is in scope; plan-devex-review when DX is in scope | Full gstack setup, Bun, host review tools, phase publication guard, snapshots and gate helpers | All four review directories and their section files included; office-hours included for its prerequisite offer |
 | design-html | Its shared preamble, UX doctrine, craft, Pretext patterns, and conditional detector-offer sections | Full gstack runtime and browser tools; bundled Pretext for standalone HTML; project package for framework integration | Original entrypoint, all generated sections, and vendor/pretext.js included |
+| frontend-design | None named; skill-local LICENSE.txt | Project brief and implementation environment | Original skill and Apache-2.0 license copied unchanged |
+| better-ui | surfaces.md, animations.md, enter-exit.md, icon-transitions.md, performance.md, icons.md | Existing UI/project conventions; browser for live verification | Entire skill folder including all recipes and agents/openai.yaml; upstream MIT license retained |
 | untangle-codebase | None named | Repository access; suitable checks; subagents for its final structural review | Original skill preserved; it asks separately about optional comment/test cleanup |
 | sol-loop | None named | Git, gh for PR context, an actual GPT Sol reviewer through T3/native supported delegation | Original skill preserved; no full-send, council, or babysit-pr needed |
 | pr | None hard-required | Project language from GLOSSARY.md if present; real change/evidence | Original skill, agents metadata, and CREDITS.md included |
@@ -59,6 +61,16 @@ Where the website and pinned source differ, use the pinned source for executable
 The workflow generates Pretext-native HTML/CSS, opens a browser preview, captures verification screenshots, and refines the result. Its framework-integration path uses the project's package manager for `@chenglou/pretext`; the standalone path can embed the bundled vendor file. Shared gstack design, browser, configuration, and lint helpers remain runtime prerequisites supplied by the full pinned installation.
 
 Use `lintapple-ui` on the actual rendered page in addition to the upstream checks. Its reports supplement visual inspection and functional verification. No live HTML-generation or browser-preview session was performed while packaging this skill.
+
+## Frontend design and UI polish
+
+Reviewed Anthropic's [requested frontend-design source](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md), its skill-local license, Jakub Krehel's [skills repository](https://github.com/jakubkrehel/skills), [website](https://jakub.kr/skills), and the better-ui entrypoint with all local links. Exact commits and file hashes are in `sources.lock.json`.
+
+`frontend-design` is self-contained and covers a visual direction grounded in the subject, token planning, implementation, and critique. Its `LICENSE.txt` is Apache-2.0 and ships with the skill. No other skill files are invoked or required.
+
+`better-ui` supplies surface, optical alignment, icon, and motion details. All six linked recipes and the upstream agent metadata are included. The entrypoint names `better-typography`, `better-accessibility`, `better-layout`, and `better-colors` as companion domains, and refers to `better-interface`'s severity rules. It does not require loading those skills to execute its own polish checks, so they are not installed as transitive dependencies. Reduced-motion guidance and fallback recipes are already included; accessibility obligations still apply. Framework-specific snippets are alternatives for the consumer's existing stack, not a requirement to install every demonstrated library.
+
+Use `frontend-design` to establish visual direction, `design-html` for the inline HTML workflow, `better-ui` for detailed polish, and `lintapple-ui` for rendered measurements. The user's brief and deliberate project conventions take precedence over generic defaults. These are packaged instructions; no live UI build, browser inspection, or visual quality claim was produced while adding them.
 
 ## Lint Apple
 
