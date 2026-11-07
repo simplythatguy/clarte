@@ -86,7 +86,8 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 | `s4/` | Split: a 2×2 letter keypad on the left, controls top-right, text bottom-right | Q7, Q8 | 5104 |
 | `s5/` | Dialogue: the conversation as a thread, whole-reply predictions from the partner's words | Q2, Q3 | 5105 |
 | `s6/` | Orb: the owner's 2026-11-07 concept on style 5's grid. A white page, frosted glass cards that turn white as they are looked at, and a light-orange orb that holds the message and reacts to the conversation. Two equally likely words branch into Q1 and Q4, a report-style setup comes first, and the type is Atkinson Hyperlegible Next | Q2, Q3 | 5106 |
-| `s_all/` | Preview of all seven: one page with a vertical S0–S6 switcher at the top right | — | 5100 |
+| `s7/` | Cloud: a copy of style 6 (v1 stays as it was). The orb with a hand-drawn face lives in the blank middle and leaves whenever text appears there: the face erases itself and the orb fades, then both return when the text is gone. It has 18 reactions to what is said, plus faces for at rest and listening, and two palettes: Soft (style 6) and Vibrant (solid letter cards with white letters). `s_all` shows it as S7 (soft) and S7V (vibrant) | Q2, Q3 | 5107 |
+| `s_all/` | Preview of every style: one page with a vertical S0–S7V switcher at the top right | — | 5100 |
 
 Run everything with one command from the repository root: `./clarte ui` (Windows: `clarte ui`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
 
@@ -94,9 +95,9 @@ Run everything with one command from the repository root: `./clarte ui` (Windows
 node prototypes/UI/v0/s_all/serve.mjs
 ```
 
-The engine is the ported prototype in `prototypes/Word Prediction/v0`. Set up its `.venv`, native build and models once, as its README describes; until then S0 shows "Engine offline". Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the five ports after it.
+The engine is the ported prototype in `prototypes/Word Prediction/v0`. Set up its `.venv`, native build and models once, as its README describes; until then S0 shows "Engine offline". Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the seven ports after it.
 
-Then open http://localhost:5100. Each of `s1`–`s6` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
+Then open http://localhost:5100. Each of `s1`–`s7` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
 
 **Onboarding is out of scope for v0.** The product keeps the calibration and onboarding flow from `prototypes/Eye Tracking`. The styles still contain the simulated calibration they were built with, but `?onboarding=off` opens any of them straight into the app, and `s_all` always loads them that way.
 
