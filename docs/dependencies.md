@@ -85,3 +85,9 @@ No application UI exists in this repository, so there is no rendered page to lin
 - [tstack README and Sol loop](https://github.com/t3dotgg/tstack).
 
 All repositories were read from shallow Git clones pinned in the lockfile. No upstream install script or skill workflow was executed merely to inspect its content. License texts, Matt's PR credits, and gstack's notices (including downstream design-source notices) are retained.
+
+## Maintaining development skills
+
+`sources.lock.json` is the source of the skill inventory. Copied `skills/<name>/SKILL.md` records identify upstream skills; `authored_skills` lists Clarte-authored skill directories. Add or rename entries there alongside the actual files; the validator does not keep a second catalog in Python.
+
+Run `python3 scripts/validate.py` after a tooling change. It checks copied-file hashes, the declared inventory, entrypoint metadata, licenses, sections, and local links in repository docs and each skill's top-level Markdown. Archived reference documents retain their upstream link context and are covered by file hashes. The gstack source marks `runtime_relative_links` because its unmodified files reference its external installation; those links require the full runtime rather than the Clarte checkout.

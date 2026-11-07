@@ -2,7 +2,8 @@
   "repositories": {
     "gstack": {
       "url": "https://github.com/garrytan/gstack",
-      "commit": "1970da59c4dc5a56109acb0368ce3113a6e7dd09"
+      "commit": "1970da59c4dc5a56109acb0368ce3113a6e7dd09",
+      "runtime_relative_links": true
     },
     "caldo": {
       "url": "https://github.com/caldoai/skills",
@@ -533,5 +534,8 @@
       "sha256": "ed1dfe988fc40511b4845ccd9050a143a2002fee3bedc8064c47fa342b5d8d4f"
     }
   ],
-  "lintapple_npm": "0.1.24"
+  "lintapple_npm": "0.1.24",
+  "authored_skills": [
+    "skills/lintapple-ui"
+  ]
 }

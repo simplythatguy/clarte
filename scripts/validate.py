@@ -14,7 +14,15 @@ for record in lock['copied_files']:
     if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != record['sha256']:
         errors.append(f"Missing or changed upstream copy: {record['path']}")
 
-skills = list((ROOT / 'skills').iterdir())
+upstream_skills = {
+    Path(record['path']).parent: record['repository']
+    for record in lock['copied_files']
+    if Path(record['path']).match('skills/*/SKILL.md')
+}
+required = set(upstream_skills) | {Path(path) for path in lock['authored_skills']}
+skills = sorted(path for path in (ROOT / 'skills').iterdir() if path.is_dir())
+if {path.relative_to(ROOT) for path in skills} != required:
+    errors.append('Skill catalog does not match the source manifest')
 for skill in skills:
     entry = skill / 'SKILL.md'
     if not entry.is_file():
@@ -31,13 +39,14 @@ for skill in skills:
         if not (skill / 'sections' / section).is_file():
             errors.append(f'Missing section: {skill.name}/{section}')
 
-required = {'office-hours', 'autoplan', 'plan-ceo-review', 'plan-design-review', 'plan-devex-review', 'plan-eng-review', 'design-html', 'frontend-design', 'better-ui', 'untangle-codebase', 'sol-loop', 'pr', 'setup-matt-pocock-skills', 'lintapple-ui'}
-if {p.name for p in skills} != required:
-    errors.append('Skill catalog does not match required dependency closure')
-
 # Resolve Markdown file links, excluding remote URLs and fragment-only links.
-# Upstream sources use runtime-relative paths and are integrity-checked above.
-local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').glob('*.md'), ROOT / 'skills/lintapple-ui/SKILL.md', * (ROOT / 'skills/frontend-design').glob('*.md'), * (ROOT / 'skills/better-ui').glob('*.md'), * (ROOT / 'skills/setup-matt-pocock-skills').glob('*.md')]
+# Runtime-relative upstream links require the external runtime documented in the manifest.
+local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').rglob('*.md')]
+for skill in skills:
+    source = upstream_skills.get(skill.relative_to(ROOT))
+    if source and lock['repositories'][source].get('runtime_relative_links', False):
+        continue
+    local_docs.extend(skill.glob('*.md'))
 for path in local_docs:
     for target in re.findall(r'\]\(([^\s)]+)\)', path.read_text()):
         if '://' in target or target.startswith(('#', 'mailto:')):
