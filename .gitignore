@@ -2,3 +2,6 @@
 __pycache__/
 node_modules/
 .scratch/
+# clarte launcher: local secrets and the downloaded toolchains
+.env
+.tools/
