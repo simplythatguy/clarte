@@ -1,6 +1,6 @@
 {
   "kind": "prototype-source-content-fingerprint",
-  "sourceSha256": "a06bdef85f42eac7a16e881d8be210c416bed88ddc8297fa5bdf8424c922c566",
+  "sourceSha256": "914a7cf50c6d77fdb4d7fa6c755fcc3338d29751c4426429f804c617cb08b7fc",
   "files": [
     {
       "path": ".gitignore",
@@ -14,23 +14,23 @@
     },
     {
       "path": "README.md",
-      "bytes": 6522,
-      "sha256": "be7a837556f51056393cf90b3b7182a9eeacf6cc686ac3c7496c0b6b83e8d426"
+      "bytes": 6589,
+      "sha256": "3c3278b8c4d09e2fb410d9731862a161ce4987a7f372895aace51cf17f72dd0d"
     },
     {
       "path": "docs/IMPORT-SOURCE.json",
-      "bytes": 98341,
-      "sha256": "85819ebc96539082e02d7e8f07e9645745e40ac4fe3fa36f5898a500b14affd1"
+      "bytes": 99344,
+      "sha256": "c01056ddf4dff1c9b22eee29831763ce3747c9fa424005bc60c21c26c9eefb1e"
     },
     {
       "path": "docs/IMPORT.md",
-      "bytes": 5190,
-      "sha256": "5d3ae6535d3a1ee5841502e6d80290a6ce1f41eb80053d97d327989beb23fb89"
+      "bytes": 6730,
+      "sha256": "7fedafc5858b4ea045691eeadb0424c0e0e8d049fe2a7f3886b893707f7be87f"
     },
     {
       "path": "docs/MINIMAL-FLOW.md",
-      "bytes": 5640,
-      "sha256": "9ca6ed10921319ba9126dcf0afedea21c25fa74aff5013ba9a38ac6dd73f42c0"
+      "bytes": 5671,
+      "sha256": "0427dc90823c3a012e5b0901de754ff8697c57e2a5e8ad80ddf416d27b747d07"
     },
     {
       "path": "docs/PROVENANCE.md",
@@ -1074,13 +1074,13 @@
     },
     {
       "path": "scripts/runtime-browser-check.mjs",
-      "bytes": 20313,
-      "sha256": "fb202186d1aefd19387fd9d64bd348f8e24bdc53e90a27789c3bd3cebeb9f921"
+      "bytes": 20367,
+      "sha256": "7fe3faf9816a5f9b5009e3e8f520a2e2134f4f17c0d483ff2a2e9dc882843454"
     },
     {
       "path": "src/App.tsx",
-      "bytes": 39476,
-      "sha256": "3b2439318f8e73ec196e4166dab65ef6c5e52f1d49d53d10473f6bf780356613"
+      "bytes": 41752,
+      "sha256": "078ab97ec5a237ee0b70fc654e5140e8fd355e9218dd0ea55ccb7791b50f63a7"
     },
     {
       "path": "src/components/Calibration.tsx",
@@ -1104,8 +1104,8 @@
     },
     {
       "path": "src/components/Settings.tsx",
-      "bytes": 3444,
-      "sha256": "b4b6e51b7da95a9400880816ab02d6ea5560487fb949235efcaefcd58cea0c21"
+      "bytes": 3664,
+      "sha256": "252ff1950b1c611a9d8d7dd6af71a7cb402f1d1b7d1e35cbaa3adc6c796fad50"
     },
     {
       "path": "src/components/StagePage.tsx",
@@ -1114,8 +1114,8 @@
     },
     {
       "path": "src/components/Targets.tsx",
-      "bytes": 1149,
-      "sha256": "2864fa5d7fd33714709fe52ba7a732d38f0c1d1c65381d85884ffbf90338b052"
+      "bytes": 968,
+      "sha256": "e0e4f4b2aaa8e724cd97d4a23c5d10e9abb0d0e60a7a3a03088f9b1b2f2e73f9"
     },
     {
       "path": "src/components/Validation.tsx",
@@ -1168,9 +1168,19 @@
       "sha256": "7ff5c5f829f33a2149cd60371f2c2bb8c165f3b1e232f92f541b1a3772ef3aee"
     },
     {
+      "path": "src/core/selection-learning.ts",
+      "bytes": 5942,
+      "sha256": "4d19f2afbb3ef9a7db3bcdcbb4247f2b4adb7f36bec6a8b848d6af28440bd653"
+    },
+    {
       "path": "src/core/speech.ts",
       "bytes": 415,
       "sha256": "5c16b580f500191af06b8e3949ddd03042cb583e8246edb672e115acc36c828e"
+    },
+    {
+      "path": "src/core/target-snap.ts",
+      "bytes": 2820,
+      "sha256": "eb618484bfcd3059e52f7d5cdc93a0f001058e71933863cc22321e2a8da47815"
     },
     {
       "path": "src/core/tracking.ts",
@@ -1184,8 +1194,8 @@
     },
     {
       "path": "src/core/webeyetrack.ts",
-      "bytes": 13056,
-      "sha256": "85faefb0e68915c8994ae4d705201432c3221c1d9c9edd7a67c1d3f18efa026d"
+      "bytes": 13241,
+      "sha256": "cd93a3672cd650367de876b47ed873127d4be639b2d40e31c92e48bc02b564b8"
     },
     {
       "path": "src/core/webgazer.ts",
@@ -1209,13 +1219,13 @@
     },
     {
       "path": "src/styles.css",
-      "bytes": 6344,
-      "sha256": "6cdee19080089df56443adc7e73fed78b5e2feb52628c5b0030c0769d2be05f7"
+      "bytes": 6179,
+      "sha256": "9e30f3c44aa5dd583ef3521b38b2b953c80094eeb88d9346aaffa82b6055fa3e"
     },
     {
       "path": "tests/app.test.mjs",
-      "bytes": 39102,
-      "sha256": "935953b7b1efc94302b8568278d0cf091201012279885ef8580a4efb8ae58c5a"
+      "bytes": 39112,
+      "sha256": "8159b0e6c360e492d11fe7e9d094c02688dcf6ecc2103249b1d49c92ab9959d6"
     },
     {
       "path": "tests/blink.test.ts",
@@ -1276,6 +1286,11 @@
       "path": "tests/saved-calibration.test.ts",
       "bytes": 5529,
       "sha256": "d377f50fd0c806cacd1f9fc7fe8997c828e0da6a7852736bd5f87fcaa1a926f4"
+    },
+    {
+      "path": "tests/selection-accuracy.test.ts",
+      "bytes": 5640,
+      "sha256": "7e3fdff403a20dc09d03becd2d0becd973aaa63f1be6d6ac8fa81e26ae10f656"
     },
     {
       "path": "tests/validation.test.ts",

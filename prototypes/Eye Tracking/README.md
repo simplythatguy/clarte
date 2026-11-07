@@ -1,6 +1,6 @@
 # Eye Tracking
 
-A standalone local webcam gaze prototype for Clarte, imported from a pinned Still prototype. It uses WebEyeTrack 0.0.2 source at `75fbd2f5f784f2eb3a39675a8dcbf1b01c697f1c`. The requested light surface uses dark text, blue reference circles and blue cardinal targets. The calibration flow and nine blank navigation targets are preserved.
+A standalone local webcam gaze prototype for Clarte, imported from a pinned Still prototype. It uses WebEyeTrack 0.0.2 source at `75fbd2f5f784f2eb3a39675a8dcbf1b01c697f1c`. The requested light surface uses dark text, blue reference circles and blue navigation targets. The calibration flow is preserved; navigation now uses eight blank targets in four columns and two rows.
 
 ## Run
 
@@ -24,7 +24,7 @@ For development, run `npm run dev` (HMR is disabled). Both commands use port 431
 3. **Calibrate head movement** starts its three-second introduction and five references with three more labels each. Labels describe instructed positions; actual eye/head movement is not independently verified.
 4. **Calibrating** waits for the real local training acknowledgement using all 42 labels. **Cancel** releases the camera.
 5. **Calibrate free flow movement** starts a separate, frozen-model check lasting 60 active seconds, then opens navigation automatically. **Skip** on its ready page also opens navigation.
-6. Navigation shows nine blank, named buttons. A steady estimate for about two seconds followed by one bilateral blink previews a target; a second blink confirms it. Looking away cancels a preview. Mouse, touch, Enter and Space also activate targets.
+6. Navigation shows eight blank, named buttons in four columns and two rows. A steady estimate for about two seconds followed by one bilateral blink previews a target; a second blink confirms it. Looking away cancels a preview. Mouse, touch, Enter and Space also activate targets.
 
 Capture screens show a circle and one top-right diagnostic toggle. Diagnostics start off; when enabled, the amber area shows recent estimates, without claiming confidence or verified gaze. Escape or background click/tap opens controls; background Space pauses capture. Continue is explicit after interruption, including pending saved restore and the final free-flow handoff. Settings includes selection mode, pacing, saved-model deletion and an explicitly labelled pointer/B-key simulation. The current navigation prototype has no speech or phrase-composer action.
 

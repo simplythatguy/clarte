@@ -36,3 +36,13 @@ Fresh checks and runtime commands are in the [README](../README.md). Historical 
 ## Independent import review corrections
 
 Review found two additional event-ordering cases. A free-flow pause can itself advance the timer to completion, so its completed-state gate now runs after pause. A final calibration acknowledgement can arrive after blur/hide and refocus, so pausing while collecting retains an explicit controls latch until Continue. Accepted labels are preserved; training still begins exactly once after continuation. Eight boundary cases cover both blur and hidden documents, the failure orderings and adjacent controls. The full suite now contains 184 tests. These App/test adaptations are explicit exceptions to the original-copy audit, while the source manifest pins their new bytes.
+
+## Accuracy and layout changes after import
+
+Requested after real-webcam use found selection unreliable. These are deliberate adaptations, listed in [IMPORT-SOURCE.json](IMPORT-SOURCE.json); the gaze model, worker and third-party sources remain unchanged.
+
+- `src/core/webeyetrack.ts`: request 1280x720 capture and run inference at up to 1280 pixels wide, instead of 640x480, so the eye-patch crop has more detail. Saved calibrations from 640x480 are rejected as a camera change and need recalibration.
+- `src/core/target-snap.ts` (new) and `src/App.tsx`: in two-blink mode, camera estimates snap to the nearest target within reach, using a three-frame median and hysteresis, instead of requiring an exact hit. Estimates far from every target or well past the screen edge still count as looking away.
+- `src/core/selection-learning.ts` (new), `src/App.tsx` and `src/components/Settings.tsx`: confirmed gaze selections pair the estimates that settled on a target with its centre and fit a bounded offset, then offset and scale, correction. It applies only to navigation, stays in memory, resets on recalibration and can be turned off with **Learn from selections**. Raw samples, gaze history and selections are still never persisted.
+- `src/components/Targets.tsx` and `src/styles.css`: navigation is eight blank targets in four columns and two rows.
+- Tests and the browser check follow the new target names and count; `tests/selection-accuracy.test.ts` (new) covers snapping and learning. None of this establishes physical gaze accuracy.

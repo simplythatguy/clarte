@@ -107,7 +107,7 @@ function fixture(storage = new Map()) {
   const silence = count => { for (let i = 0; i < count; i++) { now += 100; tick(); render(); } };
   const targets = () => {
     win.innerWidth = 1000; win.innerHeight = 700;
-    const elements = [new TargetElement('top', 100, 450), new TargetElement('right', 500, 850)];
+    const elements = [new TargetElement('top-1', 100, 450), new TargetElement('top-2', 500, 850)];
     doc.querySelectorAll = () => elements;
     doc.elementFromPoint = (x, y) => y >= 100 && y < 300 ? elements.find(e => x >= e.left && x < e.right) : null;
   };
@@ -138,14 +138,14 @@ function fixture(storage = new Map()) {
     return nodes(render()).find(n => n.type?.name==='Settings').props;
   };
   const resume = () => button('Continue').props.onClick();
-  const choose = (id='top') => nodes(render()).find(n=>n.type?.name==='DwellTarget' && n.props.id===id).props.onClick({detail:0});
+  const choose = (id='top-1') => nodes(render()).find(n=>n.type?.name==='DwellTarget' && n.props.id===id).props.onClick({detail:0});
   const diagnostics = () => nodes(render()).find(n=>n.props['aria-label']==='Toggle gaze diagnostics');
   const area = () => nodes(render()).find(n=>n.props.className==='gaze-area');
   const emitFrame = async (frame, arrival) => { now = arrival; await emit(frame); tick(); render(); };
   return { setNow: value => { now = value; }, sendOnly: frame => emit(frame), pulse: () => { tick(); render(); }, render, stage, saved, storage, validation, button, start, completeEyes, train, calibrate, advance, silence, targets, selection, dwell, settings, resume, choose, diagnostics, area, key, fail: () => failure(Error('fixture camera error')), win, doc, now: () => now, emitFrame };
 }
 
-const preview=f=>nodes(f.render()).find(n=>n.type?.name==='DwellTarget'&&n.props.id==='top')?.props.preview;
+const preview=f=>nodes(f.render()).find(n=>n.type?.name==='DwellTarget'&&n.props.id==='top-1')?.props.preview;
 const eye=async(f,state='closed',face=true,point={x:300,y:200})=>{
   const open=state==='open';await f.emitFrame({at:f.now()+100,face:face&&open,facePresent:face,eyeState:face?state:'unknown',point:open?point:null,rawPoint:open?point:null,pose:null},f.now()+100);
 };
@@ -168,7 +168,7 @@ describe('minimal automatic setup, with actual run/state classes and synthetic c
     await f.advance(29,true,{x:1,y:1});expect(f.validation().position).toBeNull();await f.advance(1,true,{x:1,y:1});
     expect(f.validation().state.kind).toBe('running');await f.advance(599,true,{x:1,y:1});expect(f.validation().state.kind).toBe('running');
     await f.advance(1,true,{x:1,y:1});expect(f.validation()).toBeUndefined();
-    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(9);
+    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(8);
     expect(camera.train).toHaveBeenCalledOnce();expect(camera.collect).toHaveBeenCalledTimes(42);expect(text(f.render())).not.toContain('reference check');
     expect(camera.preview.mock.calls.every(([visible])=>visible===false)).toBe(true);
   });
@@ -246,7 +246,7 @@ describe('minimal automatic setup, with actual run/state classes and synthetic c
 describe('blank navigation selection, freshness and optional diagnostics',()=>{
   it('is silent before a blink, previews first, confirms second, latches, and cancels on lookaway',async()=>{
     const f=fixture();f.targets();await f.calibrate();await arm(f);expect(f.selection()).toBeUndefined();expect(preview(f)).toBe(false);expect(f.area()).toBeUndefined();
-    await blink(f);expect(preview(f)).toBe(true);expect(f.selection()).toBeUndefined();await f.advance(4,true,{x:300,y:200});await blink(f);expect(f.selection()).toMatchObject({id:'top',activation:1});
+    await blink(f);expect(preview(f)).toBe(true);expect(f.selection()).toBeUndefined();await f.advance(4,true,{x:300,y:200});await blink(f);expect(f.selection()).toMatchObject({id:'top-1',activation:1});
     await arm(f);await blink(f);expect(f.selection().activation).toBe(1);
     await f.advance(1,true,{x:600,y:200});await arm(f);await blink(f);expect(preview(f)).toBe(true);await f.advance(1,true,{x:300,y:600});expect(preview(f)).toBe(false);await blink(f);expect(f.selection().activation).toBe(1);
   });
@@ -281,7 +281,7 @@ describe('blank navigation selection, freshness and optional diagnostics',()=>{
     for(let i=0;i<15;i++){await f.advance(3,true,{x:300,y:600});await f.advance(2,true,{x:300,y:200});}await f.advance(50,true,{x:300,y:200});expect(f.selection().activation).toBe(1);
   });
   it('allows deliberate keyboard selection after loss and has no speech action or hover speech',async()=>{
-    const f=fixture();f.targets();await f.calibrate();f.win.speechSynthesis.speak=vi.fn();await f.advance(5,false);f.choose();expect(f.selection().id).toBe('top');
+    const f=fixture();f.targets();await f.calibrate();f.win.speechSynthesis.speak=vi.fn();await f.advance(5,false);f.choose();expect(f.selection().id).toBe('top-1');
     await f.advance(10,true,{x:600,y:200});expect(f.win.speechSynthesis.speak).not.toHaveBeenCalled();expect(text(f.render())).not.toContain('Speak');
   });
   it('toggles diagnostics without resetting selection, never fabricates a point and hides on closed/lost/stale/paused/settings/stop',async()=>{
@@ -375,7 +375,7 @@ describe('reviewed lifecycle regressions', () => {
     expect(title(f)).toBe('Paused');
     expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(0);
     f.resume(); f.silence(1);
-    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(9);
+    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(8);
   });
   it.each(['blur','hidden'])('requires explicit Continue if a final validation frame completes just before %s', async event => {
     const f=fixture(); await f.train(); f.validation().onStart(); await f.advance(629,true,{x:300,y:200});
@@ -387,7 +387,7 @@ describe('reviewed lifecycle regressions', () => {
     expect(title(f)).toBe('Paused');
     expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(0);
     f.resume(); f.silence(1);
-    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(9);
+    expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(8);
   });
   it('retains a final acknowledged label behind Escape and starts training exactly once after Continue', async () => {
     const f=fixture(); await f.completeEyes(); await f.advance(12); f.stage().props.onToggle(); await f.advance(154); let finish;
@@ -429,7 +429,7 @@ describe('independent interruption order probes', () => {
     expect(title(f)).toBe('Paused');
     expect(nodes(f.render()).filter(n => n.type?.name === 'DwellTarget')).toHaveLength(0);
     f.resume(); f.silence(1);
-    expect(nodes(f.render()).filter(n => n.type?.name === 'DwellTarget')).toHaveLength(9);
+    expect(nodes(f.render()).filter(n => n.type?.name === 'DwellTarget')).toHaveLength(8);
   });
   it.each(['blur', 'hidden'])('retains interruption until Continue when a final collect ack arrives after %s and refocus', async event => {
     const f = fixture(); await f.completeEyes(); await f.advance(12); f.stage().props.onToggle(); await f.advance(154);
@@ -456,7 +456,7 @@ describe('independent interruption control cases', () => {
     if(event==='hidden'){f.doc.hidden=true;f.doc.dispatchEvent(new Event('visibilitychange'));}else f.win.dispatchEvent(new Event('blur'));
     f.doc.hidden=false;f.win.dispatchEvent(new Event('focus'));f.silence(2);
     expect(f.validation().state.kind).toBe('paused');expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(0);
-    f.validation().onResume();f.silence(1);expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(9);
+    f.validation().onResume();f.silence(1);expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(8);
   });
   it.each(['blur','hidden'])('holds the final ack when %s is still active on receipt', async event=>{
     const f=fixture();await f.completeEyes();await f.advance(12);f.stage().props.onToggle();await f.advance(154);

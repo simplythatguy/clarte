@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits."
+      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits. Documents the four-column, two-row navigation grid."
     },
     {
       "path": "package.json",
@@ -23,7 +23,7 @@
     },
     {
       "path": "scripts/runtime-browser-check.mjs",
-      "reason": "Resolve Playwright from this package instead of a machine-specific npm cache."
+      "reason": "Resolve Playwright from this package instead of a machine-specific npm cache. Layout request: check eight targets by their new names."
     },
     {
       "path": "scripts/check-fixture-camera.mjs",
@@ -39,11 +39,11 @@
     },
     {
       "path": "docs/MINIMAL-FLOW.md",
-      "reason": "Keep current behavior and parent lifecycle fixes; remove scratch-only paths and prior verification claims."
+      "reason": "Keep current behavior and parent lifecycle fixes; remove scratch-only paths and prior verification claims. Documents the four-column, two-row navigation grid."
     },
     {
       "path": "src/styles.css",
-      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics."
+      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics. Layout request: four-column, two-row navigation grid with uniform blue targets."
     },
     {
       "path": "index.html",
@@ -51,11 +51,23 @@
     },
     {
       "path": "src/App.tsx",
-      "reason": "Post-import review: latch interruption across pending collection acknowledgements and free-flow deadline completion before allowing Continue."
+      "reason": "Post-import review: latch interruption across pending collection acknowledgements and free-flow deadline completion before allowing Continue. Accuracy request: snap camera gaze to the nearest target in two-blink mode and learn an in-memory offset/scale correction from confirmed gaze selections."
     },
     {
       "path": "tests/app.test.mjs",
-      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume."
+      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume. Accuracy request: target ids follow the four-column, two-row navigation grid."
+    },
+    {
+      "path": "src/components/Targets.tsx",
+      "reason": "Layout request: eight blank navigation targets in four columns and two rows, replacing the nine-target grid."
+    },
+    {
+      "path": "src/components/Settings.tsx",
+      "reason": "Accuracy request: a Learn from selections toggle for the in-memory selection correction."
+    },
+    {
+      "path": "src/core/webeyetrack.ts",
+      "reason": "Accuracy request: request 1280x720 camera capture and run inference at up to 1280 pixels wide instead of 640."
     }
   ],
   "files": [
