@@ -26,9 +26,14 @@ class DecodeError(ValueError):
 
 def ffmpeg_path() -> str:
     path = shutil.which("ffmpeg")
-    if not path:
-        raise RuntimeError("ffmpeg is required. Install it with `brew install ffmpeg`.")
-    return path
+    if path:
+        return path
+    try:
+        # The imageio-ffmpeg wheel ships a static ffmpeg, so no system install is needed.
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except (ImportError, RuntimeError):
+        raise RuntimeError("ffmpeg is required. Install it with `brew install ffmpeg`.") from None
 
 
 def decode(path: Path, sr: int = SR, max_seconds: float = 20 * 60) -> np.ndarray:

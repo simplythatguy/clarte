@@ -11,7 +11,12 @@ scipy==1.17.1
 pyloudnorm==0.2.0
 # Local speaker check for old recordings (Apache-2.0); pulls in CPU torch.
 resemblyzer==0.1.4
+# resemblyzer's webrtcvad has no wheels and needs a C compiler; webrtcvad-wheels is the same
+# module prebuilt for every platform. overrides.txt drops the original (uv ... --override overrides.txt).
+webrtcvad-wheels==2.0.14.post1
 # resemblyzer's webrtcvad still imports pkg_resources.
 setuptools==80.10.2
+# Static ffmpeg for audio.py when none is on PATH.
+imageio-ffmpeg==0.8.1
 # tests
 pytest==9.2.0

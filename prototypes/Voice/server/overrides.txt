@@ -1,0 +1,3 @@
+# uv dependency overrides (uv pip sync requirements.txt --override overrides.txt).
+# webrtcvad-wheels in requirements.txt provides the webrtcvad module resemblyzer imports.
+webrtcvad; sys_platform == 'never'
