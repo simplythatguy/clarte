@@ -1,0 +1,35 @@
+{
+  "source_root": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction",
+  "source_git_commit": null,
+  "source_git_note": "Research scratch is not a git checkout; source files are pinned by SHA256 below.",
+  "source_sha256": {
+    "bench/bench.py": "57543181b772e35a608f1b8e65cd36a9d58f5d6dd47dfd345e01aa6cbfbc3327",
+    "methods/final/README.md": "e4572b4e6b1235a7e8c2ef137dec5963f652654b711ef7cebbb15487e8c706cf",
+    "methods/final/predictor.py": "667a45fac21f63d36a3adb6a1544bbcb2f341a3b52256c34a9991430e7a2275a",
+    "methods/finetune/predictor.py": "41725408caeca5055d8007cb49ec4b184537e969655a913f443d7004203740f1",
+    "methods/ensemble/predictor.py": "ceb8a0ea0339fff90c9e5c6b42465fc116c4655a79c4cdbc87d0b599172de813",
+    "methods/optimal/predictor.py": "94487d960f6669034ab9658be73a110d621d70d9a985b592924d69df0208c456",
+    "methods/optimal/assignment.cpp": "b17d8e019f3551f24a599acb3781076d6c2e7402bd47373f8c29e08997c2274f",
+    "methods/ngram/predictor.py": "be2693c8d5bd682dd1aa9366c5988559c34b23a0d17b3ce5f69e1f6278b75c16",
+    "methods/ngram/arpa.py": "40b0b778c214cd660e3df49553633ac2c1b292a9477502a120ed818f282e18e6",
+    "methods/ngram/arpa_native.cpp": "bb2753af281a3ab0ba9fa2c39a07addfbe8361d6341f3bde7323c04eddd1253e",
+    "methods/neural/scorer.py": "d06f80cb9fe76e55f5779aec0da1c9cb82c2c32f052ed7581b144c36b62b1592",
+    "methods/neural/packed.py": "7ac31a47b6dea0e0e92c3d59d0cfa0e03c7313dab2c247965deda912f0b6a9f4",
+    "methods/neural/fetch.py": "c2ff179b07ea4d36eb2012cc12947762bd878d132a40b0902ab8fd8683a64f5b",
+    "methods/finetune/train.py": "18111860ae3528303c7030ba9ab5bfbe3fd30a12f4d42444ec73cc96ed6cd409",
+    "methods/finetune/data.py": "d9ad56a59efa86033c6d2f3a856aec0bbfb340e09b08364409f9e4b137947e3a",
+    "methods/ngram/train.py": "81c6fff0715ab9808201872dd374ad7451485a4a2b74119e3bca303e22f62d4c",
+    "ui/server.py": "1e361ee54840f3fb5ae5b0e9f667c97284c30e612b4599db87a3b2e6840a71bd",
+    "methods/neural/prepare.py": "e59b2832378840d7e220bd37816ef21562f418fe9183be588d460410915accec",
+    "methods/finetune/README.md": "43ae7da50a35a1eb962d37ea5a9e2c7ac077c4f94525517b9535698afcd5ccdc",
+    "methods/ngram/README.md": "fb86d0d12c8f4de853c08a9ccbca0d68e6773c7555f2f580a2c191e9ccf14f51"
+  },
+  "native_sources": "exact copies; other Python files are deliberate adaptations",
+  "adaptations": [
+    "Imports and artifact paths moved into wordpred.",
+    "Selected Light/Deployable settings fixed; Qwen/Jev/POS/noisy and experiment options omitted.",
+    "Disk score caches, replay, telemetry and unused scorer branches removed.",
+    "In-memory position/transformer KV caches and float16 log-mass quantization retained.",
+    "HTTP and HTML test clients are new; predict field semantics copied from ui/server.py."
+  ]
+}
