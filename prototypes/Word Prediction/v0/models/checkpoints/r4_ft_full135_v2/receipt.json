@@ -1,0 +1,16 @@
+{
+  "name": "r4_ft_full135_v2",
+  "model": "smol135",
+  "base_revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "step": 800,
+  "holdout": {
+    "loss": 3.152897844597616,
+    "target_tokens": 3302,
+    "examples": 256
+  },
+  "sha256": "d2ff6483e502197a142255c4289f2f16987d3e9dbc3652f10f00258eb7b43a66",
+  "weight_bytes": 269060456,
+  "source_config_sha256": "48b9b8459ec84b8737ef37a2e4e163b8bde306ec2f255b182e072fbd2e9d579e",
+  "merged_lora": false,
+  "licence": "CC BY-NC-SA 4.0 adaptation; Apache-2.0 base notices retained"
+}

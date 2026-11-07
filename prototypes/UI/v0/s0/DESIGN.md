@@ -41,11 +41,11 @@ Known limit: pastel faces against the canvas are 1.06:1, so a target's edge is f
 
 `clarte-light-live.html` is the same screen wired to the real word-prediction engine, for trying the direction with real decoding (2026-11-07, at the owner's request). Visuals and the quadrant map are unchanged except that the group tiles follow the owner's later decision and print their letters as the primary label instead of a range.
 
-Start the engine (outside the repo, no API keys; it loads in about 25 s and prints `Open http://127.0.0.1:8765`):
+Start the engine (the ported prototype, no API keys; set it up once as `prototypes/Word Prediction/v0/README.md` describes; it loads in about 25 s and prints `Serving http://127.0.0.1:8765`). `node prototypes/UI/v0/s_all/serve.mjs` starts it for you, or run it alone:
 
 ```sh
-cd ~/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction
-methods/neural/.venv/bin/python ui/server.py
+cd 'prototypes/Word Prediction/v0'
+.venv/bin/python server.py --port 8765   # Windows: .venv\Scripts\python server.py --port 8765
 ```
 
 Then open `clarte-light-live.html` in Chrome (file:// is fine; CORS is open on the engine). The Accept card shows `likely[0]` from `POST /api/predict` with `{history, message, groups}`; groups are digits 1–4 for the four tiles. Look at a tile (hover) to dwell, or click; keys 1 2 3 4 select a group, Enter or Space accepts, Backspace deletes the last group or the last word, S sends the reply (speaks it and adds it to the history), P adds the partner's next line, R resets, G shows the backend quadrant grid. The status dot reads "Replying" when the engine answers and "Engine offline" when it does not.

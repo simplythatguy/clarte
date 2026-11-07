@@ -4,7 +4,7 @@
 // already running. Ctrl+C stops what this script started.
 import { createServer } from 'node:http';
 import { createConnection } from 'node:net';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PORT = Number(process.env.PORT ?? 5100);
+const WINDOWS = process.platform === 'win32';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webm': 'video/webm', '.json': 'application/json' };
 
 const listening = (port) => new Promise((resolve) => {
@@ -24,16 +25,18 @@ const children = [];
 for (let n = 1; n <= 5; n++) {
   const port = 5100 + n;
   if (await listening(port)) { console.log(`s${n}: already running on ${port}`); continue; }
-  const child = spawn('npm', ['run', 'dev', '--', '--port', String(port), '--strictPort'], { cwd: join(ROOT, `s${n}`), stdio: 'ignore' });
+  // npm is npm.cmd on Windows, which Node can only start through a shell.
+  const child = spawn('npm', ['run', 'dev', '--', '--port', String(port), '--strictPort'], { cwd: join(ROOT, `s${n}`), stdio: 'ignore', shell: WINDOWS });
   children.push(child);
   console.log(`s${n}: starting on ${port}`);
 }
-const ENGINE = join(process.env.HOME ?? '', '.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction');
+const ENGINE = join(ROOT, '../../Word Prediction/v0');
+const PYTHON = join(ENGINE, WINDOWS ? '.venv/Scripts/python.exe' : '.venv/bin/python');
 if (await listening(8765)) console.log('prediction engine: already running on 8765');
-else if (existsSync(join(ENGINE, 'methods/neural/.venv/bin/python'))) {
-  children.push(spawn(join(ENGINE, 'methods/neural/.venv/bin/python'), ['ui/server.py'], { cwd: ENGINE, stdio: 'ignore' }));
-  console.log('prediction engine: starting on 8765 (about 25 s); S0 shows "Engine offline" until it is up');
-} else console.log('prediction engine not found: S0 will show "Engine offline"');
+else if (existsSync(PYTHON)) {
+  children.push(spawn(PYTHON, ['server.py', '--port', '8765'], { cwd: ENGINE, stdio: ['ignore', 'ignore', 'inherit'] }));
+  console.log('prediction engine: starting on 8765; S0 shows "Engine offline" until it is up');
+} else console.log(`prediction engine not set up (no ${PYTHON}): S0 will show "Engine offline". See prototypes/Word Prediction/v0/README.md`);
 
 createServer(async (req, res) => {
   let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -46,5 +49,7 @@ createServer(async (req, res) => {
   } catch { res.writeHead(404).end('not found'); }
 }).listen(PORT, '127.0.0.1', () => console.log(`switcher: http://localhost:${PORT}`));
 
-const stop = () => { for (const c of children) c.kill(); process.exit(0); };
+// On Windows, kill() stops only the shell, so end each child's whole process tree.
+const end = (c) => WINDOWS ? spawnSync('taskkill', ['/pid', String(c.pid), '/t', '/f'], { stdio: 'ignore' }) : c.kill();
+const stop = () => { for (const c of children) end(c); process.exit(0); };
 process.on('SIGINT', stop); process.on('SIGTERM', stop);

@@ -15,16 +15,36 @@ position and transformer KV caches are retained to preserve the frozen outputs.
 ## Run
 
 Python 3.11+; the matching pinned research environment uses Python 3.14. A C++17
-compiler and zlib headers/library are needed to build the native libraries on
-macOS or Linux. Windows native builds are not supported by this script.
+compiler and zlib headers/library are needed to build the native libraries. On
+Windows, see [Windows](#windows).
+
+The models are in [`models/`](models/), stored with [Git LFS](https://git-lfs.com)
+(about 850 MB). Install Git LFS before cloning, or run `git lfs pull` afterwards;
+without it the model files are small pointer files and the server reports them
+as missing.
 
 ```sh
 cd 'prototypes/Word Prediction/v0'   # from the repo root
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python build.py
-.venv/bin/python setup_models.py
 .venv/bin/python server.py --port 8765
+```
+
+### Windows
+
+Use 64-bit Python 3.14 from python.org and MinGW-w64 g++ with zlib, for example
+MSYS2's UCRT64 packages `mingw-w64-ucrt-x86_64-gcc` and `mingw-w64-ucrt-x86_64-zlib`
+with `C:\msys64\ucrt64\bin` on `PATH` (or set `CXX` to that `g++`). `build.py`
+links the C++ runtime and zlib statically, so the DLLs load without MinGW on `PATH`.
+MSVC is not supported. In PowerShell:
+
+```powershell
+cd 'prototypes\Word Prediction\v0'
+py -3.14 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python build.py
+.venv\Scripts\python server.py --port 8765
 ```
 
 Open `http://127.0.0.1:8765/`. The test page has Partner said, an editable
@@ -39,16 +59,15 @@ requirements. The default server prints a notice and falls back to Light if
 Deployable artifacts are absent. Missing Light artifacts still fail clearly.
 Corrupt checkpoint receipts/hashes are errors, not a silent fallback.
 
-Large models are copied to `~/.cache/clarte-wordpred/v0`, outside this repository.
-`WORDPRED_MODELS=/absolute/path` overrides that location for setup and both
-runtimes. The folder `.gitignore` also excludes `models/`, `build/`, native
-binaries and Python caches. No models or compiled libraries are distributed.
+`WORDPRED_MODELS=/absolute/path` points both runtimes at another model folder.
+[`models/SHA256SUMS`](models/SHA256SUMS) lists every model file's hash. The runtime
+refuses a count model whose SHA256 differs from the pinned value, because loading
+a pickle runs code, and it checks the checkpoint against its receipt. Compiled
+libraries are not distributed; `build.py` makes them.
 
-`setup_models.py --source /path/to/research/four-zone-prediction` copies counts,
-ARPA, vocabulary, the completed fine-tuned checkpoint, and the pinned base
-snapshot if present. Without them, it downloads the public ARPA and pinned base
-model and explains which derived artifacts must be rebuilt. `--no-download`
-limits setup to local copies. See [MODEL_RECIPE.md](MODEL_RECIPE.md) for the exact
+After a retrain, `setup_models.py --source /path/to/research/four-zone-prediction`
+refreshes `models/` from the research workspace; update `COUNTS_SHA256` in
+`wordpred/paths.py` and `models/SHA256SUMS` with it. See [MODEL_RECIPE.md](MODEL_RECIPE.md) for the exact
 upstream training commands, required data, fingerprints and checkpoint receipt.
 The runtime never imports from the research workspace.
 
@@ -115,20 +134,31 @@ strings over 128 digits. Unknown paths return 404. The response adds measured
 Adapted from the research final `Local` (Deployable) and `Light` paths.
 [PORT_PROVENANCE.json](PORT_PROVENANCE.json) records the upstream paths, SHA256
 fingerprints, and deliberate adaptations. Both C++ files are exact copies.
-`setup_models.py` records copied model sources and SHA256 in the external cache's
-`model-provenance.json`. No independent code licence is asserted for the research
+The model files were copied byte for byte from the research workspace on
+2026-11-07; `models/SHA256SUMS` matches the research receipts. Provenance ships
+with them: `models/PROVENANCE.json` (source path and SHA256 of each file),
+`models/receipts/training_aac63k.json` (count-model inputs and hashes), and the
+checkpoint's `receipt.json`, `MODEL_CARD.md`, training records and `source/`. No independent code licence is asserted for the research
 code by this port.
 
-| Artifact | Source / licence |
-| --- | --- |
-| wordfreq vocabulary/frequencies | [wordfreq](https://github.com/rspeer/wordfreq), data CC BY-SA 4.0 (its software is separately Apache-2.0) |
-| AAC training corpus and ARPA LM | [Vertanen & Kristensson resources](https://data.imagineville.org/imagine/), CC BY 4.0; [4-gram](https://data.imagineville.org/imagine/lm_mix_top3_4gram_abs0.0.arpa.gz) |
-| DailyDialog training text | [dataset card](https://huggingface.co/datasets/li2017dailydialog/daily_dialog/blob/main/README.md), CC BY-NC-SA 4.0 |
-| Base SmolLM2-135M | [pinned model](https://huggingface.co/HuggingFaceTB/SmolLM2-135M/tree/93efa2f097d58c2a74874c7e644dbc9b0cee75a2), Apache-2.0 |
-| Fine-tuned weights | Under the research rights policy, inherited DailyDialog CC BY-NC-SA 4.0 adaptation with Apache-2.0 base notices retained |
+### Model credits and licences
 
-The count prior also includes DailyDialog-derived counts. Light does not remove
-that noncommercial data restriction. This is a local research prototype.
+The files in `models/` are third-party works or adaptations of them,
+redistributed here under their licences. No changes were made to the files
+marked unmodified.
+
+| File in `models/` | Credit | Licence |
+| --- | --- | --- |
+| `lm_mix_top3_4gram_abs0.0.arpa.gz` (unmodified) | Keith Vertanen and Per Ola Kristensson, 4-gram AAC language model from [The Imagination of Crowds: Conversational AAC Language Modeling using Crowdsourcing and Large Data Sources](https://aclanthology.org/D11-1065/), EMNLP 2011. [Download page](https://data.imagineville.org/imagine/) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `base/` (unmodified) | Hugging Face, [SmolLM2-135M](https://huggingface.co/HuggingFaceTB/SmolLM2-135M/tree/93efa2f097d58c2a74874c7e644dbc9b0cee75a2), revision `93efa2f`; Loubna Ben Allal et al., [SmolLM2: When Smol Goes Big](https://arxiv.org/abs/2502.02737), 2025 | [Apache-2.0](models/base/LICENSE) |
+| `checkpoints/r4_ft_full135_v2/` | Clarte fine-tune of SmolLM2-135M (above) on the AAC corpus from the same paper as the ARPA model and [DailyDialog](https://huggingface.co/datasets/li2017dailydialog/daily_dialog) by Yanran Li, Hui Su, Xiaoyu Shen, Wenjie Li, Ziqiang Cao and Shuzi Niu ([DailyDialog: A Manually Labelled Multi-turn Dialogue Dataset](https://aclanthology.org/I17-1099/), IJCNLP 2017). Training recipe in [MODEL_RECIPE.md](MODEL_RECIPE.md) | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), inherited from DailyDialog; SmolLM2's Apache-2.0 notice applies to the base weights |
+| `counts_aac63k.pkl` | Clarte n-gram counts built from the AAC corpus, DailyDialog (both credited above) and [wordfreq](https://github.com/rspeer/wordfreq) word frequencies by Robyn Speer | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), inherited from DailyDialog; wordfreq data is [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `vocabulary.json` | Clarte vocabulary: the wordfreq list (above) joined with the words of the AAC corpus and DailyDialog | Includes wordfreq data, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), and words from the corpora above |
+
+Because of DailyDialog, the checkpoint and count model may be used for
+noncommercial purposes only, and adaptations must keep the same licence. Light
+uses the count model, so it carries the same restriction. This is a local
+research prototype.
 
 The source `decision.tsv` final one-time test reports **Light 3.983** and
 **Deployable 3.545 selections per word**, split-macro means over 14,628 words.
