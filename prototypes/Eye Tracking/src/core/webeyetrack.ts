@@ -2,6 +2,8 @@ import type { GazeFrame, Point, Viewport } from './tracking';
 import { normalizeGaze, readWorkerGaze } from './tracking';
 import { WorkerClient } from './worker-client';
 import { readLearnedCalibration, type CameraGeometry, type LearnedCalibration } from './saved-calibration';
+import type { ReplayExport } from './worker-engine';
+import { OneEuroPoint } from './one-euro';
 export type { GazeFrame } from './tracking';
 export type TrackerRuntime = {
   begin(stream: MediaStream, onFrame: (frame: GazeFrame) => void | Promise<void>, onFailure: (error: unknown) => void): Promise<void>;
@@ -12,7 +14,15 @@ export type TrackerRuntime = {
   exportCalibration(): Promise<LearnedCalibration>;
   restoreCalibration(state: LearnedCalibration): Promise<void>;
   preview(show: boolean): void;
+  /** Development replay recording; absent on runtimes that cannot record. */
+  setRecording?(enabled: boolean): Promise<void>;
+  record?(point: Point, at: number, viewport: Viewport): Promise<boolean>;
+  exportReplay?(): Promise<ReplayExport>;
 };
+export function readReplayExport(v: unknown): ReplayExport {
+  if (!v || typeof v !== 'object' || !('entries' in v) || !('images' in v) || !Array.isArray(v.entries) || !Array.isArray(v.images) || v.entries.length !== v.images.length || !v.images.every(i => i instanceof Blob)) throw new Error('Invalid replay export');
+  return { entries: v.entries, images: v.images };
+}
 export function cameraError(error: unknown): string {
   if (error instanceof DOMException) {
     switch (error.name) {
@@ -45,6 +55,7 @@ export class LocalWebEyeTrack implements TrackerRuntime {
   private generation = 0;
   private scheduled: (() => void) | null = null;
   private frameGate = new DecodedFrameGate();
+  private smoother = new OneEuroPoint();
   private latestAt = -Infinity;
   private onFrame: (frame: GazeFrame) => void | Promise<void> = () => {};
   private onFailure: (error: unknown) => void = () => {};
@@ -60,7 +71,7 @@ export class LocalWebEyeTrack implements TrackerRuntime {
     this.canvas = document.createElement('canvas');
     const generation = ++this.generation;
     const client = this.createClient();
-    await Promise.all([client.call('init', null, [], 90000), video.play()]);
+    await Promise.all([client.call('init', { development: import.meta.env.DEV }, [], 90000), video.play()]);
     if (generation !== this.generation) return;
     this.schedule();
   }
@@ -108,9 +119,20 @@ export class LocalWebEyeTrack implements TrackerRuntime {
       if (generation !== this.generation) return;
       if (output.at !== at) throw new Error('Camera result does not match its captured frame');
       this.latestAt = at;
-      await this.onFrame(normalizeGaze(output, { width: window.innerWidth, height: window.innerHeight }));
+      await this.onFrame(this.smooth(normalizeGaze(output, { width: window.innerWidth, height: window.innerHeight })));
     } catch (error) { if (generation === this.generation) this.onFailure(error); }
     finally { done(); if (generation === this.generation) { this.busy = false; this.schedule(); } }
+  }
+  /**
+   * The pointer follows the unclipped estimate through a One Euro filter instead of the tracker's
+   * fixed-gain Kalman output: steadier on a fixation and quick to follow a deliberate move.
+   * Held-out checks and blink selection keep using the unfiltered `rawPoint`.
+   */
+  private smooth(frame: GazeFrame): GazeFrame {
+    if (!frame.point || !frame.rawPoint) { this.smoother.reset(); return frame; }
+    const width = window.innerWidth, height = window.innerHeight;
+    const filtered = this.smoother.filter(frame.rawPoint, frame.at, width);
+    return { ...frame, point: { x: Math.min(width, Math.max(0, filtered.x)), y: Math.min(height, Math.max(0, filtered.y)) } };
   }
   async collect(point: Point, at: number, viewport: Viewport): Promise<boolean> {
     if (!this.client || this.training || at !== this.latestAt || performance.now() - at > 600) return false;
@@ -118,6 +140,17 @@ export class LocalWebEyeTrack implements TrackerRuntime {
   }
   async train(): Promise<void> {
     await this.modelCommand('train', null, 120000);
+  }
+  async setRecording(enabled: boolean): Promise<void> {
+    if (!this.client) return;
+    await this.client.call('recording', { enabled });
+  }
+  async record(point: Point, at: number, viewport: Viewport): Promise<boolean> {
+    if (!this.client || this.training || at !== this.latestAt) return false;
+    return await this.client.call('record', { at, x: point.x / viewport.width - .5, y: point.y / viewport.height - .5 }) === true;
+  }
+  async exportReplay(): Promise<ReplayExport> {
+    return readReplayExport(await this.modelCommand('exportReplay', null, 60000));
   }
   private async modelCommand(type: string, payload: unknown, timeout = 20000): Promise<unknown> {
     if (!this.client || this.training) throw new Error('Tracker is unavailable for training');
@@ -138,11 +171,12 @@ export class LocalWebEyeTrack implements TrackerRuntime {
   }
   async reset(): Promise<void> {
     ++this.generation; this.scheduled?.(); this.scheduled = null; this.client?.stop();
+    this.smoother.reset();
     this.busy = false; this.training = true; this.latestAt = -Infinity;
     // Keep the decoded-frame gate across a reset: an old decoded image is never new evidence.
     const generation = this.generation;
     const client = this.createClient();
-    await client.call('init', null, [], 90000);
+    await client.call('init', { development: import.meta.env.DEV }, [], 90000);
     if (generation !== this.generation) return;
     this.training = false; this.schedule();
   }
@@ -211,6 +245,18 @@ export class CameraSession {
     const generation = this.generation, model = ++this.modelGeneration;
     try { await this.runtime.restoreCalibration(state); return generation === this.generation && model === this.modelGeneration; }
     catch (error) { if (generation !== this.generation || model !== this.modelGeneration) return false; throw error; }
+  }
+  async setRecording(enabled: boolean): Promise<void> { await this.runtime?.setRecording?.(enabled); }
+  async record(point: Point, at: number, viewport: Viewport): Promise<boolean> {
+    const generation = this.generation;
+    const kept = await this.runtime?.record?.(point, at, viewport);
+    return generation === this.generation && kept === true;
+  }
+  async exportReplay(): Promise<ReplayExport | null> {
+    if (!this.runtime?.exportReplay) return null;
+    const generation = this.generation;
+    const value = await this.runtime.exportReplay();
+    return generation === this.generation ? value : null;
   }
   geometry(): CameraGeometry | null {
     const settings = this.stream?.getTracks().find(track => track.kind === 'video')?.getSettings();

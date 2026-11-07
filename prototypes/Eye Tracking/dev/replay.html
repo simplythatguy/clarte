@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Replay experiments (development)</title>
+<style>
+  body { font: 15px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; color: #1b1b1b; background: #fff; margin: 0; padding: 32px 24px; }
+  main { max-width: 960px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  button { font: inherit; padding: 10px 18px; border-radius: 12px; border: 1px solid #8a8a87; background: #fff; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: default; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #d9d9d6; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  textarea { width: 100%; min-height: 160px; font: 12px/1.4 ui-monospace, monospace; }
+  canvas { max-width: 100%; border: 1px solid #d9d9d6; image-rendering: pixelated; }
+  p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Replay experiments</h1>
+  <p>Development only. Load a replay set saved from Settings → <em>Save replay set</em>. Everything runs in this tab against the shipped model; nothing is uploaded.</p>
+  <p><input id="file" type="file" accept=".bin,application/octet-stream"> <button id="run" disabled>Run experiments</button></p>
+  <p id="status" role="status">No file loaded.</p>
+  <canvas id="strip" role="img" aria-label="First recorded eye strip" hidden></canvas>
+  <table>
+    <thead><tr><th>Experiment</th><th>Fit median px</th><th>Leave-one-dot-out median</th><th>LODO 90th</th><th>Check median px</th><th>Check 90th</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <textarea id="json" readonly placeholder="Results JSON appears here after a run."></textarea>
+</main>
+<script type="module" src="./replay.ts"></script>
+</body>
+</html>

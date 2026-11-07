@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits. Documents the four-column, two-row navigation grid."
+      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits. Documents the four-column, two-row navigation grid. Document Check results and development-only replay recording."
     },
     {
       "path": "package.json",
@@ -43,7 +43,7 @@
     },
     {
       "path": "src/styles.css",
-      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics. Layout request: four-column, two-row navigation grid with uniform blue targets."
+      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics. Layout request: four-column, two-row navigation grid with uniform blue targets. Check results tables and offset map."
     },
     {
       "path": "index.html",
@@ -51,11 +51,11 @@
     },
     {
       "path": "src/App.tsx",
-      "reason": "Post-import review: latch interruption across pending collection acknowledgements and free-flow deadline completion before allowing Continue. Accuracy request: snap camera gaze to the nearest target in two-blink mode and learn an in-memory offset/scale correction from confirmed gaze selections."
+      "reason": "Accuracy request: head guard fed by real head pose gates learning from selections. Probabilistic target classifier seeded by the check, check results summary, development-only replay recording."
     },
     {
       "path": "tests/app.test.mjs",
-      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume. Accuracy request: target ids follow the four-column, two-row navigation grid."
+      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume. Accuracy request: target ids follow the four-column, two-row navigation grid. Follow the target classifier and check seeding."
     },
     {
       "path": "src/components/Targets.tsx",
@@ -63,11 +63,47 @@
     },
     {
       "path": "src/components/Settings.tsx",
-      "reason": "Accuracy request: a Learn from selections toggle for the in-memory selection correction."
+      "reason": "Accuracy request: a Learn from selections toggle for the in-memory selection correction. Check results page after the free-flow check; development-only replay recording controls."
     },
     {
       "path": "src/core/webeyetrack.ts",
-      "reason": "Accuracy request: request 1280x720 camera capture and run inference at up to 1280 pixels wide instead of 640."
+      "reason": "Accuracy request: the pointer follows the unclipped estimate through a One Euro filter instead of the fixed-gain Kalman output. Development replay pass-through on the tracker runtime and camera session."
+    },
+    {
+      "path": "src/core/validation.ts",
+      "reason": "Accuracy request: score screen-correction models leave-one-reference-out on the check’s own samples, keep aggregates only, and expose the reference an admitted sample measured for development replay."
+    },
+    {
+      "path": "src/core/worker-engine.ts",
+      "reason": "Accuracy request: report head pose per frame. Development replay: optional, bounded, in-memory recording of instructed frames exported only by explicit request; off and unreachable in production."
+    },
+    {
+      "path": "tsconfig.json",
+      "reason": "Typecheck the development replay page."
+    },
+    {
+      "path": "vendor/webeyetrack/worker.ts",
+      "reason": "Development replay commands, accepted only when a development page initializes the worker."
+    },
+    {
+      "path": "public/vendor/webeyetrack/BUILD.json",
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+    },
+    {
+      "path": "public/vendor/webeyetrack/worker.js",
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+    },
+    {
+      "path": "public/vendor/webeyetrack/worker.js.map",
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+    },
+    {
+      "path": "src/core/head-position.ts",
+      "reason": "Accuracy request: compute image-geometry head pose from face landmarks and gate in-memory learning on the head staying where navigation was checked."
+    },
+    {
+      "path": "src/core/tracking.ts",
+      "reason": "Accuracy request: carry the head pose through the worker result parser and frame normalizer."
     }
   ],
   "files": [

@@ -78,3 +78,15 @@ video, canvas.webeyetrack-canvas, #webgazerVideoContainer { display: none !impor
   .navigation-target.is-selected { outline: 5px solid Highlight; outline-offset: -8px; }
   .calibration-point, .validation-dot { background: CanvasText; }
 }
+/* Check results: aggregated numbers and an offset map, read after the free-flow check. */
+.check-report { max-width: 560px; margin: 0 auto 28px; text-align: left; display: grid; gap: 18px; }
+.check-summary { margin: 0; font-size: 1.05rem; line-height: 1.5; }
+.check-note { margin: 0; line-height: 1.5; padding-left: 14px; border-left: 3px solid #1c5e9e; }
+.check-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.check-table caption { text-align: left; font-weight: 550; padding-bottom: 8px; }
+.check-table th, .check-table td { padding: 6px 8px; border-bottom: 1px solid #d9d9d6; text-align: right; }
+.check-table th[scope="row"], .check-table th:first-child, .check-table td:first-child { text-align: left; font-weight: 450; }
+.check-table tr.is-best th, .check-table tr.is-best td { font-weight: 650; }
+.check-map { display: block; margin: 0 auto; max-width: 100%; height: auto; color: #1b1b1b; }
+.check-legend { margin: 0; text-align: center; font-size: .9rem; color: #4f4f4a; }
+.developer-status { display: block; margin-top: 24px; color: #4f4f4a; }

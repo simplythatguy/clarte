@@ -1,4 +1,5 @@
 import { calibrationPoints, READING_MS } from './calibration';
+import { compareCorrections, type CorrectionReport } from './calibration-models';
 import { STALE_MS } from './dwell';
 import type { GazeFrame, Point, Viewport } from './tracking';
 
@@ -12,7 +13,8 @@ export type PauseReason = 'manual' | 'hidden' | 'focus' | 'settings';
 export type CancelReason = 'manual' | 'restart' | 'viewport' | 'motion' | 'session';
 type Metrics = { coverage: number; measurementMs: number; coveredMs: number; bins: number; targets: number };
 export type ValidationResult = Metrics & { condition: CheckCondition; motion: CheckMotion; viewport: Viewport } & (
-  | { kind: 'measured'; medianPx: number; p90Px: number }
+  /** `corrections`: how each screen-space correction model would score on this run, leave-one-target-out. */
+  | { kind: 'measured'; medianPx: number; p90Px: number; corrections: CorrectionReport | null }
   | { kind: 'insufficient' }
 );
 export type ValidationState =
@@ -78,9 +80,11 @@ export class ValidationRun {
   private segment: { wallStart: number; activeStart: number } | null = null;
   private lastWall = -Infinity;
   private lastFrame = -Infinity;
+  /** The reference the most recently admitted sample was measured against (for development replay only). */
+  lastAdmitted: { at: number; target: Point; index: number } | null = null;
   private settleUntil = 0;
   private readonly eligible = new Float64Array(VALIDATION.durationMs / VALIDATION.binMs);
-  private readonly samples: ({ error: number; target: number } | undefined)[] = Array.from({ length: this.eligible.length });
+  private readonly samples: ({ error: number; target: number; raw: Point } | undefined)[] = Array.from({ length: this.eligible.length });
 
   constructor(viewport: Viewport, readonly condition: CheckCondition, readonly motion: CheckMotion, random = Math.random) {
     this.viewport = { ...viewport };
@@ -155,7 +159,8 @@ export class ValidationRun {
     if (this.samples[index]) return false;
     const error = distance(raw, position.target);
     if (!Number.isFinite(error)) return false;
-    this.samples[index] = { error, target: position.index };
+    this.samples[index] = { error, target: position.index, raw: { x: raw.x, y: raw.y } };
+    this.lastAdmitted = { at: frame.at, target: { ...position.target }, index: position.index };
     return true;
   }
   cancel(reason: CancelReason): void {
@@ -172,8 +177,9 @@ export class ValidationRun {
     const coverage = measurementMs > 0 ? coveredMs / measurementMs : 0;
     const metrics = { coverage, measurementMs, coveredMs, bins: errors.length, targets: targets.size, condition: this.condition, motion: this.motion, viewport: this.viewport };
     if (coverage < VALIDATION.minimumCoverage || errors.length < VALIDATION.minimumBins || targets.size < VALIDATION.minimumTargets) return { ...metrics, kind: 'insufficient' };
+    const corrections = compareCorrections(this.samples.flatMap((sample, index) => (sample && this.eligible[index] > 0 ? [{ estimate: sample.raw, target: sample.target }] : [])), this.targets, this.viewport);
     errors.sort((a, b) => a - b);
     const middle = Math.floor(errors.length / 2);
-    return { ...metrics, kind: 'measured', medianPx: errors.length % 2 ? errors[middle] : errors[middle - 1] + (errors[middle] - errors[middle - 1]) / 2, p90Px: errors[Math.ceil(.9 * errors.length) - 1] };
+    return { ...metrics, kind: 'measured', medianPx: errors.length % 2 ? errors[middle] : errors[middle - 1] + (errors[middle] - errors[middle - 1]) / 2, p90Px: errors[Math.ceil(.9 * errors.length) - 1], corrections };
   }
 }

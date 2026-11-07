@@ -5037,6 +5037,10 @@
       "sha256": "ceee6d3b8eae594ed9fe2bb75e72cd30738447776ad4a5284edda8da2807cbb5"
     },
     {
+      "path": "src/core/head-position.ts",
+      "sha256": "aa3a71a40e07a237c9030a54ca81c00b9e9343665a767c58364658d9473991d4"
+    },
+    {
       "path": "src/core/network.ts",
       "sha256": "a6175c012ce7960fee6b221ae98d7cb905c8bd8cb34745323b58ed9a85a2bd2e"
     },
@@ -5046,11 +5050,11 @@
     },
     {
       "path": "src/core/tracking.ts",
-      "sha256": "7d53da48216d6cd3f197e8ece7bfafb836279414b0755df1b273b7e51f96392e"
+      "sha256": "4070885f73bcfde2c1cfe39fcdb8421a44f38f8f8f6273cc00f7d913b7e738cc"
     },
     {
       "path": "src/core/worker-engine.ts",
-      "sha256": "5f6349acb9f16eb9eb049f567446b043253c3e549f56b297a29d9be09e6ee85e"
+      "sha256": "3f3ab6744e7c6ae5431d2bdec48c5052b86350f4ce6a67e5bb7b81ecac9fd349"
     },
     {
       "path": "vendor/webeyetrack/local/BlazeGaze.ts",
@@ -5078,7 +5082,7 @@
     },
     {
       "path": "vendor/webeyetrack/worker.ts",
-      "sha256": "23410988b3b921ea9ad33f529648faa27e7b7ca0955c77c75d592a6c539a6635"
+      "sha256": "690098314a5edf95079c1db972ac750ef5cf6410aa6de289d6bfe7e774cb6adf"
     }
   ],
   "disabledInputs": [
@@ -5452,7 +5456,7 @@
     },
     {
       "path": "public/vendor/webeyetrack/worker.js",
-      "sha256": "144adc706a0df673994aaed1dc2106ceac7c90fa68522d37d14bb2fb24c4ee03"
+      "sha256": "2473495f19c6167f2b6dee10580c76f1c6efb81a2531941fc455c3bc5b145f20"
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.LEGAL.txt",
@@ -5460,7 +5464,7 @@
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.map",
-      "sha256": "097cd14789f54475f35e7275c1f8d81ca1cc6593ca1dde4da02735f719bdb2fa"
+      "sha256": "28953ae13ababd6f339fa2e4265b2bf4ce7bfe98f64266cb0d2d0966154be350"
     }
   ]
 }

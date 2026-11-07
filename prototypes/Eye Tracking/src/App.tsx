@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './components/Icon';
-import { Settings, type SettingsValue } from './components/Settings';
+import { Settings, type SettingsPage, type SettingsValue } from './components/Settings';
+import { summarizeCheck, type CheckSummary } from './core/check-report';
+import { buildReplayFile } from './core/replay-file';
 import { Calibration } from './components/Calibration';
 import { GazeArea, type Area } from './core/gaze-area';
 import { DwellTarget, NAVIGATION_TARGETS } from './components/Targets';
 import { StagePage } from './components/StagePage';
 import { Validation } from './components/Validation';
-import { SavedCalibrationStore, SAVED_CALIBRATION_KEY, calibrationCompatibility, type CalibrationGeometry, type SavedCalibration as SavedModel } from './core/saved-calibration';
+import { SavedCalibrationStore, SAVED_CALIBRATION_KEY, MODEL_VERSION, calibrationCompatibility, type CalibrationGeometry, type SavedCalibration as SavedModel } from './core/saved-calibration';
 import { CalibrationRun, freshFeatures, viewportChanged } from './core/calibration';
 import { GazeResolver, type GazeLayout } from './core/gaze';
 import { initialDwell, stepDwell, type DwellEvent, type DwellState } from './core/dwell';
@@ -14,9 +16,10 @@ import { lifecycle, type Lifecycle, type LifecycleEvent } from './core/lifecycle
 import { cameraError, createCameraSession, type GazeFrame } from './core/webeyetrack';
 import { ValidationRun, type CheckCondition, type PauseReason, type ValidationState } from './core/validation';
 import { BlinkSelection } from './core/blink';
-import { TargetSnapper } from './core/target-snap';
+import { HeadPositionGuard, allowsLearning } from './core/head-position';
+import { TargetClassifier, personalizationFromCheck } from './core/target-classifier';
 import { SelectionLearning } from './core/selection-learning';
-import type { Point } from './core/tracking';
+import type { Point, Viewport } from './core/tracking';
 
 const lostFrame: GazeFrame = { point: null, face: false, facePresent: false, eyeState: 'unknown', at: -Infinity, pose: null };
 const defaultSettings: SettingsValue = { selection: 'blink', dwellMs: 2400, assistance: true, pointer: false, pace: 'quick', learning: true };
@@ -55,8 +58,10 @@ export function App() {
   const [frame, setFrame] = useState<GazeFrame>(lostFrame);
   const frameRef = useRef(frame);
   const [resolver] = useState(() => new GazeResolver());
-  const [snapper] = useState(() => new TargetSnapper());
+  const [classifier] = useState(() => new TargetClassifier());
   const [learning] = useState(() => new SelectionLearning());
+  // Where the head was when navigation was calibrated and checked; moving away invalidates what is learned.
+  const headGuard = useRef(new HeadPositionGuard());
   const trail = useRef<{ at: number; point: Point; target: string }[]>([]);
   const layoutKey = useRef('');
   const [clock, setClock] = useState(performance.now());
@@ -80,6 +85,38 @@ export function App() {
   const calibrationViewport = useRef({ width: window.innerWidth, height: window.innerHeight });
   const validationRun = useRef<ValidationRun | null>(null);
   const [validation, setValidation] = useState<ValidationState>({ kind: 'ready' });
+  const [lastCheck, setLastCheck] = useState<CheckSummary | null>(null);
+  const [settingsPage, setSettingsPage] = useState<SettingsPage>('settings');
+  // Development replay recording: off by default, explicit per session, exported only by a button press.
+  const [replay, setReplay] = useState({ recording: false, count: 0, status: '' });
+  const replayRef = useRef(replay);
+  // A finished free-flow check personalizes navigation before the first selection: its measured
+  // offsets seed the drift correction (fixing a pointer that sits consistently above or below the
+  // gaze) and its leftover error sets the target classifier's noise. Aggregates only, never samples.
+  const usedCheck = useRef<object | null>(null);
+  useEffect(() => {
+    if (validation.kind !== 'complete' || usedCheck.current === validation.result) return;
+    usedCheck.current = validation.result;
+    const { result } = validation;
+    setLastCheck(summarizeCheck(result, Date.now()));
+    if (result.kind !== 'measured' || !result.corrections) {
+      if (import.meta.env.DEV) console.info('[calibration models] check had too little data to compare models or seed navigation');
+      return;
+    }
+    const { corrections } = result;
+    const personal = personalizationFromCheck(corrections, result.viewport);
+    const seeded = personal ? learning.seed(personal.pairs, result.viewport) : 0;
+    if (personal) classifier.setNoise(personal.sigmaPx);
+    if (!import.meta.env.DEV) return;
+    console.info(`[calibration models] ${result.condition} check, ${corrections.references} references, held-out error in px`);
+    console.table(Object.fromEntries(corrections.scores.map(s => [s.model, { medianPx: s.medianPx && Math.round(s.medianPx), p90Px: s.p90Px && Math.round(s.p90Px) }])));
+    console.info('[calibration models] uncorrected offset at each reference (a pattern across the screen means a non-affine error)');
+    console.table(corrections.offsets.map(o => ({ x: Math.round(o.target.x), y: Math.round(o.target.y), dx: Math.round(o.dx), dy: Math.round(o.dy), samples: o.samples })));
+    const median = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+    console.info(personal
+      ? `[navigation] seeded drift correction from ${seeded} references (median offset ${Math.round(median(corrections.offsets.map(o => o.dx)))}, ${Math.round(median(corrections.offsets.map(o => o.dy)))} px; negative dy = pointer above gaze); classifier noise σ ≈ ${Math.round(personal.sigmaPx)} px`
+      : '[navigation] check not used to personalize: its error is not explained by a simple correction (was the dot followed?)');
+  }, [validation, learning, classifier]);
   const [selected, setSelected] = useState<{ id: string; sequence: number } | null>(null);
   const selectionSequence = useRef(0);
   const [announcement, setAnnouncement] = useState('');
@@ -131,7 +168,7 @@ export function App() {
     const latest = trail.current.at(-1)?.at ?? -Infinity;
     const estimates = trail.current.filter(sample => sample.target === id && latest - sample.at <= TRAIL_MS).map(sample => sample.point);
     trail.current = [];
-    if (!settingsRef.current.learning) return;
+    if (!settingsRef.current.learning || !allowsLearning(headGuard.current.feedback(performance.now()))) return;
     const rect = inputLayout().targets.find(target => target.id === id);
     if (rect) learning.learn(estimates, rect, viewport());
   }
@@ -148,7 +185,7 @@ export function App() {
   function cancelGaze() {
     blink.reset(); setBlinkPreview(null); simulatedClosureUntil.current = 0;
     updateDwell({ type: 'reset' });
-    resolver.reset(); snapper.reset(); trail.current = [];
+    resolver.reset(); classifier.reset(); trail.current = [];
     gazeArea.reset(); setArea(null);
     layoutKey.current = '';
   }
@@ -168,6 +205,11 @@ export function App() {
     frameRef.current = next;
     setFrame(next);
     setClock(now);
+    if (current.kind === 'camera' && (current.phase === 'validation' || current.phase === 'compose')) {
+      const guard = headGuard.current;
+      guard.observe({ face: next.facePresent, at: next.at, pose: next.pose }, now);
+      if (current.phase === 'compose') { const feedback = guard.feedback(now); if (feedback.kind === 'setup' && feedback.stable) guard.establishReference(now); }
+    }
     if (settingsOpenRef.current || controlsRef.current || document.hidden || !pageFocused.current || (current.kind !== 'camera' && current.kind !== 'simulation')) return;
     if (freshFeatures(next, now)) setArea(gazeArea.sample(next, viewport(), now));
     else { gazeArea.reset(); setArea(null); }
@@ -188,8 +230,8 @@ export function App() {
       // No filtered/held target survives reopening: use this frame's unfiltered estimate.
       // Camera estimates snap to the nearest target; the simulated pointer is exact.
       const point = current.kind === 'camera' ? next.rawPoint : next.point;
-      if (!next.facePresent) snapper.reset();
-      const target = current.kind === 'camera' ? snapper.resolve(point, inputLayout())
+      if (!next.facePresent) classifier.reset();
+      const target = current.kind === 'camera' ? classifier.classify(point, inputLayout(), next.at).target
         : point && Number.isFinite(point.x) && Number.isFinite(point.y) ? targetAt(point) : null;
       if (current.kind === 'camera' && next.eyeState === 'open') recordTrail(observed.rawPoint, target, next.at);
       const result = blink.sample(next, target, now);
@@ -201,7 +243,8 @@ export function App() {
     }
     if (current.kind === 'camera' && current.phase === 'validation') {
       const run = validationRun.current;
-      run?.admit(next, now);
+      const admitted = run?.admit(next, now) === true;
+      if (admitted && replayRef.current.recording && run?.lastAdmitted?.at === next.at) void recordReplay(run.lastAdmitted.target, next.at, run.viewport);
       if (run) setValidation(run.state);
       return;
     }
@@ -249,7 +292,7 @@ export function App() {
 
   function resetLabels() {
     inputViewport.current = { ...viewport(), pixelRatio: window.devicePixelRatio || 1 };
-    learning.reset();
+    learning.reset(); classifier.setNoise(null); headGuard.current = new HeadPositionGuard();
     savedStore.invalidate(); chooseSaved(false); setRestoring(false); restoringRef.current = false;
     setSavedStatus(previous => previous.startsWith('Saving calibration') ? 'Calibration was not saved before the session ended.' : previous);
     clearValidation();
@@ -274,6 +317,7 @@ export function App() {
         send({ type: 'started', request: token });
         chooseSaved(savedModelRef.current !== null);
         camera.preview(false);
+        if (replayRef.current.recording) void camera.setRecording(true);
       }
     } catch (error) { if (token === request.current) fail(error); }
   }
@@ -315,6 +359,7 @@ export function App() {
       if (ready && run === calibrationRun.current && sessionRef.current.kind === 'camera') {
         // Model reload may outlast a resize, so use the current viewport again.
         resetLabels(); send({ type: 'resetCalibration' });
+        if (replayRef.current.recording) void camera.setRecording(true);
       }
     } catch (error) { if (run === calibrationRun.current && sessionRef.current.kind === 'camera') fail(error); }
   }
@@ -467,8 +512,38 @@ export function App() {
 
   function closeSettings() {
     settingsOpenRef.current = false;
-    setSettingsOpen(false);
+    setSettingsOpen(false); setSettingsPage('settings');
     clearInput();
+  }
+
+  function updateReplay(patch: Partial<typeof replay>) {
+    const next = { ...replayRef.current, ...patch };
+    replayRef.current = next; setReplay(next);
+  }
+
+  function setReplayRecording(enabled: boolean) {
+    updateReplay({ recording: enabled, count: 0, status: enabled ? 'Recording calibration and check frames for this session only.' : '' });
+    if (sessionRef.current.kind === 'camera') void camera.setRecording(enabled);
+  }
+
+  async function recordReplay(point: Point, at: number, box: Viewport) {
+    if (await camera.record(point, at, box)) updateReplay({ count: replayRef.current.count + 1 });
+  }
+
+  /** Writes the recorded replay set to a file the person chooses to keep; nothing is stored by the app. */
+  async function exportReplayFile() {
+    try {
+      const exported = await camera.exportReplay();
+      if (!exported || !exported.entries.length) { updateReplay({ status: 'Nothing recorded yet. Turn recording on, then calibrate and run a check.' }); return; }
+      const geometry = camera.geometry();
+      const blob = buildReplayFile({ createdAt: Date.now(), model: MODEL_VERSION, viewport: viewport(), pixelRatio: window.devicePixelRatio || 1, camera: geometry ? { width: geometry.width, height: geometry.height } : null }, exported.entries, exported.images);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = `clarte-replay-${new Date().toISOString().replace(/[:.]/g, '-')}.bin`;
+      document.body.append(anchor); anchor.click(); anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      updateReplay({ status: `Saved ${exported.entries.length} frames (${(blob.size / 1e6).toFixed(1)} MB).` });
+    } catch (error) { updateReplay({ status: `Replay export failed: ${error instanceof Error ? error.message : 'unknown error'}` }); }
   }
 
   function openSettings() {
@@ -735,6 +810,8 @@ export function App() {
     {showDiagnostics && <div className="gaze-area" style={{ left: showDiagnostics.x, top: showDiagnostics.y, width: showDiagnostics.radius * 2, height: showDiagnostics.radius * 2 }} aria-hidden="true"><i /></div>}
     {settingsOpen && <Settings value={settings} camera={isCamera} simulation={isSimulation} canValidate={isCamera && !calibrationMode && calibrationRun.current.state.kind === 'complete'}
       onChange={changeSettings} onClose={closeSettings} savedStatus={savedStatus} hasSaved={Boolean(savedModel) || Boolean(savedStatus)} fullscreenError={fullscreenError} onFullscreen={() => { void fullscreen(); }}
+      check={lastCheck} page={settingsPage} onPage={setSettingsPage}
+      developer={import.meta.env.DEV ? { recording: replay.recording, count: replay.count, status: replay.status, onRecording: setReplayRecording, onSave: () => { void exportReplayFile(); } } : null}
       onDeleteSaved={() => { void deleteSavedCalibration(); }} onReset={() => { void resetCalibration(); }} onValidate={validate} onSimulation={simulate} onCamera={() => { void startCamera(); }} onStop={() => { closeSettings(); stopSession(); }} />}
   </div>;
 }
