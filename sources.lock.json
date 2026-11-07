@@ -1,0 +1,453 @@
+{
+  "repositories": {
+    "gstack": {
+      "url": "https://github.com/garrytan/gstack",
+      "commit": "1970da59c4dc5a56109acb0368ce3113a6e7dd09"
+    },
+    "caldo": {
+      "url": "https://github.com/caldoai/skills",
+      "commit": "f3cf47774975a7d9fca45730babf4ff7ad765ada"
+    },
+    "tstack": {
+      "url": "https://github.com/t3dotgg/tstack",
+      "commit": "1085050f3baed1ac724caa4a8166145fb2ac88af"
+    },
+    "matt": {
+      "url": "https://github.com/mattpocock/skills",
+      "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d"
+    },
+    "lintapple": {
+      "url": "https://github.com/gholtzap/lintapple",
+      "commit": "bee55634867d6c11833e88024023498b86aa6335"
+    }
+  },
+  "copied_files": [
+    {
+      "path": "skills/office-hours/SKILL.md",
+      "source": "office-hours/SKILL.md",
+      "repository": "gstack",
+      "sha256": "3567c8d98afa05e526f7dcf7157f4d52812a238aa9b821f8f7c9381311939b88"
+    },
+    {
+      "path": "skills/office-hours/sections/design-and-handoff.md",
+      "source": "office-hours/sections/design-and-handoff.md",
+      "repository": "gstack",
+      "sha256": "59f2bd641c370e883206d887e863a9394a4cb69e94a06cd4291d587ffc119496"
+    },
+    {
+      "path": "skills/office-hours/sections/manifest.json",
+      "source": "office-hours/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "91f8b0520d105f44de04f348392c96cafaf53947c5d8b07f8bac2b5855a709c5"
+    },
+    {
+      "path": "skills/office-hours/sections/phase-2a-startup-diagnostic.md",
+      "source": "office-hours/sections/phase-2a-startup-diagnostic.md",
+      "repository": "gstack",
+      "sha256": "35ed1e419eca359e454b9f18dddcce0aeb553a0ee519a7e635f4f0b7d484a393"
+    },
+    {
+      "path": "skills/office-hours/sections/phase-2b-builder-brainstorm.md",
+      "source": "office-hours/sections/phase-2b-builder-brainstorm.md",
+      "repository": "gstack",
+      "sha256": "05251d190b32f1da63165e8339211404963556ef5b9cf4c3e46361cbc51027e2"
+    },
+    {
+      "path": "skills/office-hours/sections/preamble.md",
+      "source": "office-hours/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/office-hours/sections/second-opinion.md",
+      "source": "office-hours/sections/second-opinion.md",
+      "repository": "gstack",
+      "sha256": "4ba845e2a4b7733e1fac4d091e881dcc73d822f9a5f6b848809ec5b2ca2eaeb9"
+    },
+    {
+      "path": "skills/office-hours/sections/visual-design.md",
+      "source": "office-hours/sections/visual-design.md",
+      "repository": "gstack",
+      "sha256": "fa7f64e1f933ad72f2b9c062d64fb302702ac9e3e267fc0177a420a933440810"
+    },
+    {
+      "path": "skills/autoplan/DRIVER.md",
+      "source": "autoplan/DRIVER.md",
+      "repository": "gstack",
+      "sha256": "ca35e1c18de01c8336e4a019d3580e02b1e8d3dbd80c49b5cc321aa83ddb1a7e"
+    },
+    {
+      "path": "skills/autoplan/SKILL.md",
+      "source": "autoplan/SKILL.md",
+      "repository": "gstack",
+      "sha256": "a1f4036492f6b27c1f9b96b256408207bfc97e804bebb478a2f04a5d538a46ca"
+    },
+    {
+      "path": "skills/autoplan/bin/guard-journal.ts",
+      "source": "autoplan/bin/guard-journal.ts",
+      "repository": "gstack",
+      "sha256": "aa906122f7b634b00a9ece6498ee8ebaa18b942f61c9eda3af2c0c85ef3f1733"
+    },
+    {
+      "path": "skills/autoplan/bin/guard-log.ts",
+      "source": "autoplan/bin/guard-log.ts",
+      "repository": "gstack",
+      "sha256": "f651aa58a43f753d84a8ebacffad8bfa6d96b2a4bdc8645cdab4c4bdd8653369"
+    },
+    {
+      "path": "skills/autoplan/bin/guard-reasons.ts",
+      "source": "autoplan/bin/guard-reasons.ts",
+      "repository": "gstack",
+      "sha256": "42af12367dda56a71be838501211cd1abd5cb17b9360e9dd8557707200a6af23"
+    },
+    {
+      "path": "skills/autoplan/bin/owned-read.ts",
+      "source": "autoplan/bin/owned-read.ts",
+      "repository": "gstack",
+      "sha256": "6825d02296d13f063087ef15081e5820fb8a2b74294afbb680b490c1f2874410"
+    },
+    {
+      "path": "skills/autoplan/bin/phase-publication-hook",
+      "source": "autoplan/bin/phase-publication-hook",
+      "repository": "gstack",
+      "sha256": "4afeca92688ecbc53ec18b56285b39955c506b6ad483537b650c1451328c54b7"
+    },
+    {
+      "path": "skills/autoplan/bin/phase-publication-hook.ts",
+      "source": "autoplan/bin/phase-publication-hook.ts",
+      "repository": "gstack",
+      "sha256": "a324bed18e06d2086dab921ba7fa0c46ffa4d29b7cf19fbfc9feb8929fe68e39"
+    },
+    {
+      "path": "skills/autoplan/sections/ceo-only.md",
+      "source": "autoplan/sections/ceo-only.md",
+      "repository": "gstack",
+      "sha256": "18b171215648efb6accb69b74f8f78535eed16b5947464015851164670375f98"
+    },
+    {
+      "path": "skills/autoplan/sections/ceo-phase.md",
+      "source": "autoplan/sections/ceo-phase.md",
+      "repository": "gstack",
+      "sha256": "1137918980da619131f115357861dd0a37ba38c98a3b4b88109c0e7a678dd099"
+    },
+    {
+      "path": "skills/autoplan/sections/design-phase.md",
+      "source": "autoplan/sections/design-phase.md",
+      "repository": "gstack",
+      "sha256": "ae44fc6531ddf7b35a2452bd42b7b6ad1052f215270fd6134b991551af08b042"
+    },
+    {
+      "path": "skills/autoplan/sections/dx-phase.md",
+      "source": "autoplan/sections/dx-phase.md",
+      "repository": "gstack",
+      "sha256": "c1f96b1271c264c3bdeaf049c451dfb098815b5fae352081e44aa090669886eb"
+    },
+    {
+      "path": "skills/autoplan/sections/eng-phase.md",
+      "source": "autoplan/sections/eng-phase.md",
+      "repository": "gstack",
+      "sha256": "d77e962aa33a43bdefc8856c042a9351e278a748950c9f0139c7b8a4b763946f"
+    },
+    {
+      "path": "skills/autoplan/sections/manifest.json",
+      "source": "autoplan/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "a7b6f64e47670b4343b210e2b6a536d55ab97512034e577537001a5e9aae701e"
+    },
+    {
+      "path": "skills/autoplan/sections/phase-close.md",
+      "source": "autoplan/sections/phase-close.md",
+      "repository": "gstack",
+      "sha256": "7f1b6da860a302c2867972f622833f06f0bf65882bc50b8a96f9170667b7df7a"
+    },
+    {
+      "path": "skills/autoplan/sections/preamble.md",
+      "source": "autoplan/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/autoplan/sections/tasks-aggregator.md",
+      "source": "autoplan/sections/tasks-aggregator.md",
+      "repository": "gstack",
+      "sha256": "2ff8a043efe73d67ee09912618827013bd9d3c0f265a4df20a025a2e17147dd4"
+    },
+    {
+      "path": "skills/autoplan/sections/unattended.md",
+      "source": "autoplan/sections/unattended.md",
+      "repository": "gstack",
+      "sha256": "464dc53ef4734f880763b27973588727f72252baf5d66fc73a26187bc7ff806b"
+    },
+    {
+      "path": "skills/autoplan/shadow-decider.md",
+      "source": "autoplan/shadow-decider.md",
+      "repository": "gstack",
+      "sha256": "e4857932ae831b7a6d933c42c182ccd7711c68338fec6901799264f645589344"
+    },
+    {
+      "path": "skills/plan-ceo-review/SKILL.md",
+      "source": "plan-ceo-review/SKILL.md",
+      "repository": "gstack",
+      "sha256": "46b7e0cfa8ede8204a416f40a482555e3325bba710594169307fbc25d709dd4f"
+    },
+    {
+      "path": "skills/plan-ceo-review/bin/mode-handoff-hook",
+      "source": "plan-ceo-review/bin/mode-handoff-hook",
+      "repository": "gstack",
+      "sha256": "184f74bc1b79d43ceb342031f79065573a629e030799af05397be3b5cc8e2902"
+    },
+    {
+      "path": "skills/plan-ceo-review/bin/mode-handoff-hook.ts",
+      "source": "plan-ceo-review/bin/mode-handoff-hook.ts",
+      "repository": "gstack",
+      "sha256": "9f8dca41755f6d6d286d884222170840004a00aa3d74c9cb15f75f490e553378"
+    },
+    {
+      "path": "skills/plan-ceo-review/sections/checklist.md",
+      "source": "plan-ceo-review/sections/checklist.md",
+      "repository": "gstack",
+      "sha256": "c25c11296ea4a1e0a1723ea640d74a9857956ef9b08368583db74bb9fd1a02e6"
+    },
+    {
+      "path": "skills/plan-ceo-review/sections/manifest.json",
+      "source": "plan-ceo-review/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "f74ebb493a9f3ad08d430d95bd1d3ecc66e525e358320b05faf4fa1534c519f8"
+    },
+    {
+      "path": "skills/plan-ceo-review/sections/preamble.md",
+      "source": "plan-ceo-review/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/plan-ceo-review/sections/review-sections.md",
+      "source": "plan-ceo-review/sections/review-sections.md",
+      "repository": "gstack",
+      "sha256": "4fd3afe2b395cf5c3c5c7f06e497f4b586bd8050a1a4e3b95514260027aca441"
+    },
+    {
+      "path": "skills/plan-design-review/SKILL.md",
+      "source": "plan-design-review/SKILL.md",
+      "repository": "gstack",
+      "sha256": "a2120db2d4a34107b62a14431bf9519013dc645f9d9288f0a679a956db51d41b"
+    },
+    {
+      "path": "skills/plan-design-review/sections/checklist.md",
+      "source": "plan-design-review/sections/checklist.md",
+      "repository": "gstack",
+      "sha256": "1844bcab2e3e9b458698af93deb6442e10ebf3ee87789497f490a3f99cbffd41"
+    },
+    {
+      "path": "skills/plan-design-review/sections/manifest.json",
+      "source": "plan-design-review/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "941ba3c0beeb67f4aa76ffdedabf0074d5ec3e073f5240429ae5c66152ee85e9"
+    },
+    {
+      "path": "skills/plan-design-review/sections/preamble.md",
+      "source": "plan-design-review/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/plan-design-review/sections/review-sections.md",
+      "source": "plan-design-review/sections/review-sections.md",
+      "repository": "gstack",
+      "sha256": "1840c1cdbabcb61dddd4bff8afeb283d65a410d780a0ac5cdc4090a012c89b8c"
+    },
+    {
+      "path": "skills/plan-devex-review/SKILL.md",
+      "source": "plan-devex-review/SKILL.md",
+      "repository": "gstack",
+      "sha256": "44ba3c57bff182149c9cb5fbecf922eb398896f77a328892707bba362d030794"
+    },
+    {
+      "path": "skills/plan-devex-review/dx-hall-of-fame.md",
+      "source": "plan-devex-review/dx-hall-of-fame.md",
+      "repository": "gstack",
+      "sha256": "f98b7e2cffe4300305a9a35522f0b9980f3653b5024c712640c94099ea1da46a"
+    },
+    {
+      "path": "skills/plan-devex-review/sections/checklist.md",
+      "source": "plan-devex-review/sections/checklist.md",
+      "repository": "gstack",
+      "sha256": "93cbecb7e48b43dcffea5ce56206f60af0a201ff4d2639ecc853acd368d00cc1"
+    },
+    {
+      "path": "skills/plan-devex-review/sections/manifest.json",
+      "source": "plan-devex-review/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "9a53cac14a432ce0b9ec6b8da14e8cba174d3b7a15b34c492fed925a15455d8f"
+    },
+    {
+      "path": "skills/plan-devex-review/sections/preamble.md",
+      "source": "plan-devex-review/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/plan-devex-review/sections/review-sections.md",
+      "source": "plan-devex-review/sections/review-sections.md",
+      "repository": "gstack",
+      "sha256": "11f20b75545fb7ddbaed374974e6ccc85ce9e93e8eb0723d45534366f4e03794"
+    },
+    {
+      "path": "skills/plan-eng-review/SKILL.md",
+      "source": "plan-eng-review/SKILL.md",
+      "repository": "gstack",
+      "sha256": "58d96f6f3e296ccc2942e2e1a5732810b18f9f8bcd6ed9338115c99c91a88524"
+    },
+    {
+      "path": "skills/plan-eng-review/sections/checklist.md",
+      "source": "plan-eng-review/sections/checklist.md",
+      "repository": "gstack",
+      "sha256": "2e84d4d8e04fa840b0c2546525880375bba0bb55a54b984bd0e907b2626445f6"
+    },
+    {
+      "path": "skills/plan-eng-review/sections/manifest.json",
+      "source": "plan-eng-review/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "78e3e0a122f5ccdbcdfb9bbc729494a3f83441b23fc0698a59bb32fd01af6d4a"
+    },
+    {
+      "path": "skills/plan-eng-review/sections/preamble.md",
+      "source": "plan-eng-review/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/plan-eng-review/sections/review-sections.md",
+      "source": "plan-eng-review/sections/review-sections.md",
+      "repository": "gstack",
+      "sha256": "202df94f20273ae6fb1cd4e6f65953a4dd50880d04fd5010a05d2557359f11dc"
+    },
+    {
+      "path": "skills/untangle-codebase/SKILL.md",
+      "source": "skills/untangle-codebase/SKILL.md",
+      "repository": "caldo",
+      "sha256": "b4eb6b5130c38ca04532601e99d2d174cf4faa4df520b5b7ba609e8707e55761"
+    },
+    {
+      "path": "skills/sol-loop/SKILL.md",
+      "source": "skills/sol-loop/SKILL.md",
+      "repository": "tstack",
+      "sha256": "1db1eb4c4a156ee666070e9a12623d520cd1bd9b19c3fc21003fe5a440ba0b10"
+    },
+    {
+      "path": "skills/pr/CREDITS.md",
+      "source": "skills/engineering/pr/CREDITS.md",
+      "repository": "matt",
+      "sha256": "a7a087127665d7298a72280ef6e19c41ad8404523712a788c8dc3ab414bc2497"
+    },
+    {
+      "path": "skills/pr/SKILL.md",
+      "source": "skills/engineering/pr/SKILL.md",
+      "repository": "matt",
+      "sha256": "ab63f1cf78647389edcd386c9427c5dfca27ed2836930c24773ffee834c19bcd"
+    },
+    {
+      "path": "skills/pr/agents/openai.yaml",
+      "source": "skills/engineering/pr/agents/openai.yaml",
+      "repository": "matt",
+      "sha256": "2295b586624db4ef546f3fd4695492f039d941a46d8a1593a702ce3ca511b8ad"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/SKILL.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
+      "repository": "matt",
+      "sha256": "b01e05bfe8c323171275c6ceec78b12f1bd4c62dfd26c2cfe8be806d3883f1ed"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/agents/openai.yaml",
+      "source": "skills/engineering/setup-matt-pocock-skills/agents/openai.yaml",
+      "repository": "matt",
+      "sha256": "9527de0110541c45712319025155aeab8dc7d77c6ed6e5e83271bab1851ab939"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/domain.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/domain.md",
+      "repository": "matt",
+      "sha256": "593a7042218689f1d24df89df14eaf0a20e19e0d0a7d479a01947ac78f0784b9"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-github.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/issue-tracker-github.md",
+      "repository": "matt",
+      "sha256": "6fdb3e9b00b7b0b115ecac3b1c00e3790f637f190abf598815368722c0a94692"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-gitlab.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/issue-tracker-gitlab.md",
+      "repository": "matt",
+      "sha256": "947602d33a80f98f939fb990995b8f95a3459b114b919c4221d08bd75d7cffe0"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-local.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/issue-tracker-local.md",
+      "repository": "matt",
+      "sha256": "7dcda20a2eb4bdc89b95d1143423c0691309921cadae3132e6424f371030506e"
+    },
+    {
+      "path": "skills/setup-matt-pocock-skills/triage-labels.md",
+      "source": "skills/engineering/setup-matt-pocock-skills/triage-labels.md",
+      "repository": "matt",
+      "sha256": "ae512af838c78b8750471c42cd2b20fa32319553e61d84c9a23d171b40ce14aa"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/craft.md",
+      "source": "design-html/sections/craft.md",
+      "repository": "gstack",
+      "sha256": "cd8daae4fcd8329fbe0a5bf7ceca2dd81bfd5faf9ba7a30a075e4bd64694a526"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/detector-install-offer.md",
+      "source": "design-html/sections/detector-install-offer.md",
+      "repository": "gstack",
+      "sha256": "629f6f1ecc63615fe2fc18b0fab69718a7438f293b9ac505964a03a1657aefd6"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/doctrine.md",
+      "source": "design-html/sections/doctrine.md",
+      "repository": "gstack",
+      "sha256": "db00be4d927e48ebeff614f761a8d118b294c527fab4596bf48b54a7296503fd"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/manifest.json",
+      "source": "design-html/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "ee8c7be0156b2d58ca89cce255bf0662da106a3feda213ad978eab8dbcdcb9c7"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/preamble.md",
+      "source": "design-html/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/design-pen/references/upstream-sections/pretext-patterns.md",
+      "source": "design-html/sections/pretext-patterns.md",
+      "repository": "gstack",
+      "sha256": "12c49fbb61977f3736926ed50609f1a230c8cdae4eea9999994802dbdc9c3310"
+    },
+    {
+      "path": "skills/design-pen/references/design-html.source.md",
+      "source": "design-html/SKILL.md",
+      "repository": "gstack",
+      "sha256": "72755b94ac7ee21523b86b865be286c4716fa9bb9752f8a210259d44d0ed3fc8"
+    },
+    {
+      "path": "skills/design-pen/references/ux-principles.md",
+      "source": "design-html/sections/doctrine.md",
+      "repository": "gstack",
+      "sha256": "db00be4d927e48ebeff614f761a8d118b294c527fab4596bf48b54a7296503fd"
+    },
+    {
+      "path": "skills/lintapple-ui/references/upstream-readme.md",
+      "source": "README.md",
+      "repository": "lintapple",
+      "sha256": "8a1031a152b93c10f37d0c952cc77193f088dcaf3ca4ddd6ecb9808df4d970aa"
+    }
+  ],
+  "lintapple_npm": "0.1.24"
+}
