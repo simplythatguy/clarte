@@ -1,0 +1,6 @@
+models/
+build/
+*.dylib
+*.so
+__pycache__/
+.venv/
