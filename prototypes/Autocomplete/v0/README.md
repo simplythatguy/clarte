@@ -6,6 +6,10 @@ prediction. A suggestion is committed only by Accept.
 
 ## Dependency and run
 
+From the repository root, `./clarte autocomplete` (Windows: `clarte autocomplete`) sets up
+the engine and starts this server with its test page; see the root README. The rest of this
+section is the manual route.
+
 `autocomplete.py` adds the sibling `../../Word Prediction/v0` directory to
 `sys.path`, resolved from its own file location. Keep both folders together.
 The runtime imports the ported `wordpred` package, never the research workspace.
@@ -16,7 +20,7 @@ licences, benchmark results, and vocabulary limits. Models are shared from the e
 ```sh
 cd 'prototypes/Word Prediction/v0'   # from the repo root
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements.txt -r build-requirements.txt
 .venv/bin/python build.py
 cd '../../Autocomplete/v0'
 '../../Word Prediction/v0/.venv/bin/python' server.py --port 8766

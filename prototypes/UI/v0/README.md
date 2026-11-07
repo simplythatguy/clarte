@@ -87,13 +87,13 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 | `s5/` | Dialogue: the conversation as a thread, whole-reply predictions from the partner's words | Q2, Q3 | 5105 |
 | `s_all/` | Preview of all six: one page with a vertical S0–S5 switcher at the top right | — | 5100 |
 
-Run everything with one command from the repository root; it starts any style server and the prediction engine that are not already running:
+Run everything with one command from the repository root: `./clarte ui` (Windows: `clarte ui`) sets up Node, the five styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
 
 ```sh
 node prototypes/UI/v0/s_all/serve.mjs
 ```
 
-The engine is the ported prototype in `prototypes/Word Prediction/v0`. Set up its `.venv`, native build and models once, as its README describes; until then S0 shows "Engine offline". Engine errors print in this terminal.
+The engine is the ported prototype in `prototypes/Word Prediction/v0`. Set up its `.venv`, native build and models once, as its README describes; until then S0 shows "Engine offline". Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the five ports after it.
 
 Then open http://localhost:5100. Each of `s1`–`s5` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief and a `REPORT.md` written by its builder with evidence, council scores and open questions.
 

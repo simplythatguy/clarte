@@ -14,35 +14,49 @@ position and transformer KV caches are retained to preserve the frozen outputs.
 
 ## Run
 
-Python 3.11+; the matching pinned research environment uses Python 3.14. A C++17
-compiler and zlib headers/library are needed to build the native libraries. On
-Windows, see [Windows](#windows).
+From the repository root, `./clarte predict` (Windows: `clarte predict`) does everything
+below and opens the test page: it fetches the models when Git LFS is not installed,
+creates `.venv`, builds the native libraries and starts the server. See the root README.
+
+### Manual setup
+
+Python 3.11+; the matching pinned research environment uses Python 3.14. `build.py`
+compiles the native libraries with Zig's bundled clang (`ziglang` from
+[`build-requirements.txt`](build-requirements.txt)) and the zlib sources vendored in
+[`wordpred/native/zlib`](wordpred/native/zlib/), so no system compiler, SDK or zlib is
+needed. Set `CXX` (and `CC` for zlib) to use another C++17 compiler instead; zlib is
+still compiled in, so `-lz` is never needed.
 
 The models are in [`models/`](models/), stored with [Git LFS](https://git-lfs.com)
 (about 850 MB). Install Git LFS before cloning, or run `git lfs pull` afterwards;
 without it the model files are small pointer files and the server reports them
-as missing.
+as missing (`clarte` fetches them itself into `.tools/models` and points
+`WORDPRED_MODELS` there).
 
 ```sh
 cd 'prototypes/Word Prediction/v0'   # from the repo root
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements.txt -r build-requirements.txt
 .venv/bin/python build.py
 .venv/bin/python server.py --port 8765
 ```
 
+Intel Macs: torch 2.9.1 has no macOS x86_64 wheel, so install
+[`requirements-light.txt`](requirements-light.txt) instead and run `--model light`;
+`clarte` does this automatically there.
+
 ### Windows
 
-Use 64-bit Python 3.14 from python.org and MinGW-w64 g++ with zlib, for example
-MSYS2's UCRT64 packages `mingw-w64-ucrt-x86_64-gcc` and `mingw-w64-ucrt-x86_64-zlib`
-with `C:\msys64\ucrt64\bin` on `PATH` (or set `CXX` to that `g++`). `build.py`
-links the C++ runtime and zlib statically, so the DLLs load without MinGW on `PATH`.
+Use 64-bit Python 3.14 from python.org; the default Zig build needs nothing else.
+MinGW-w64 g++ still works through `CXX` (and `CC`), for example MSYS2's UCRT64
+`mingw-w64-ucrt-x86_64-gcc` with `C:\msys64\ucrt64\bin` on `PATH`; `build.py` then
+links the C++ runtime statically, so the DLLs load without MinGW on `PATH`.
 MSVC is not supported. In PowerShell:
 
 ```powershell
 cd 'prototypes\Word Prediction\v0'
 py -3.14 -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m pip install -r requirements.txt -r build-requirements.txt
 .venv\Scripts\python build.py
 .venv\Scripts\python server.py --port 8765
 ```
@@ -134,6 +148,10 @@ strings over 128 digits. Unknown paths return 404. The response adds measured
 Adapted from the research final `Local` (Deployable) and `Light` paths.
 [PORT_PROVENANCE.json](PORT_PROVENANCE.json) records the upstream paths, SHA256
 fingerprints, and deliberate adaptations. Both C++ files are exact copies.
+[`wordpred/native/zlib`](wordpred/native/zlib/) holds the unmodified zlib 1.4 sources that
+`arpa_native` needs for `gzopen` (zlib licence, `LICENSE` there and
+[`licenses/zlib-Zlib.txt`](../../../licenses/zlib-Zlib.txt)); its `PROVENANCE.json` records
+the tarball and file hashes.
 The model files were copied byte for byte from the research workspace on
 2026-11-07; `models/SHA256SUMS` matches the research receipts. Provenance ships
 with them: `models/PROVENANCE.json` (source path and SHA256 of each file),

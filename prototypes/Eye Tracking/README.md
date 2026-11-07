@@ -4,7 +4,7 @@ A standalone local webcam gaze prototype for Clarte, imported from a pinned Stil
 
 ## Run
 
-From the Clarte repository root:
+From the Clarte repository root, `./clarte eyes` (Windows: `clarte eyes`) installs the pinned Node and dependencies and opens the development server; see the root README. Manually:
 
 ```sh
 cd 'prototypes/Eye Tracking'
