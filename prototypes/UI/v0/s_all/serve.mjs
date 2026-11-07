@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Serves the S0–S5 preview on http://localhost:5100. Starts any of the five style dev servers
-// (s1–s5 on ports 5101–5105) and the local prediction engine for S0 (port 8765) that are not
-// already running. Ctrl+C stops what this script started.
+// Serves the S0–S5 preview on http://localhost:5100 (PORT overrides it). Starts any of the five
+// style dev servers (s1–s5 on the five ports after it, 5101–5105 by default) and the local
+// prediction engine for S0 (port 8765) that are not already running. Ctrl+C stops what this
+// script started.
 import { createServer } from 'node:http';
 import { createConnection } from 'node:net';
 import { spawn, spawnSync } from 'node:child_process';
@@ -23,7 +24,7 @@ const listening = (port) => new Promise((resolve) => {
 
 const children = [];
 for (let n = 1; n <= 5; n++) {
-  const port = 5100 + n;
+  const port = PORT + n;
   if (await listening(port)) { console.log(`s${n}: already running on ${port}`); continue; }
   // npm is npm.cmd on Windows, which Node can only start through a shell.
   const child = spawn('npm', ['run', 'dev', '--', '--port', String(port), '--strictPort'], { cwd: join(ROOT, `s${n}`), stdio: 'ignore', shell: WINDOWS });

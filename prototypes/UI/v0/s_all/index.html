@@ -34,14 +34,16 @@
 <nav id="bar" aria-label="Styles"></nav>
 <script>
   const H = location.hostname;
+  // serve.mjs runs the styles on the five ports after its own (5101-5105 when it is on 5100).
+  const P = Number(location.port) || 5100;
   // Styles open with ?onboarding=off: straight into the app, no calibration or first-run screens.
   const STYLES = [
     { id: 's0', name: 'S0 · Light mock (live prediction)', url: '/s0/index.html' },
-    { id: 's1', name: 'S1 · Rails',    url: `http://${H}:5101/?onboarding=off` },
-    { id: 's2', name: 'S2 · Corners',  url: `http://${H}:5102/?onboarding=off` },
-    { id: 's3', name: 'S3 · Stages',   url: `http://${H}:5103/?onboarding=off` },
-    { id: 's4', name: 'S4 · Split',    url: `http://${H}:5104/?onboarding=off` },
-    { id: 's5', name: 'S5 · Dialogue', url: `http://${H}:5105/?onboarding=off` },
+    { id: 's1', name: 'S1 · Rails',    url: `http://${H}:${P + 1}/?onboarding=off` },
+    { id: 's2', name: 'S2 · Corners',  url: `http://${H}:${P + 2}/?onboarding=off` },
+    { id: 's3', name: 'S3 · Stages',   url: `http://${H}:${P + 3}/?onboarding=off` },
+    { id: 's4', name: 'S4 · Split',    url: `http://${H}:${P + 4}/?onboarding=off` },
+    { id: 's5', name: 'S5 · Dialogue', url: `http://${H}:${P + 5}/?onboarding=off` },
   ];
   const bar = document.getElementById('bar');
   const frames = {};
