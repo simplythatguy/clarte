@@ -1,6 +1,6 @@
 {
   "kind": "prototype-source-content-fingerprint",
-  "sourceSha256": "6c0eff6aa8cffc3f640b7136690e811546f09fc090535dc941cc8d7fa2347410",
+  "sourceSha256": "a06bdef85f42eac7a16e881d8be210c416bed88ddc8297fa5bdf8424c922c566",
   "files": [
     {
       "path": ".gitignore",
@@ -19,13 +19,13 @@
     },
     {
       "path": "docs/IMPORT-SOURCE.json",
-      "bytes": 97920,
-      "sha256": "cd5517f5af8608eec95548aff575c8e6588baa1e7aac865afd169acfa5be8923"
+      "bytes": 98341,
+      "sha256": "85819ebc96539082e02d7e8f07e9645745e40ac4fe3fa36f5898a500b14affd1"
     },
     {
       "path": "docs/IMPORT.md",
-      "bytes": 4361,
-      "sha256": "b6f04ab0d258f9e1443843299a8b2b22d57f101b8f590a359b561d2dc66161af"
+      "bytes": 5190,
+      "sha256": "5d3ae6535d3a1ee5841502e6d80290a6ce1f41eb80053d97d327989beb23fb89"
     },
     {
       "path": "docs/MINIMAL-FLOW.md",
@@ -1079,8 +1079,8 @@
     },
     {
       "path": "src/App.tsx",
-      "bytes": 39422,
-      "sha256": "67d3eafe1604b6b95114b56b7047358d59ea6fac023345a690a408d58e5d9a86"
+      "bytes": 39476,
+      "sha256": "3b2439318f8e73ec196e4166dab65ef6c5e52f1d49d53d10473f6bf780356613"
     },
     {
       "path": "src/components/Calibration.tsx",
@@ -1214,8 +1214,8 @@
     },
     {
       "path": "tests/app.test.mjs",
-      "bytes": 35595,
-      "sha256": "36f883548b2ad40d2f4d1eff9294ee323ad193707e2a41c3c3ce7810ec9f298b"
+      "bytes": 39102,
+      "sha256": "935953b7b1efc94302b8568278d0cf091201012279885ef8580a4efb8ae58c5a"
     },
     {
       "path": "tests/blink.test.ts",

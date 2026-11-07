@@ -48,6 +48,14 @@
     {
       "path": "index.html",
       "reason": "Latest user request: match the browser theme-color metadata to the white light surface."
+    },
+    {
+      "path": "src/App.tsx",
+      "reason": "Post-import review: latch interruption across pending collection acknowledgements and free-flow deadline completion before allowing Continue."
+    },
+    {
+      "path": "tests/app.test.mjs",
+      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume."
     }
   ],
   "files": [

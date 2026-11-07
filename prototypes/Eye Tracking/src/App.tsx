@@ -383,7 +383,7 @@ export function App() {
 
   function pauseCalibration() {
     if (sessionRef.current.kind !== 'camera' || sessionRef.current.phase !== 'calibration') return;
-    if (restoringRef.current) { controlsRef.current = 'Paused'; setControls('Paused'); }
+    if (restoringRef.current || calibrationRun.current.state.kind === 'collecting') { controlsRef.current = 'Paused'; setControls('Paused'); }
     if (calibrationRun.current.state.kind === 'training' || calibrationRun.current.state.kind === 'resetting') { stopSession(true); return; }
     calibrationRun.current.pause();
     syncCalibration();
@@ -494,10 +494,10 @@ export function App() {
 
   function pauseValidation(reason: PauseReason) {
     const run = validationRun.current;
+    run?.pause(performance.now(), reason);
     if (sessionRef.current.kind === 'camera' && sessionRef.current.phase === 'validation' && run?.state.kind === 'complete') {
       controlsRef.current = 'Paused'; setControls('Paused');
     }
-    run?.pause(performance.now(), reason);
     if (run) setValidation(run.state);
     clearInput();
   }

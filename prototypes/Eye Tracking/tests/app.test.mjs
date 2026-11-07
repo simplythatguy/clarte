@@ -416,3 +416,54 @@ describe('worker sample owner after resize', () => {
     expect(f.validation()?.state.kind).toBe('ready');
   });
 });
+
+describe('independent interruption order probes', () => {
+  it.each(['blur', 'hidden'])('keeps explicit Continue if %s itself crosses the free-flow deadline', async event => {
+    const f = fixture(); await f.train(); f.validation().onStart();
+    await f.advance(629, true, { x: 300, y: 200 });
+    expect(f.validation().state).toMatchObject({ kind: 'running', elapsedMs: 59900 });
+    f.setNow(f.now() + 100);
+    if (event === 'hidden') { f.doc.hidden = true; f.doc.dispatchEvent(new Event('visibilitychange')); }
+    else f.win.dispatchEvent(new Event('blur'));
+    f.doc.hidden = false; f.win.dispatchEvent(new Event('focus')); f.silence(2);
+    expect(title(f)).toBe('Paused');
+    expect(nodes(f.render()).filter(n => n.type?.name === 'DwellTarget')).toHaveLength(0);
+    f.resume(); f.silence(1);
+    expect(nodes(f.render()).filter(n => n.type?.name === 'DwellTarget')).toHaveLength(9);
+  });
+  it.each(['blur', 'hidden'])('retains interruption until Continue when a final collect ack arrives after %s and refocus', async event => {
+    const f = fixture(); await f.completeEyes(); await f.advance(12); f.stage().props.onToggle(); await f.advance(154);
+    let finish;
+    camera.collect.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const pending = f.advance(1);
+    expect(typeof finish).toBe('function'); expect(camera.collect).toHaveBeenCalledTimes(42);
+    if (event === 'hidden') { f.doc.hidden = true; f.doc.dispatchEvent(new Event('visibilitychange')); }
+    else f.win.dispatchEvent(new Event('blur'));
+    f.doc.hidden = false; f.win.dispatchEvent(new Event('focus'));
+    finish(true); await pending; f.silence(2);
+    expect(camera.train).not.toHaveBeenCalled();
+    expect(f.validation()).toBeUndefined();
+    expect(title(f)).toBe('Paused');
+    f.resume(); f.silence(1);
+    await vi.waitFor(()=>expect(camera.train).toHaveBeenCalledOnce());
+  });
+});
+
+describe('independent interruption control cases', () => {
+  it.each(['blur','hidden'])('pauses normally when %s occurs before the final deadline', async event => {
+    const f=fixture(); await f.train();f.validation().onStart();await f.advance(629,true,{x:300,y:200});
+    f.setNow(f.now()+50);
+    if(event==='hidden'){f.doc.hidden=true;f.doc.dispatchEvent(new Event('visibilitychange'));}else f.win.dispatchEvent(new Event('blur'));
+    f.doc.hidden=false;f.win.dispatchEvent(new Event('focus'));f.silence(2);
+    expect(f.validation().state.kind).toBe('paused');expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(0);
+    f.validation().onResume();f.silence(1);expect(nodes(f.render()).filter(n=>n.type?.name==='DwellTarget')).toHaveLength(9);
+  });
+  it.each(['blur','hidden'])('holds the final ack when %s is still active on receipt', async event=>{
+    const f=fixture();await f.completeEyes();await f.advance(12);f.stage().props.onToggle();await f.advance(154);
+    let finish;camera.collect.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));const pending=f.advance(1);expect(typeof finish).toBe('function');
+    if(event==='hidden'){f.doc.hidden=true;f.doc.dispatchEvent(new Event('visibilitychange'));}else f.win.dispatchEvent(new Event('blur'));
+    finish(true);await pending;f.doc.hidden=false;f.win.dispatchEvent(new Event('focus'));f.silence(2);
+    expect(title(f)).toBe('Paused');expect(camera.train).not.toHaveBeenCalled();
+    f.resume();f.silence(1);await Promise.resolve();expect(camera.train).toHaveBeenCalledOnce();
+  });
+});
