@@ -20,17 +20,15 @@ export type Experiment = {
   /** Fit the affine before fine-tuning and train through it (the production order). */
   affineFirst?: boolean;
 };
-export type Score = { name: string; fitMedianPx: number; lodoMedianPx: number | null; lodoP90Px: number | null; checkMedianPx: number | null; checkP90Px: number | null; checkOffsets: { x: number; y: number; dx: number; dy: number }[] };
+export type Score = { name: string; fitMedianPx: number; lodoMedianPx: number | null; lodoP90Px: number | null; checkMedianPx: number | null; checkP90Px: number | null; /** Share of check frames landing in the same 4×2 navigation cell as the target. */ checkCell: number | null; checkOffsets: { x: number; y: number; dx: number; dy: number }[] };
 
 export const EXPERIMENTS: Experiment[] = [
   { name: 'none (pretrained head, no correction)', steps: 0, lr: 0, l2: 0, correction: 'none' },
   { name: 'production: affine on all samples + 1 step @1e-5', steps: 1, lr: 1e-5, l2: 0, correction: 'affine', perSample: true, affineFirst: true },
   { name: 'affine on per-dot medians', steps: 0, lr: 0, l2: 0, correction: 'affine' },
   { name: 'robust affine on per-dot medians', steps: 0, lr: 0, l2: 0, correction: 'ransac-affine' },
-  { name: 'thin-plate on per-dot medians', steps: 0, lr: 0, l2: 0, correction: 'thin-plate' },
-  ...[20, 50, 100].flatMap(steps => [1e-3, 3e-3].flatMap(lr => [0, 1e-2].map(l2 => ({ name: `fine-tune ${steps} steps @${lr}${l2 ? ` l2 ${l2}` : ''} + affine`, steps, lr, l2, correction: 'affine' as const })))),
-  { name: 'fine-tune 50 steps @1e-3 l2 1e-2 + robust affine', steps: 50, lr: 1e-3, l2: 1e-2, correction: 'ransac-affine' },
-  { name: 'fine-tune 50 steps @1e-3 l2 1e-2 + thin-plate', steps: 50, lr: 1e-3, l2: 1e-2, correction: 'thin-plate' },
+  ...[50, 100, 200, 400].flatMap(steps => [1e-3, 3e-3, 1e-2].flatMap(lr => [0, 1e-3].map(l2 => ({ name: `fine-tune ${steps} steps @${lr}${l2 ? ` l2 ${l2}` : ''} + affine`, steps, lr, l2, correction: 'affine' as const })))),
+  { name: 'fine-tune 200 steps @3e-3 + robust affine', steps: 200, lr: 3e-3, l2: 0, correction: 'ransac-affine' },
 ];
 
 export class Harness {
@@ -143,10 +141,12 @@ export class Harness {
     const median = (e: number[]) => (e.length ? e[Math.floor(e.length / 2)] : NaN), p90 = (e: number[]) => (e.length ? e[Math.ceil(.9 * e.length) - 1] : NaN);
     const full = this.fit(experiment, calibration);
     const fitMedianPx = median(this.errors(calibration, full(calibration)));
-    let checkMedianPx: number | null = null, checkP90Px: number | null = null, checkOffsets: Score['checkOffsets'] = [];
+    let checkMedianPx: number | null = null, checkP90Px: number | null = null, checkCell: number | null = null, checkOffsets: Score['checkOffsets'] = [];
     if (check.length) {
       const points = full(check), e = this.errors(check, points);
       checkMedianPx = median(e); checkP90Px = p90(e);
+      const cell = (p: Point) => `${Math.min(3, Math.max(0, Math.floor(p.x / this.viewport.width * 4)))}:${Math.min(1, Math.max(0, Math.floor(p.y / this.viewport.height * 2)))}`;
+      checkCell = check.filter((f, i) => cell(points[i]) === cell(this.labelPx(f.entry))).length / check.length;
       const groups = new Map<string, { x: number; y: number; dx: number[]; dy: number[] }>();
       check.forEach((f, i) => { const t = this.labelPx(f.entry), key = f.entry.label.join(','); const g = groups.get(key) ?? { x: t.x, y: t.y, dx: [], dy: [] }; g.dx.push(points[i].x - t.x); g.dy.push(points[i].y - t.y); groups.set(key, g); });
       const med = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
@@ -164,7 +164,7 @@ export class Harness {
       lodo.sort((a, b) => a - b);
     }
     this.resetHead();
-    return { name: experiment.name, fitMedianPx, lodoMedianPx: lodo.length ? median(lodo) : null, lodoP90Px: lodo.length ? p90(lodo) : null, checkMedianPx, checkP90Px, checkOffsets };
+    return { name: experiment.name, fitMedianPx, lodoMedianPx: lodo.length ? median(lodo) : null, lodoP90Px: lodo.length ? p90(lodo) : null, checkMedianPx, checkP90Px, checkCell, checkOffsets };
   }
 }
 

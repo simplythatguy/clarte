@@ -31,6 +31,7 @@ vi.mock('../src/core/webeyetrack', () => ({ createCameraSession: () => camera, c
 import { App } from '../src/App';
 import { CalibrationEngine } from '../src/core/worker-engine';
 import { ESTIMATOR_SHAPES, SAVED_CALIBRATION_KEY } from '../src/core/saved-calibration';
+import { PROFILES_KEY } from '../src/core/profiles';
 const learned = () => ({ weights: ESTIMATOR_SHAPES.map(shape => Array(shape.reduce((a,b)=>a*b,1)).fill(.01)), affine: [1,0,0,0,1,0], faceWidthCm: 15 });
 
 function nodes(tree) {
@@ -465,5 +466,85 @@ describe('independent interruption control cases', () => {
     finish(true);await pending;f.doc.hidden=false;f.win.dispatchEvent(new Event('focus'));f.silence(2);
     expect(title(f)).toBe('Paused');expect(camera.train).not.toHaveBeenCalled();
     f.resume();f.silence(1);await Promise.resolve();expect(camera.train).toHaveBeenCalledOnce();
+  });
+});
+
+describe('camera moved with the screen (lid tilt)', () => {
+  const moved = { dx: 0, dy: 24, tiltDeg: 1.1, moved: true, matchable: true };
+  const frame = (f, over = {}) => ({ face: true, facePresent: true, eyeState: 'open', point: { x: 520, y: 380 }, rawPoint: { x: 520, y: 380 }, pose: head, at: f.now() + 100, ...over });
+  const hasRefit = f => nodes(f.render()).some(node => node.props?.className?.includes?.('refit-stage'));
+  it('in navigation: re-anchors, shows one centre dot, seeds the correction from it and resumes', async () => {
+    const f = fixture(); f.targets(); await f.calibrate();
+    expect(hasRefit(f)).toBe(false);
+    f.setNow(f.now() + 100); await f.sendOnly(frame(f, { camera: moved })); f.pulse();
+    expect(hasRefit(f)).toBe(true);
+    expect(text(f.render())).toContain('Look at the dot');
+    // Settle, then a second of samples 20 px right and 30 px below the dot.
+    await f.advance(24, true, { x: 520, y: 380 });
+    expect(hasRefit(f)).toBe(false);
+    expect(text(f.render())).toContain('Re-aligned.');
+    // The learned offset now pulls estimates toward where the dot was.
+    await f.advance(1, true, { x: 520, y: 380 });
+    const area = f.area?.();
+    if (area) expect(area.x).toBeLessThan(520);
+  });
+  it('in navigation without enough samples: gives up quietly and keeps the previous calibration', async () => {
+    const f = fixture(); f.targets(); await f.calibrate();
+    f.setNow(f.now() + 100); await f.sendOnly(frame(f, { camera: moved })); f.pulse();
+    expect(hasRefit(f)).toBe(true);
+    await f.advance(70, false);
+    expect(hasRefit(f)).toBe(false);
+    expect(text(f.render())).toContain('Could not re-align');
+  });
+  it('during the check: cancels it with a clear reason; during calibration: pauses', async () => {
+    const f = fixture(); await f.train(); f.validation().onStart(); await f.advance(50, true, { x: 300, y: 200 });
+    expect(f.validation().state.kind).toBe('running');
+    f.setNow(f.now() + 100); await f.sendOnly(frame(f, { camera: moved })); f.pulse();
+    expect(f.validation().state).toEqual({ kind: 'cancelled', reason: 'camera' });
+    const g = fixture(); await g.start(); await g.advance(12); g.stage().props.onToggle(); await g.advance(40);
+    expect(['moving', 'settling', 'sampling', 'collecting', 'reading']).toContain(g.stage().props.state.kind);
+    g.setNow(g.now() + 100); await g.sendOnly(frame(g, { camera: moved })); g.pulse();
+    expect(g.stage().props.state.kind).toBe('paused');
+    expect(g.stage().props.recovery).toBe('Screen moved');
+  });
+});
+
+describe('named profiles', () => {
+  it('keeps one saved calibration per profile and offers the right one after switching', async () => {
+    const f = fixture(); await f.calibrate();
+    await vi.waitFor(() => expect(f.storage.size).toBe(1));
+    let tools = f.settings().profiles;
+    expect(tools.active.name).toBe('Default'); expect(tools.list).toHaveLength(1); expect(tools.hasSaved('default')).toBe(true);
+    // A new person: the default's record moves into the directory and the camera session recalibrates.
+    tools.onCreate('Omer');
+    await vi.waitFor(() => expect(f.stage()?.props.state.kind).toBe('ready'));
+    expect(camera.resetCalibration).toHaveBeenCalled();
+    expect(f.storage.has(PROFILES_KEY)).toBe(true); expect(f.storage.has(SAVED_CALIBRATION_KEY)).toBe(false);
+    expect(f.stage().props.saved).toBe(false);
+    tools = f.settings().profiles;
+    expect(tools.active.name).toBe('Omer'); expect(tools.hasSaved('default')).toBe(true); expect(tools.hasSaved('omer')).toBe(false);
+    // Back to the first person: their record is restored and offered on the calibration page with their name.
+    tools.onSelect('default');
+    await vi.waitFor(() => expect(f.stage()?.props.saved).toBe(true));
+    expect(f.stage().props.profile).toBe('Default');
+    expect(JSON.parse(f.storage.get(SAVED_CALIBRATION_KEY)).learned.affine).toEqual([1, 0, 0, 0, 1, 0]);
+    // Removing the other profile leaves only the implicit default, with nothing extra stored.
+    f.settings().profiles.onSelect('omer');
+    await vi.waitFor(() => expect(f.stage()?.props.state.kind).toBe('ready'));
+    f.settings().profiles.onRemove('omer');
+    await vi.waitFor(() => expect(f.stage()?.props.state.kind).toBe('ready'));
+    expect(f.storage.has(PROFILES_KEY)).toBe(false); expect(f.storage.has(SAVED_CALIBRATION_KEY)).toBe(true);
+    tools = f.settings().profiles;
+    expect(tools.active.id).toBe('default'); expect(tools.list).toHaveLength(1);
+  });
+  it('reports duplicate or empty names without changing anything', async () => {
+    const f = fixture(); await f.start();
+    f.settings().profiles.onCreate('Ana'); await vi.waitFor(() => expect(f.settings().profiles.active.name).toBe('Ana'));
+    f.settings().profiles.onCreate('ana');
+    await vi.waitFor(() => expect(f.settings().profiles.status).toMatch(/already exists/));
+    expect(f.settings().profiles.list).toHaveLength(2);
+    f.settings().profiles.onRename('ana', '   ');
+    await vi.waitFor(() => expect(f.settings().profiles.status).toMatch(/name/));
+    expect(f.settings().profiles.active.name).toBe('Ana');
   });
 });

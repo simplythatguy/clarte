@@ -176,7 +176,8 @@ export function obtainEyePatch(
     faceLandmarks: Point[],
     facePaddingCoefs: [number, number] = [0.4, 0.2],
     faceCropSize: number = 512,
-    dstImgSize: [number, number] = [512, 128]
+    dstImgSize: [number, number] = [512, 128],
+    prewarp?: number[][]
 ): ImageData {
 
     // Step 3: Prepare src and dst
@@ -208,8 +209,8 @@ export function obtainEyePatch(
     // Compute homography matrix
     const H = computeHomography(srcPts, dstPts);
 
-    // Step 5: Warp the image
-    const warped = warpImageData(frame, H, faceCropSize, faceCropSize);
+    // Step 5: Warp the image (through the pre-warp first, when the crop is taken from a pose-normalized view)
+    const warped = warpImageData(frame, prewarp ? H.map(row => [0, 1, 2].map(c => row[0] * prewarp[0][c] + row[1] * prewarp[1][c] + row[2] * prewarp[2][c])) : H, faceCropSize, faceCropSize);
 
     // Step 6: Apply the homography matrix to the facial landmarks
     const warpedLandmarks = faceLandmarks.map(pt => applyHomography(H, pt));

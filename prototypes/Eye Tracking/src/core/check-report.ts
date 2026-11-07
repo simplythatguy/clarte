@@ -1,4 +1,6 @@
 import type { CorrectionModel } from './calibration-models';
+import type { EstimatorReport } from './geometric-gaze';
+import type { TrainingReport } from './training';
 import type { ValidationResult } from './validation';
 import type { Viewport } from './tracking';
 
@@ -11,8 +13,18 @@ export type CheckSummary = {
   offsets: { x: number; y: number; dx: number; dy: number; samples: number }[];
   bias: { dx: number; dy: number } | null;
   regions: { name: string; dx: number; dy: number; references: number }[];
+  /** The two estimators behind the pointer on this check, and the blend the check chose (applied to navigation). */
+  estimators: EstimatorReport | null;
+  /** How calibration went, when known: held-out errors in px and the blend weight it started with. */
+  calibration: { networkPx: number | null; geometricPx: number | null; weight: number | null } | null;
   notes: string[];
 };
+/** Pixel view of a training report's held-out errors (mean squared, normalized) for the person. */
+export function summarizeTraining(report: TrainingReport | null | undefined, viewport: Viewport): CheckSummary['calibration'] {
+  if (!report) return null;
+  const px = (mse: number | null | undefined) => (typeof mse === 'number' && Number.isFinite(mse) && mse >= 0 ? Math.sqrt(mse) * Math.max(viewport.width, viewport.height) : null);
+  return { networkPx: px(report.heldOutAfter), geometricPx: px(report.geometric?.heldOutMse), weight: report.geometric ? report.geometric.weight : null };
+}
 export const MODEL_LABELS: Record<CorrectionModel, string> = {
   none: 'No correction', affine: 'Affine (current)', 'ransac-affine': 'Affine, robust', quadratic: 'Quadratic', 'thin-plate': 'Thin-plate spline',
 };
@@ -20,9 +32,9 @@ const median = (v: number[]) => { const s = [...v].sort((a, b) => a - b), m = Ma
 const mean = (v: number[]) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0);
 const px = (v: number) => `${Math.round(Math.abs(v))} px`;
 
-export function summarizeCheck(result: ValidationResult, at: number): CheckSummary | null {
+export function summarizeCheck(result: ValidationResult, at: number, training?: TrainingReport | null): CheckSummary | null {
   if (result.kind !== 'measured') return null;
-  const { corrections } = result;
+  const { corrections, estimators } = result;
   const scores = corrections?.scores ?? [];
   const measured = scores.filter(s => s.medianPx !== null) as { model: CorrectionModel; medianPx: number; p90Px: number }[];
   const best = measured.length ? measured.reduce((a, b) => (b.medianPx < a.medianPx ? b : a)) : null;
@@ -54,5 +66,9 @@ export function summarizeCheck(result: ValidationResult, at: number): CheckSumma
   const vertical = regions.find(r => r.name === 'Top half'), lower = regions.find(r => r.name === 'Bottom half');
   if (vertical && lower && vertical.references && lower.references && Math.abs(vertical.dy - lower.dy) >= side * .05) notes.push(`The vertical offset differs between the top (${px(vertical.dy)} ${vertical.dy < 0 ? 'above' : 'below'}) and bottom (${px(lower.dy)} ${lower.dy < 0 ? 'above' : 'below'}) of the screen.`);
   if (result.p90Px > side * .25) notes.push('Errors are large and scattered. Check lighting on your face, turn off Center Stage and keep the window size fixed, then recalibrate.');
-  return { at, condition: result.condition, viewport: result.viewport, coverage: result.coverage, bins: result.bins, references: corrections?.references ?? 0, medianPx: result.medianPx, p90Px: result.p90Px, models, offsets, bias, regions, notes };
+  if (estimators && estimators.networkMedian !== null && estimators.geometricMedian !== null) {
+    const better = estimators.geometricMedian < estimators.networkMedian ? 'geometric' : 'network';
+    notes.push(`Two estimators ran: the gaze network (${px(estimators.networkMedian)}) and the geometric iris-and-lid model (${px(estimators.geometricMedian)}). ${estimators.blend ? `Blending them ${Math.round(estimators.blend.weight * 100)}% geometric gives ${px(estimators.blend.median)}; navigation now uses that blend.` : `The ${better} one did better on this check.`}`);
+  }
+  return { at, condition: result.condition, viewport: result.viewport, coverage: result.coverage, bins: result.bins, references: corrections?.references ?? 0, medianPx: result.medianPx, p90Px: result.p90Px, models, offsets, bias, regions, estimators: estimators ?? null, calibration: summarizeTraining(training, result.viewport), notes };
 }

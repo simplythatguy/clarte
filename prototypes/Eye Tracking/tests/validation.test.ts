@@ -154,3 +154,29 @@ describe('defined binned statistics and time coverage', () => {
     expect(VALIDATION.durationMs).toBe(VALIDATION.targets * VALIDATION.slotMs);
   });
 });
+
+describe('estimators on a free-flow check', () => {
+  it('scores the network and geometric estimates and chooses the best blend', async () => {
+    const { ValidationRun, VALIDATION, validationPosition } = await import('../src/core/validation');
+    const viewport = { width: 1000, height: 600 };
+    const run = new ValidationRun(viewport, 'still', 'reduced', () => .5);
+    run.start(0);
+    let at = 0;
+    for (let t = 0; t < VALIDATION.durationMs; t += 100) {
+      at = t + 1;
+      const position = validationPosition(run.targets, viewport, at, 'reduced');
+      const target = position.target;
+      // The blended raw point is off by 20 px; the network is off by +40 px in x, the geometric by -40 px, so their mean is exact.
+      run.admit({ point: target, rawPoint: { x: target.x + 20, y: target.y }, face: true, facePresent: true, eyeState: 'open', at, pose: null, estimates: { network: { x: target.x + 40, y: target.y }, geometric: { x: target.x - 40, y: target.y } } }, at + 1);
+    }
+    run.tick(VALIDATION.durationMs + 5);
+    expect(run.state.kind).toBe('complete');
+    const result = run.state.kind === 'complete' ? run.state.result : null;
+    expect(result?.kind).toBe('measured');
+    if (result?.kind !== 'measured') return;
+    expect(result.medianPx).toBeCloseTo(20);
+    expect(result.estimators).not.toBeNull();
+    expect(result.estimators!.networkMedian).toBeCloseTo(40); expect(result.estimators!.geometricMedian).toBeCloseTo(40);
+    expect(result.estimators!.blend!.weight).toBe(.5); expect(result.estimators!.blend!.median).toBeLessThan(1e-6);
+  });
+});

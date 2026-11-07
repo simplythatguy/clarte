@@ -1,11 +1,13 @@
 import type { Viewport } from './tracking';
+import { readGeometricState, type GeometricState } from './geometric-gaze';
 
-// Only the six adapted MLP tensors are saved; the pinned encoder stays in local assets.
+// Only the six adapted MLP tensors, the affine and the small geometric estimator are saved; the pinned encoder stays in local assets.
 export const ESTIMATOR_SHAPES = [[518, 16], [16], [16, 16], [16], [16, 2], [2]];
 export const MODEL_VERSION = '75fbd2f5f784f2eb3a39675a8dcbf1b01c697f1c:0.0.2:local-estimator-v1';
 export const SAVED_CALIBRATION_KEY = 'still.local-calibration.v1';
 export const MAX_SAVED_BYTES = 512_000;
-export type LearnedCalibration = { weights: number[][]; affine: number[]; faceWidthCm: number };
+/** `geometric` (optional): the fitted iris-and-lid estimator and its blend weight; absent on calibrations saved before it existed. */
+export type LearnedCalibration = { weights: number[][]; affine: number[]; faceWidthCm: number; geometric?: GeometricState | null };
 export type CameraGeometry = { deviceId: string; width: number; height: number; facingMode: string };
 export type CalibrationGeometry = { viewport: Viewport; camera: CameraGeometry; pixelRatio: number };
 export type SavedCalibration = { schema: 1; model: string; savedAt: number; geometry: CalibrationGeometry; learned: LearnedCalibration };
@@ -14,9 +16,12 @@ const keys = (v: Record<string, unknown>, names: string[]) => Object.keys(v).len
 const finite = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
 const vector = (v: unknown, size: number): v is number[] => Array.isArray(v) && v.length === size && v.every(n => finite(n, -1e6, 1e6));
 export function readLearnedCalibration(v: unknown): LearnedCalibration {
-  if (!object(v) || !keys(v, ['weights', 'affine', 'faceWidthCm']) || !Array.isArray(v.weights) || v.weights.length !== ESTIMATOR_SHAPES.length ||
+  const names = object(v) && 'geometric' in v ? ['weights', 'affine', 'faceWidthCm', 'geometric'] : ['weights', 'affine', 'faceWidthCm'];
+  if (!object(v) || !keys(v, names) || !Array.isArray(v.weights) || v.weights.length !== ESTIMATOR_SHAPES.length ||
       !v.weights.every((w, i) => vector(w, ESTIMATOR_SHAPES[i].reduce((a, b) => a * b, 1))) || !vector(v.affine, 6) || !finite(v.faceWidthCm, .001, 1000)) throw new Error('Saved calibration has invalid estimator data. Recalibrate or delete it.');
-  return { weights: v.weights, affine: v.affine, faceWidthCm: v.faceWidthCm };
+  const learned: LearnedCalibration = { weights: v.weights, affine: v.affine, faceWidthCm: v.faceWidthCm };
+  if ('geometric' in v && v.geometric !== null && v.geometric !== undefined) learned.geometric = readGeometricState(v.geometric);
+  return learned;
 }
 export function readSavedCalibration(v: unknown): SavedCalibration {
   if (!object(v) || !keys(v, ['schema', 'model', 'savedAt', 'geometry', 'learned']) || v.schema !== 1 || v.model !== MODEL_VERSION || !finite(v.savedAt, 1, 1e15)) throw new Error('Saved calibration is from an incompatible model or format. Recalibrate or delete it.');

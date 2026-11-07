@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team model training (development)</title>
+<style>
+  body { font: 15px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; color: #1b1b1b; background: #fff; margin: 0; padding: 32px 24px; }
+  main { max-width: 960px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  h2 { font-size: 1.1rem; margin: 8px 0 0; }
+  p, ol { margin: 0; }
+  button { font: inherit; padding: 10px 18px; border-radius: 12px; border: 1px solid #8a8a87; background: #fff; cursor: pointer; }
+  button.primary { background: #1b1b1b; color: #fff; border-color: #1b1b1b; }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type="text"] { font: inherit; padding: 6px 8px; border: 1px solid #8a8a87; border-radius: 8px; width: 12em; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #d9d9d6; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  .verdict { padding: 12px 14px; border-left: 4px solid #1c5e9e; background: #f3f7fb; }
+  .verdict.is-bad { border-color: #9b4d0a; background: #fbf5ef; }
+  textarea { width: 100%; min-height: 120px; font: 12px/1.4 ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Team model training</h1>
+  <p>Development only. Trains one shared starting model from everyone's replay recordings, in this tab, with the shipped model. Nothing is uploaded.</p>
+  <ol>
+    <li>Each person records a session in the app (Settings → <em>Record replay set (dev)</em>, calibrate, run the full free-flow check, <em>Save replay set</em>). Two sessions each is better than one.</li>
+    <li>Load all the files here and put the right name next to each file. Files with the same name count as the same person.</li>
+    <li>Press <em>Train</em>. Each setting is tested by training without one person and checking that person, for every person.</li>
+    <li>If it helps, download <code>team-estimator.json</code> and put it at <code>public/team/team-estimator.json</code>.</li>
+  </ol>
+  <p><input id="files" type="file" accept=".bin,application/octet-stream" multiple></p>
+  <table id="sessions" hidden>
+    <thead><tr><th>File</th><th>Person</th><th>Frames (calibration / check)</th></tr></thead>
+    <tbody id="session-rows"></tbody>
+  </table>
+  <p><button id="train" class="primary" disabled>Train</button></p>
+  <p id="status" role="status">No files loaded.</p>
+  <section id="results" hidden>
+    <h2>Held-out error per person (median px, lower is better)</h2>
+    <table>
+      <thead><tr><th>Person</th><th>Frames</th><th>Without team model</th><th>With team model</th><th>Change</th></tr></thead>
+      <tbody id="person-rows"></tbody>
+    </table>
+    <h2>Settings tried</h2>
+    <table>
+      <thead><tr><th>Steps</th><th>Learning rate</th><th>L2</th><th>Mean held-out error</th></tr></thead>
+      <tbody id="config-rows"></tbody>
+    </table>
+    <p id="verdict" class="verdict"></p>
+    <p><button id="download" disabled>Download team-estimator.json</button></p>
+    <textarea id="json" readonly></textarea>
+  </section>
+</main>
+<script type="module" src="./team.ts"></script>
+</body>
+</html>

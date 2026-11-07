@@ -9,6 +9,7 @@ Bundled license information:
 @tensorflow/tfjs-core/dist/ops/floorDiv.js:
 @tensorflow/tfjs-core/dist/ops/div.js:
 @tensorflow/tfjs-core/dist/ops/mul.js:
+@tensorflow/tfjs-core/dist/ops/add_n.js:
 @tensorflow/tfjs-core/dist/ops/all.js:
 @tensorflow/tfjs-core/dist/ops/any.js:
 @tensorflow/tfjs-core/dist/ops/atan2.js:

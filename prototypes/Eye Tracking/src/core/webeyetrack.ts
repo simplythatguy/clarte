@@ -4,16 +4,24 @@ import { WorkerClient } from './worker-client';
 import { readLearnedCalibration, type CameraGeometry, type LearnedCalibration } from './saved-calibration';
 import type { ReplayExport } from './worker-engine';
 import { OneEuroPoint } from './one-euro';
+import type { TrainingOptions, TrainingReport } from './training';
 export type { GazeFrame } from './tracking';
 export type TrackerRuntime = {
   begin(stream: MediaStream, onFrame: (frame: GazeFrame) => void | Promise<void>, onFailure: (error: unknown) => void): Promise<void>;
   stop(): void;
   collect(point: Point, at: number, viewport: Viewport): Promise<boolean>;
-  train(): Promise<void>;
+  train(options?: Partial<TrainingOptions>): Promise<void>;
+  trainingReport?(): Promise<TrainingReport | null>;
+  /** The geometric estimator's share of the blended estimate, chosen by a measured check; resolves to the bounded weight applied. */
+  setBlend?(weight: number): Promise<number>;
   reset(): Promise<void>;
   exportCalibration(): Promise<LearnedCalibration>;
   restoreCalibration(state: LearnedCalibration): Promise<void>;
   preview(show: boolean): void;
+  /** Starting estimator for the next calibration (null: the pretrained one); applied whenever the tracker initializes. */
+  setBaseEstimator?(weights: number[][] | null): void;
+  /** Take eye strips from a pose-normalized view; applied whenever the tracker initializes (development comparison). */
+  setNormalizedCrop?(enabled: boolean): void;
   /** Development replay recording; absent on runtimes that cannot record. */
   setRecording?(enabled: boolean): Promise<void>;
   record?(point: Point, at: number, viewport: Viewport): Promise<boolean>;
@@ -56,6 +64,8 @@ export class LocalWebEyeTrack implements TrackerRuntime {
   private scheduled: (() => void) | null = null;
   private frameGate = new DecodedFrameGate();
   private smoother = new OneEuroPoint();
+  private base: number[][] | null = null;
+  private normalizedCrop = false;
   private latestAt = -Infinity;
   private onFrame: (frame: GazeFrame) => void | Promise<void> = () => {};
   private onFailure: (error: unknown) => void = () => {};
@@ -71,7 +81,9 @@ export class LocalWebEyeTrack implements TrackerRuntime {
     this.canvas = document.createElement('canvas');
     const generation = ++this.generation;
     const client = this.createClient();
-    await Promise.all([client.call('init', { development: import.meta.env.DEV }, [], 90000), video.play()]);
+    await Promise.all([client.call('init', { development: import.meta.env.DEV, normalizeCrop: this.normalizedCrop }, [], 90000), video.play()]);
+    if (generation !== this.generation) return;
+    if (this.base) await client.call('baseEstimator', { weights: this.base });
     if (generation !== this.generation) return;
     this.schedule();
   }
@@ -138,8 +150,20 @@ export class LocalWebEyeTrack implements TrackerRuntime {
     if (!this.client || this.training || at !== this.latestAt || performance.now() - at > 600) return false;
     return await this.client.call('collect', { at, x: point.x / viewport.width - .5, y: point.y / viewport.height - .5 }) === true;
   }
-  async train(): Promise<void> {
-    await this.modelCommand('train', null, 120000);
+  async train(options?: Partial<TrainingOptions>): Promise<void> {
+    await this.modelCommand('train', options ?? null, 180000);
+  }
+  async trainingReport(): Promise<TrainingReport | null> {
+    if (!this.client) return null;
+    const value = await this.client.call('trainingReport');
+    return value && typeof value === 'object' ? value as TrainingReport : null;
+  }
+  setBaseEstimator(weights: number[][] | null): void { this.base = weights; }
+  setNormalizedCrop(enabled: boolean): void { this.normalizedCrop = enabled; }
+  async setBlend(weight: number): Promise<number> {
+    const value = await this.modelCommand('blend', { weight });
+    if (typeof value !== 'number') throw new Error('Blend weight was not applied');
+    return value;
   }
   async setRecording(enabled: boolean): Promise<void> {
     if (!this.client) return;
@@ -176,7 +200,9 @@ export class LocalWebEyeTrack implements TrackerRuntime {
     // Keep the decoded-frame gate across a reset: an old decoded image is never new evidence.
     const generation = this.generation;
     const client = this.createClient();
-    await client.call('init', { development: import.meta.env.DEV }, [], 90000);
+    await client.call('init', { development: import.meta.env.DEV, normalizeCrop: this.normalizedCrop }, [], 90000);
+    if (generation !== this.generation) return;
+    if (this.base) await client.call('baseEstimator', { weights: this.base });
     if (generation !== this.generation) return;
     this.training = false; this.schedule();
   }
@@ -208,6 +234,8 @@ export class CameraSession {
     stream.getTracks().forEach(track => track.addEventListener('ended', () => failure(new Error('Camera track ended')), { once: true }));
     try {
       const runtime = this.dependencies.create(); this.runtime = runtime;
+      runtime.setBaseEstimator?.(this.base);
+      runtime.setNormalizedCrop?.(this.normalizedCrop);
       await runtime.begin(stream, frame => { if (generation === this.generation) return onFrame(frame); }, failure);
       return generation === this.generation;
     } catch (error) { if (generation !== this.generation) return false; this.stop(); throw error; }
@@ -222,10 +250,10 @@ export class CameraSession {
     const accepted = await this.runtime?.collect(point, at, viewport);
     return generation === this.generation && accepted === true;
   }
-  async train(): Promise<boolean> {
+  async train(options?: Partial<TrainingOptions>): Promise<boolean> {
     if (!this.runtime) return false;
     const generation = this.generation, model = ++this.modelGeneration;
-    try { await this.runtime.train(); return generation === this.generation && model === this.modelGeneration; }
+    try { await this.runtime.train(options); return generation === this.generation && model === this.modelGeneration; }
     catch (error) { if (generation !== this.generation || model !== this.modelGeneration) return false; throw error; }
   }
   async resetCalibration(): Promise<boolean> {
@@ -246,6 +274,12 @@ export class CameraSession {
     try { await this.runtime.restoreCalibration(state); return generation === this.generation && model === this.modelGeneration; }
     catch (error) { if (generation !== this.generation || model !== this.modelGeneration) return false; throw error; }
   }
+  private base: number[][] | null = null;
+  /** Takes effect from the next camera start or recalibration. */
+  setBaseEstimator(weights: number[][] | null): void { this.base = weights; this.runtime?.setBaseEstimator?.(weights); }
+  private normalizedCrop = false;
+  /** Development comparison: eye strips from a pose-normalized view, from the next camera start or recalibration. */
+  setNormalizedCrop(enabled: boolean): void { this.normalizedCrop = enabled; this.runtime?.setNormalizedCrop?.(enabled); }
   async setRecording(enabled: boolean): Promise<void> { await this.runtime?.setRecording?.(enabled); }
   async record(point: Point, at: number, viewport: Viewport): Promise<boolean> {
     const generation = this.generation;
@@ -258,6 +292,16 @@ export class CameraSession {
     const value = await this.runtime.exportReplay();
     return generation === this.generation ? value : null;
   }
+  async trainingReport(): Promise<TrainingReport | null> { return (await this.runtime?.trainingReport?.()) ?? null; }
+  /** Applies a check-chosen blend weight; false when the runtime changed meanwhile or cannot blend. */
+  async setBlend(weight: number): Promise<number | null> {
+    if (!this.runtime?.setBlend) return null;
+    const generation = this.generation, model = this.modelGeneration;
+    try { const applied = await this.runtime.setBlend(weight); return generation === this.generation && model === this.modelGeneration ? applied : null; }
+    catch (error) { if (generation !== this.generation || model !== this.modelGeneration) return null; throw error; }
+  }
+  /** The live camera stream, for development test-session recording only. */
+  mediaStream(): MediaStream | null { return this.stream; }
   geometry(): CameraGeometry | null {
     const settings = this.stream?.getTracks().find(track => track.kind === 'video')?.getSettings();
     return settings?.width && settings.height ? { width: settings.width, height: settings.height, deviceId: settings.deviceId ?? '', facingMode: settings.facingMode ?? '' } : null;
