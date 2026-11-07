@@ -15,7 +15,10 @@
  *
  * It is interactive, never ambient-only:
  *  - mood: the conversation state tints it (idle peach, listening coral, replying apricot,
- *    speaking tangerine), cross-faded over 600 ms by Motion; the state pill stays the text twin;
+ *    speaking green), cross-faded over 600 ms by Motion; the state pill stays the text twin;
+ *  - speaking (owner, 2026-11-07): while Clarte speaks the orb is livelier: its lobes deepen,
+ *    it wobbles about 2.4x faster, a quick ripple runs round its edge, each spoken word swells it
+ *    up to 7%, and it is drawn at a stronger opacity (80%). It calms back over 0.9 s when speech ends;
  *  - lean (owner, 2026-11-07): it leans towards the card gaze is on (a letter group, a word
  *    choice, Delete on the right, any action): the body shifts about 45 px that way and bulges on
  *    that side. It aims at the card's centre, never the raw gaze point, and eases there at its own
@@ -47,13 +50,14 @@ const PALETTES: Record<'light' | 'dark', Record<OrbMood, Palette>> = {
     idle: ['#FFC49C', '#FFE4D0', '#FFD5B6', '#FFF7F0'],
     listening: ['#FFB9A0', '#FFDDD0', '#FFCDBA', '#FFF6F2'],
     composing: ['#FFCB8E', '#FFE8C8', '#FFDBAE', '#FFF9EE'],
-    speaking: ['#FFB988', '#FFDFC4', '#FFCCA6', '#FFF6EC'],
+    // Speaking turns green (owner, 2026-11-07), matched in lightness to the oranges.
+    speaking: ['#BCEBCA', '#E0F6E7', '#CDF0D7', '#F7FDF9'],
   },
   dark: {
     idle: ['#7A3A18', '#3A2A22', '#5E3622', '#45302A'],
     listening: ['#7A2E20', '#3E2622', '#5E3026', '#4A2C28'],
     composing: ['#6E4A12', '#3E3222', '#5C4420', '#4A3A26'],
-    speaking: ['#84400E', '#40281A', '#683616', '#4E3020'],
+    speaking: ['#1F5A36', '#1C3A28', '#2A6A42', '#203A2C'],
   },
 };
 
@@ -80,6 +84,7 @@ uniform vec3 u_c2;
 uniform vec3 u_c3;
 uniform float u_dark;
 uniform vec2 u_lean;
+uniform float u_energy;
 varying vec2 v_uv;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -97,10 +102,14 @@ void main() {
   float lean = length(u_lean);
   vec2 ld = lean > 0.0001 ? u_lean / lean : vec2(0.0);
   float toward = max(0.0, dot(vec2(cos(a), sin(a)), ld));
+  // Energy (speaking): the slow lobes deepen and a quick ripple runs round the edge.
+  float e = u_energy;
+  float amp = 1.0 + 0.8 * e;
   float r = u_radius * (1.0 + u_swell) * (1.0 + 0.12 * lean * toward * toward) * (1.0
-    + 0.070 * sin(2.0 * a + 0.26 * t + 1.3)
-    + 0.045 * sin(3.0 * a - 0.19 * t + 0.4)
-    + 0.022 * sin(5.0 * a + 0.31 * t + 2.1));
+    + amp * 0.070 * sin(2.0 * a + 0.26 * t + 1.3)
+    + amp * 0.045 * sin(3.0 * a - 0.19 * t + 0.4)
+    + amp * 0.022 * sin(5.0 * a + 0.31 * t + 2.1)
+    + e * 0.018 * sin(7.0 * a + 1.9 * t));
   float d = length(p) / r;
 
   vec2 q0 = r * (vec2(-0.38, 0.34) + 0.22 * vec2(sin(0.17 * t), cos(0.13 * t)));
@@ -143,7 +152,7 @@ type Props = {
 
 export function Orb({ mood, pulse, still, theme }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const api = useRef<{ setMood(p: Palette, instant: boolean): void; kick(): void; setStill(v: boolean): void; setDark(v: boolean): void } | null>(null);
+  const api = useRef<{ setMood(p: Palette, instant: boolean): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void; setDark(v: boolean): void } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -169,7 +178,7 @@ export function Orb({ mood, pulse, still, theme }: Props) {
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     const u = (name: string) => gl.getUniformLocation(prog, name);
-    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uDark = u('u_dark'), uLean = u('u_lean');
+    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uDark = u('u_dark'), uLean = u('u_lean'), uEnergy = u('u_energy');
     const uCols = [u('u_c0'), u('u_c1'), u('u_c2'), u('u_c3')];
 
     // Live values. `time` advances by `speed` (1 while moving, 0 when Still). `lean` follows
@@ -179,6 +188,8 @@ export function Orb({ mood, pulse, still, theme }: Props) {
     let lean: [number, number] = [0, 0];
     let leanTarget: [number, number] = [0, 0];
     let swell = 0;
+    // 0 at rest, 1 while speaking: faster, deeper motion and bigger word swells.
+    let energy = 0;
     let dark = 0;
     let stillMode = false;
     let colours = flat(PALETTES.light.idle);
@@ -205,6 +216,7 @@ export function Orb({ mood, pulse, still, theme }: Props) {
       gl.uniform1f(uRadius, 0.62);
       gl.uniform1f(uDark, dark);
       gl.uniform2f(uLean, lean[0], lean[1]);
+      gl.uniform1f(uEnergy, frozen() ? 0 : energy);
       uCols.forEach((loc, i) => gl.uniform3f(loc, colours[i * 3], colours[i * 3 + 1], colours[i * 3 + 2]));
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -217,7 +229,8 @@ export function Orb({ mood, pulse, still, theme }: Props) {
       frame = 0;
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
-      time += dt * speed;
+      // Speaking runs the wobble about 2.4x faster (still under 0.2 Hz).
+      time += dt * speed * (1 + 1.4 * energy);
       const k = 1 - Math.exp(-dt / LEAN_TAU);
       lean = [lean[0] + (leanTarget[0] - lean[0]) * k, lean[1] + (leanTarget[1] - lean[1]) * k];
       const settling = Math.hypot(leanTarget[0] - lean[0], leanTarget[1] - lean[1]) > 0.002;
@@ -265,10 +278,16 @@ export function Orb({ mood, pulse, still, theme }: Props) {
         mix = 0;
         track(animate(0, 1, { duration: 0.6, ease: [0.2, 0, 0, 1], onUpdate: (v) => { mix = v; } }));
       },
+      setEnergy(v) {
+        if (energy === v) return;
+        // Up quickly as speech starts; down more slowly as it ends, so the orb calms rather than stops.
+        track(animate(energy, v, { duration: v > energy ? 0.5 : 0.9, ease: [0.23, 1, 0.32, 1], onUpdate: (x) => { energy = x; } }));
+      },
       kick() {
         if (frozen()) return;
         const startAt = swell;
-        track(animate(startAt, 0.035, { duration: 0.16, ease: [0.23, 1, 0.32, 1], onUpdate: (v) => { swell = v; } })).finished.then(() => {
+        // Each spoken word swells it more than a heard word (3.5% at rest, up to 7% while speaking).
+        track(animate(startAt, 0.035 + 0.035 * energy, { duration: 0.16, ease: [0.23, 1, 0.32, 1], onUpdate: (v) => { swell = v; } })).finished.then(() => {
           track(animate(swell, 0, { type: 'spring', stiffness: 140, damping: 11, onUpdate: (v) => { swell = v; } }));
         }, () => {});
       },
@@ -303,6 +322,7 @@ export function Orb({ mood, pulse, still, theme }: Props) {
   useEffect(() => {
     api.current?.setDark(theme === 'dark');
     api.current?.setMood(PALETTES[theme][mood], first.current);
+    api.current?.setEnergy(mood === 'speaking' ? 1 : 0);
     first.current = false;
   }, [mood, theme]);
   useEffect(() => { api.current?.setStill(still); }, [still]);
@@ -312,5 +332,5 @@ export function Orb({ mood, pulse, still, theme }: Props) {
     lastPulse.current = pulse;
   }, [pulse]);
 
-  return <canvas ref={canvasRef} className="orb" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className="orb" data-mood={mood} aria-hidden="true" />;
 }

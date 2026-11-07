@@ -11,6 +11,7 @@
   /* White page (owner, 2026-11-07): no frame, no wash. The orb is the only orange. */
   --canvas: #FFFFFF;
   --orb-opacity: 0.6;
+  --orb-opacity-speaking: 0.8;
   --surface: #FFFFFF;
   --surface-focus: #FFFFFF;
   /* Glass: a soft neutral grey veil (about #F3F3F4 on white) with a hairline edge. */
@@ -80,6 +81,7 @@
 :root[data-theme='dark'] {
   --canvas: #161617;
   --orb-opacity: 1;
+  --orb-opacity-speaking: 1;
   --surface: #2E2E31;
   --surface-focus: #2E2E31;
   --glass: rgb(255 255 255 / 0.06);
@@ -186,6 +188,12 @@ body {
 .card-ink { background: var(--ink); color: var(--on-ink); border-color: transparent; }
 /* Focus cue: the glass clears a step and its edge turns white. */
 .card:is(.card-surface, .card-group):is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
+/* Letter cards (owner, 2026-11-07): each in a very light tint of its own group colour, with an
+   edge in the same hue; the look still fills it with white. */
+.card-group { --tint: color-mix(in oklab, var(--gi) 8%, #FFFFFF); background: var(--tint); border-color: color-mix(in oklab, var(--gi) 14%, transparent); }
+.card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 4%, #FFFFFF); border-color: color-mix(in oklab, var(--gi) 32%, transparent); }
+:root[data-theme='dark'] .card-group { --tint: color-mix(in oklab, var(--gt) 9%, var(--canvas)); border-color: color-mix(in oklab, var(--gt) 18%, transparent); }
+:root[data-theme='dark'] .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gt) 13%, var(--canvas)); border-color: color-mix(in oklab, var(--gt) 36%, transparent); }
 .card-ink:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
 /* A selection: solid white with the accent edge while gaze remains. */
 .card[data-gaze='done'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -332,10 +340,10 @@ body {
   gap: 10px;
 }
 .turn[data-cut] { visibility: hidden; }
-.turn.clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.turn-text.clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
 .turn {
   margin: 0;
-  max-width: 86%;
+  max-width: calc(86% + 1.5em); /* the icon and its gap take 1.5em */
   font-size: var(--fs-turn);
   font-weight: 450;
   line-height: 1.4;
@@ -351,6 +359,17 @@ body {
 .turn-partner { align-self: flex-start; color: var(--ink-2); }
 .turn-me { align-self: flex-end; text-align: right; color: var(--ink); }
 .turn-holder { color: var(--ink-3); }
+/* Who said it (owner, 2026-11-07): a microphone left of each heard turn, a speaker right of each
+   spoken reply. A turn is an icon and a text block; only the text is clamped, so a long turn's
+   ellipsis never runs into the icon and the icon is never clipped (the icon floats beside it). */
+.turn-icon { display: flex; margin-top: 0.2em; color: var(--ink-3); }
+.turn-partner > .turn-icon { float: left; margin-right: 0.5em; }
+.turn-me > .turn-icon { float: right; margin-left: 0.5em; }
+/* The text is its own block beside the floated icon, so a clamp keeps its ellipsis. */
+.turn-text { display: flow-root; }
+/* Chrome draws no ellipsis on right-aligned clamped text; a clamped line is full anyway. */
+.turn-me > .turn-text.clamped { text-align: left; }
+.turn-icon .icon { width: 1em; height: 1em; }
 .turn-partner + .turn-me, .turn-me + .turn-partner { margin-top: 8px; }
 .rule { flex: none; height: 1px; margin: 24px 0 16px; background: var(--hairline); }
 
@@ -381,7 +400,7 @@ body {
 
 /* Spoken word: one pill highlight, swapped instantly on the speech boundary. */
 .w { border-radius: 999px; box-decoration-break: clone; -webkit-box-decoration-break: clone; padding: 0 0.16em; margin: 0 -0.16em; }
-.w[data-spoken] { background: var(--speaking-face); color: var(--speaking); }
+.w[data-spoken] { background: color-mix(in oklab, var(--speaking-face) 45%, transparent); color: var(--speaking); }
 
 /* The word in progress (BRIEF "The word in progress") */
 .word { white-space: nowrap; }
@@ -475,9 +494,11 @@ body {
   pointer-events: none;
   /* Owner, 2026-11-07: the light orange at reduced strength, so it reads as a tint on white. */
   opacity: var(--orb-opacity);
-  transition: opacity var(--dur-phase) var(--ease-state);
+  transition: opacity 600ms var(--ease-state);
   @starting-style { opacity: 0; }
 }
+/* While Clarte speaks the orb is drawn stronger (owner, 2026-11-07). */
+.orb[data-mood='speaking'] { opacity: var(--orb-opacity-speaking); }
 
 /* On the orb, the thread loses its hairline (the orb is the frame), and the live line is centred
    on the orb like the jewel in the owner's reference. */
