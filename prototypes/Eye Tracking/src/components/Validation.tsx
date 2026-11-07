@@ -12,8 +12,8 @@ export function Validation(props: Props) {
   </section>;
   const paused = state.kind === 'paused' || state.kind === 'intro-paused';
   const title = state.kind === 'intro' ? `Calibrate free flow movement · ${Math.ceil(state.remainingMs / 1000)}`
-    : paused ? props.recovery || 'Calibration paused' : state.kind === 'cancelled' ? 'Calibration interrupted' : 'Calibrate free flow movement';
-  return <div className="validation-stage"><StagePage title={title} alert={Boolean(props.recovery)}>
+    : paused ? props.recovery || 'Calibration paused' : state.kind === 'cancelled' ? (state.reason === 'camera' ? 'The screen moved' : 'Calibration interrupted') : 'Calibrate free flow movement';
+  return <div className="validation-stage"><StagePage title={title} alert={Boolean(props.recovery) || (state.kind === 'cancelled' && state.reason === 'camera')}>
     {state.kind === 'intro' ? null : <>
       <button className="primary-button" onClick={paused ? props.onResume : state.kind === 'cancelled' ? props.onRestart : props.onStart}>{paused ? 'Continue' : state.kind === 'cancelled' ? 'Restart' : 'Calibrate'}</button>
       {paused && <button onClick={props.onRestart}>Restart</button>}

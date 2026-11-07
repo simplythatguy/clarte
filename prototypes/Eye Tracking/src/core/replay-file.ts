@@ -10,6 +10,8 @@ export const REPLAY_MAGIC = 'CLARTE-REPLAY-1';
 export type ReplayManifest = {
   format: typeof REPLAY_MAGIC; createdAt: number; model: string;
   viewport: Viewport; pixelRatio: number; camera: { width: number; height: number } | null;
+  /** How the eye strips were cropped; absent on older files, which are `upstream`. Do not mix crops when training. */
+  crop?: 'upstream' | 'normalized';
   entries: (ReplayEntry & { offset: number; length: number })[];
 };
 export type ReplayFile = { manifest: ReplayManifest; images: Blob[] };

@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Icon } from './components/Icon';
 import { Settings, type SettingsPage, type SettingsValue } from './components/Settings';
 import { summarizeCheck, type CheckSummary } from './core/check-report';
+import type { TrainingReport } from './core/training';
 import { buildReplayFile } from './core/replay-file';
+import { TestSessionRecorder, type RecordedSession } from './core/session-recorder';
+import { sessionBaseName, type SessionManifest } from './core/session-file';
 import { Calibration } from './components/Calibration';
 import { GazeArea, type Area } from './core/gaze-area';
 import { DwellTarget, NAVIGATION_TARGETS } from './components/Targets';
 import { StagePage } from './components/StagePage';
 import { Validation } from './components/Validation';
-import { SavedCalibrationStore, SAVED_CALIBRATION_KEY, MODEL_VERSION, calibrationCompatibility, type CalibrationGeometry, type SavedCalibration as SavedModel } from './core/saved-calibration';
+import { SAVED_CALIBRATION_KEY, MODEL_VERSION, calibrationCompatibility, type CalibrationGeometry, type SavedCalibration as SavedModel } from './core/saved-calibration';
+import { PROFILES_KEY, ProfileStore, type Profile } from './core/profiles';
 import { CalibrationRun, freshFeatures, viewportChanged } from './core/calibration';
 import { GazeResolver, type GazeLayout } from './core/gaze';
 import { initialDwell, stepDwell, type DwellEvent, type DwellState } from './core/dwell';
@@ -17,12 +21,14 @@ import { cameraError, createCameraSession, type GazeFrame } from './core/webeyet
 import { ValidationRun, type CheckCondition, type PauseReason, type ValidationState } from './core/validation';
 import { BlinkSelection } from './core/blink';
 import { HeadPositionGuard, allowsLearning } from './core/head-position';
+import { QUICK_REFIT, QuickRefit } from './core/quick-refit';
+import { loadTeamModel, type TeamModel } from './core/team-model';
 import { TargetClassifier, personalizationFromCheck } from './core/target-classifier';
-import { SelectionLearning } from './core/selection-learning';
+import { PostureBank } from './core/posture-bank';
 import type { Point, Viewport } from './core/tracking';
 
 const lostFrame: GazeFrame = { point: null, face: false, facePresent: false, eyeState: 'unknown', at: -Infinity, pose: null };
-const defaultSettings: SettingsValue = { selection: 'blink', dwellMs: 2400, assistance: true, pointer: false, pace: 'quick', learning: true };
+const defaultSettings: SettingsValue = { selection: 'blink', dwellMs: 2400, assistance: true, pointer: false, pace: 'quick', learning: true, team: false, normalizedCrop: false };
 /** Uncorrected estimates kept per target so a confirmed selection can be learned from. */
 const TRAIL_MS = 6000;
 const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
@@ -59,9 +65,13 @@ export function App() {
   const frameRef = useRef(frame);
   const [resolver] = useState(() => new GazeResolver());
   const [classifier] = useState(() => new TargetClassifier());
-  const [learning] = useState(() => new SelectionLearning());
+  // Screen correction, global plus per head-pose cell, learned from the check and confirmed selections.
+  const [learning] = useState(() => new PostureBank());
   // Where the head was when navigation was calibrated and checked; moving away invalidates what is learned.
   const headGuard = useRef(new HeadPositionGuard());
+  // After the camera itself moved (lid tilt): one centre dot re-measures the pointer offset before navigation resumes.
+  const refit = useRef<QuickRefit | null>(null);
+  const [refitState, setRefitState] = useState<QuickRefit['state'] | null>(null);
   const trail = useRef<{ at: number; point: Point; target: string }[]>([]);
   const layoutKey = useRef('');
   const [clock, setClock] = useState(performance.now());
@@ -69,7 +79,9 @@ export function App() {
   const request = useRef(0);
   const pageFocused = useRef(true);
   const inputViewport = useRef({ ...viewport(), pixelRatio: window.devicePixelRatio || 1 });
-  const [savedStore] = useState(() => new SavedCalibrationStore());
+  const [savedStore] = useState(() => new ProfileStore());
+  // Named profiles: whose saved calibration the single saved record belongs to.
+  const [profiles, setProfiles] = useState<{ list: Profile[]; active: Profile; status: string }>(() => { try { return { list: savedStore.profiles(), active: savedStore.active(), status: '' }; } catch { return { list: [], active: { id: 'default', name: 'Default', createdAt: 0 }, status: '' }; } });
   const [savedModel, setSavedModel] = useState<SavedModel | null>(null);
   const savedModelRef = useRef<SavedModel | null>(null);
   const [savedStatus, setSavedStatus] = useState('');
@@ -86,10 +98,19 @@ export function App() {
   const validationRun = useRef<ValidationRun | null>(null);
   const [validation, setValidation] = useState<ValidationState>({ kind: 'ready' });
   const [lastCheck, setLastCheck] = useState<CheckSummary | null>(null);
+  // Aggregates of how the last calibration trained (held-out errors, blend weight); shown with the check results.
+  const lastTraining = useRef<TrainingReport | null>(null);
+  const savedRun = useRef<{ run: CalibrationRun; lease: number } | null>(null);
   const [settingsPage, setSettingsPage] = useState<SettingsPage>('settings');
   // Development replay recording: off by default, explicit per session, exported only by a button press.
   const [replay, setReplay] = useState({ recording: false, count: 0, status: '' });
   const replayRef = useRef(replay);
+  // Development test sessions: raw camera video plus the dot/label timeline, one numbered sample per
+  // tester per calibration, kept in memory until saved or discarded.
+  const [testSessions, setTestSessions] = useState<{ enabled: boolean; tester: string; recording: string; sessions: RecordedSession[]; status: string }>({ enabled: false, tester: '', recording: '', sessions: [], status: '' });
+  const testSessionsRef = useRef(testSessions);
+  const sessionRecorder = useRef<TestSessionRecorder | null>(null);
+  const sampleCounts = useRef(new Map<string, number>());
   // A finished free-flow check personalizes navigation before the first selection: its measured
   // offsets seed the drift correction (fixing a pointer that sits consistently above or below the
   // gaze) and its leftover error sets the target classifier's noise. Aggregates only, never samples.
@@ -98,14 +119,16 @@ export function App() {
     if (validation.kind !== 'complete' || usedCheck.current === validation.result) return;
     usedCheck.current = validation.result;
     const { result } = validation;
-    setLastCheck(summarizeCheck(result, Date.now()));
+    setLastCheck(summarizeCheck(result, Date.now(), lastTraining.current));
+    // The check measured both estimators: navigation uses the blend that scored best, and the saved calibration follows.
+    if (result.kind === 'measured' && result.estimators?.blend) void applyBlend(result.estimators.blend.weight);
     if (result.kind !== 'measured' || !result.corrections) {
       if (import.meta.env.DEV) console.info('[calibration models] check had too little data to compare models or seed navigation');
       return;
     }
     const { corrections } = result;
     const personal = personalizationFromCheck(corrections, result.viewport);
-    const seeded = personal ? learning.seed(personal.pairs, result.viewport) : 0;
+    const seeded = personal ? learning.seed(personal.pairs, result.viewport, frameRef.current.pose) : 0;
     if (personal) classifier.setNoise(personal.sigmaPx);
     if (!import.meta.env.DEV) return;
     console.info(`[calibration models] ${result.condition} check, ${corrections.references} references, held-out error in px`);
@@ -127,6 +150,22 @@ export function App() {
   const [recovery, setRecovery] = useState('');
   const missingSince = useRef<number | null>(null);
   const phase = session.kind === 'camera' || session.kind === 'simulation' ? session.phase : session.kind;
+
+  // An optional team model (trained offline on the team's recordings) becomes the calibration starting point.
+  // It is on by default only when its held-out evaluation shows it helps people it was not trained on.
+  const [teamModel, setTeamModel] = useState<TeamModel | null>(null);
+  const teamModelRef = useRef<TeamModel | null>(null);
+  useEffect(() => {
+    let live = true;
+    void loadTeamModel().then(model => {
+      if (!live || !model) return;
+      teamModelRef.current = model; setTeamModel(model);
+      const next = { ...settingsRef.current, team: model.evaluation.improves };
+      settingsRef.current = next; setSettings(next);
+      camera.setBaseEstimator(next.team ? model.weights : null);
+    });
+    return () => { live = false; };
+  }, []);
 
   useEffect(() => {
     try { const saved = savedStore.load(); savedModelRef.current = saved; setSavedModel(saved); }
@@ -158,6 +197,16 @@ export function App() {
     }
   }
 
+  async function applyBlend(weight: number) {
+    try {
+      const applied = await camera.setBlend(weight);
+      if (applied === null) return;
+      lastTraining.current = lastTraining.current ? { ...lastTraining.current, geometric: lastTraining.current.geometric ? { ...lastTraining.current.geometric, weight: applied } : null } : null;
+      const saved = savedRun.current;
+      if (saved && saved.run === calibrationRun.current && saved.lease === savedStore.lease) await saveTrainedCalibration(saved.run, saved.lease);
+    } catch (error) { if (import.meta.env.DEV) console.warn('[estimators] blend not applied', error); }
+  }
+
   function recordTrail(point: Point | null | undefined, target: string | null, at: number) {
     if (!point || !target || !Number.isFinite(at)) return;
     trail.current = [...trail.current.filter(sample => at - sample.at <= TRAIL_MS), { at, point, target }];
@@ -170,7 +219,7 @@ export function App() {
     trail.current = [];
     if (!settingsRef.current.learning || !allowsLearning(headGuard.current.feedback(performance.now()))) return;
     const rect = inputLayout().targets.find(target => target.id === id);
-    if (rect) learning.learn(estimates, rect, viewport());
+    if (rect) learning.learn(estimates, rect, viewport(), frameRef.current.pose);
   }
 
   function updateDwell(event: DwellEvent) {
@@ -182,6 +231,46 @@ export function App() {
     if (result.selected) selectTarget(result.selected, true);
   }
 
+  function endRefit() { refit.current = null; setRefitState(null); }
+
+  /** The camera moved with the screen: what was measured in the old camera pose no longer applies. */
+  function cameraMoved(frame: GazeFrame, now: number) {
+    const current = sessionRef.current;
+    if (current.kind !== 'camera') return;
+    if (current.phase === 'validation') {
+      const run = validationRun.current;
+      if (run && (run.state.kind === 'running' || run.state.kind === 'paused')) { run.cancel('camera'); setValidation(run.state); clearInput(); setAnnouncement('The screen moved. Start the check again.'); }
+      return;
+    }
+    if (current.phase === 'calibration') {
+      if (['moving', 'settling', 'sampling', 'collecting', 'reading'].includes(calibrationRun.current.state.kind)) { pauseCalibration(); setRecovery('Screen moved'); setAnnouncement('The screen moved. Continue or restart the calibration.'); }
+      return;
+    }
+    if (current.phase !== 'compose' || settingsOpenRef.current || controlsRef.current) return;
+    // Head reference, learned corrections and their posture cells were all measured relative to the old camera pose.
+    headGuard.current = new HeadPositionGuard();
+    learning.reset();
+    cancelGaze();
+    refit.current = new QuickRefit(viewport(), now);
+    setRefitState(refit.current.state);
+    setAnnouncement(`The screen moved by about ${Math.abs(frame.camera?.tiltDeg ?? 0).toFixed(0)} degrees. Look at the dot to re-align.`);
+  }
+
+  /** Feeds the one-dot refit; returns true while it owns the frame. */
+  function stepRefit(observed: GazeFrame, now: number): boolean {
+    const active = refit.current;
+    if (!active) return false;
+    const result = active.observe(observed, now);
+    setRefitState(active.state);
+    if (result.kind === 'running') return true;
+    endRefit();
+    if (result.kind === 'measured') {
+      learning.seed([result.pair], viewport(), observed.pose);
+      setAnnouncement('Re-aligned.');
+    } else setAnnouncement('Could not re-align; navigation continues with the previous calibration.');
+    return true;
+  }
+
   function cancelGaze() {
     blink.reset(); setBlinkPreview(null); simulatedClosureUntil.current = 0;
     updateDwell({ type: 'reset' });
@@ -191,7 +280,7 @@ export function App() {
   }
 
   function clearInput() {
-    cancelGaze();
+    cancelGaze(); endRefit();
     frameRef.current = lostFrame;
     setFrame(lostFrame);
     simulationPoint.current = null;
@@ -205,12 +294,14 @@ export function App() {
     frameRef.current = next;
     setFrame(next);
     setClock(now);
+    if (next.camera?.moved) cameraMoved(next, now);
     if (current.kind === 'camera' && (current.phase === 'validation' || current.phase === 'compose')) {
       const guard = headGuard.current;
       guard.observe({ face: next.facePresent, at: next.at, pose: next.pose }, now);
       if (current.phase === 'compose') { const feedback = guard.feedback(now); if (feedback.kind === 'setup' && feedback.stable) guard.establishReference(now); }
     }
     if (settingsOpenRef.current || controlsRef.current || document.hidden || !pageFocused.current || (current.kind !== 'camera' && current.kind !== 'simulation')) return;
+    if (current.kind === 'camera' && current.phase === 'compose' && stepRefit(observed, now)) return;
     if (freshFeatures(next, now)) setArea(gazeArea.sample(next, viewport(), now));
     else { gazeArea.reset(); setArea(null); }
     const blinkMode = settingsRef.current.selection === 'blink' && current.phase === 'compose';
@@ -218,7 +309,12 @@ export function App() {
     if (current.kind === 'camera' && current.phase === 'calibration') {
       const run = calibrationRun.current;
       try {
-        await run.capture(next, now, (point, at) => camera.collect(point, at, run.viewport));
+        await run.capture(next, now, async (point, at) => {
+          const accepted = await camera.collect(point, at, run.viewport);
+          if (accepted) sessionRecorder.current?.event(at, { type: 'label', x: point.x / run.viewport.width - .5, y: point.y / run.viewport.height - .5, stage: run.state.stage });
+          return accepted;
+        });
+        if (sessionRecorder.current && ['moving', 'settling', 'sampling', 'collecting'].includes(run.state.kind)) sessionRecorder.current.dot(next.at, 'calibration', `${run.state.stage}:${run.state.kind}`, run.point.x / run.viewport.width - .5, run.point.y / run.viewport.height - .5);
         if (run === calibrationRun.current && sessionRef.current.kind === 'camera') {
           if (run.state.kind === 'collected' && (document.hidden || !pageFocused.current)) openControls();
           syncCalibration(); advanceCalibration();
@@ -244,6 +340,9 @@ export function App() {
     if (current.kind === 'camera' && current.phase === 'validation') {
       const run = validationRun.current;
       const admitted = run?.admit(next, now) === true;
+      const recorder = sessionRecorder.current, position = run?.position;
+      if (recorder && run && position) recorder.dot(next.at, 'check', position.stage, position.point.x / run.viewport.width - .5, position.point.y / run.viewport.height - .5);
+      if (recorder && run && admitted && run.lastAdmitted?.at === next.at) recorder.event(next.at, { type: 'check', x: run.lastAdmitted.target.x / run.viewport.width - .5, y: run.lastAdmitted.target.y / run.viewport.height - .5, index: run.lastAdmitted.index });
       if (admitted && replayRef.current.recording && run?.lastAdmitted?.at === next.at) void recordReplay(run.lastAdmitted.target, next.at, run.viewport);
       if (run) setValidation(run.state);
       return;
@@ -280,6 +379,7 @@ export function App() {
   }
 
   function fail(error: unknown) {
+    endTestSession('camera failure', false);
     closeSettings(); closeControls(); setRecovery('');
     ++request.current;
     savedStore.invalidate();
@@ -293,6 +393,7 @@ export function App() {
   function resetLabels() {
     inputViewport.current = { ...viewport(), pixelRatio: window.devicePixelRatio || 1 };
     learning.reset(); classifier.setNoise(null); headGuard.current = new HeadPositionGuard();
+    lastTraining.current = null; savedRun.current = null;
     savedStore.invalidate(); chooseSaved(false); setRestoring(false); restoringRef.current = false;
     setSavedStatus(previous => previous.startsWith('Saving calibration') ? 'Calibration was not saved before the session ended.' : previous);
     clearValidation();
@@ -323,6 +424,7 @@ export function App() {
   }
 
   function stopSession(pause = false) {
+    endTestSession(pause ? 'paused' : 'stopped', false);
     closeControls(); setSimulationEntry(false);
     ++request.current;
     camera.stop();
@@ -349,6 +451,7 @@ export function App() {
   }
 
   async function resetCalibration() {
+    endTestSession('recalibrated', false);
     chooseSaved(false);
     closeSettings(); closeControls(); stopSpeech(); clearInput(); resetLabels();
     const run = calibrationRun.current;
@@ -369,6 +472,7 @@ export function App() {
   async function trainCalibration() {
     const run = calibrationRun.current;
     if (run.state.stage !== 'head' || !run.beginTraining()) return;
+    sessionRecorder.current?.event(performance.now(), { type: 'train' });
     const saveLease = savedStore.lease;
     clearInput(); syncCalibration(); camera.preview(false);
     try {
@@ -376,9 +480,12 @@ export function App() {
       if (!trained && run === calibrationRun.current && sessionRef.current.kind === 'camera') throw new Error('Training did not finish');
       if (trained && run === calibrationRun.current && sessionRef.current.kind === 'camera' && sessionRef.current.phase === 'calibration' && run.finishTraining()) {
         syncCalibration(); clearInput(); camera.preview(false);
+        sessionRecorder.current?.event(performance.now(), { type: 'trained' });
         prepareValidation();
         send({ type: 'calibrated', destination: 'validation' });
         setAnnouncement('Calibration trained locally.');
+        void Promise.resolve().then(() => camera.trainingReport()).then(report => { if (run === calibrationRun.current) { lastTraining.current = report; if (import.meta.env.DEV && report) console.info('[calibration training]', report); } }).catch(() => {});
+        savedRun.current = { run, lease: saveLease };
         void saveTrainedCalibration(run, saveLease);
       }
     } catch (error) { if (run === calibrationRun.current && sessionRef.current.kind === 'camera') fail(error); }
@@ -444,6 +551,43 @@ export function App() {
     }
   }
 
+  function refreshProfiles(status = '') {
+    try { setProfiles({ list: savedStore.profiles(), active: savedStore.active(), status }); }
+    catch (error) { setProfiles(previous => ({ ...previous, status: error instanceof Error ? error.message : 'Profiles are unavailable.' })); }
+  }
+  function reloadSavedModel() {
+    try { const saved = savedStore.load(); savedModelRef.current = saved; setSavedModel(saved); return saved; }
+    catch { savedModelRef.current = null; setSavedModel(null); setSavedStatus('Saved calibration could not be loaded. Recalibrate or delete it in Settings.'); return null; }
+  }
+  /** Switching the person: their saved calibration becomes the one offered; a running camera session recalibrates. */
+  function selectProfile(id: string) {
+    if (restoringRef.current || id === profiles.active.id) return;
+    clearInput(); stopSpeech();
+    try { savedStore.select(id); } catch (error) { refreshProfiles(error instanceof Error ? error.message : 'Could not switch profile.'); return; }
+    const saved = reloadSavedModel();
+    refreshProfiles();
+    setSavedStatus(saved ? `Profile ${savedStore.active().name}: saved calibration available.` : `Profile ${savedStore.active().name}: no saved calibration yet.`);
+    // With the camera on, the new person starts afresh and is offered their own saved calibration.
+    if (sessionRef.current.kind === 'camera') void resetCalibration().then(() => { if (sessionRef.current.kind === 'camera' && sessionRef.current.phase === 'calibration' && calibrationRun.current.state.kind === 'ready') chooseSaved(savedModelRef.current !== null); });
+    else chooseSaved(false);
+  }
+  function createProfile(name: string) {
+    try { const profile = savedStore.create(name); refreshProfiles(); selectProfile(profile.id); }
+    catch (error) { refreshProfiles(error instanceof Error ? error.message : 'Could not add the profile.'); }
+  }
+  function renameProfile(id: string, name: string) {
+    try { savedStore.rename(id, name); refreshProfiles(); }
+    catch (error) { refreshProfiles(error instanceof Error ? error.message : 'Could not rename the profile.'); }
+  }
+  function removeProfile(id: string) {
+    if (restoringRef.current) return;
+    clearInput();
+    const wasActive = id === profiles.active.id;
+    try { savedStore.remove(id); } catch (error) { refreshProfiles(error instanceof Error ? error.message : 'Could not remove the profile.'); return; }
+    refreshProfiles();
+    if (wasActive) { reloadSavedModel(); chooseSaved(false); setSavedStatus(`Profile removed. Now using ${savedStore.active().name}.`); if (sessionRef.current.kind === 'camera') void resetCalibration(); }
+  }
+
   async function deleteSavedCalibration() {
     clearInput(); stopSpeech();
     const wasRestoring = restoringRef.current;
@@ -480,6 +624,7 @@ export function App() {
         setRecovery('Face not detected');
         return;
       }
+      if (state.kind === 'ready') startTestSession(performance.now());
       trackingWasUsable.current = true;
       camera.preview(false);
       syncCalibration();
@@ -530,13 +675,62 @@ export function App() {
     if (await camera.record(point, at, box)) updateReplay({ count: replayRef.current.count + 1 });
   }
 
+  function updateTestSessions(patch: Partial<typeof testSessions>) {
+    const next = { ...testSessionsRef.current, ...patch };
+    testSessionsRef.current = next; setTestSessions(next);
+  }
+
+  function downloadBlob(blob: Blob, name: string) {
+    const url = URL.createObjectURL(blob), anchor = document.createElement('a');
+    anchor.href = url; anchor.download = name;
+    document.body.append(anchor); anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  /** Starts recording one numbered sample for the current tester (development builds only). */
+  function startTestSession(at: number) {
+    const state = testSessionsRef.current;
+    if (!import.meta.env.DEV || !state.enabled || sessionRecorder.current) return;
+    const stream = camera.mediaStream();
+    if (!stream || typeof MediaRecorder === 'undefined') { updateTestSessions({ status: 'Recording is not available in this browser.' }); return; }
+    const tester = state.tester.trim() || 'Tester';
+    const sample = (sampleCounts.current.get(tester) ?? 0) + 1;
+    try {
+      const geometry = camera.geometry();
+      const recorder = new TestSessionRecorder(stream, { tester, sample, model: MODEL_VERSION, viewport: calibrationRun.current.viewport, pixelRatio: window.devicePixelRatio || 1, camera: geometry ? { width: geometry.width, height: geometry.height } : null });
+      sampleCounts.current.set(tester, sample);
+      sessionRecorder.current = recorder;
+      recorder.event(at, { type: 'calibration-start' });
+      updateTestSessions({ recording: `${tester} #${sample}`, status: `Recording ${tester} #${sample}: calibrate, then finish the free-flow check.` });
+    } catch (error) { updateTestSessions({ status: `Could not start recording: ${error instanceof Error ? error.message : 'unknown error'}` }); }
+  }
+
+  function endTestSession(reason: string, complete: boolean, live: SessionManifest['live'] = null) {
+    const recorder = sessionRecorder.current;
+    if (!recorder) return;
+    sessionRecorder.current = null;
+    void recorder.stop(reason, complete, live).then(session => {
+      // Keep the six most recent samples in memory; each is tens of megabytes.
+      const sessions = [session, ...testSessionsRef.current.sessions].slice(0, 6);
+      updateTestSessions({ recording: '', sessions, status: `${session.tester} #${session.sample} recorded (${Math.round(session.durationMs / 1000)} s${complete ? '' : `, ${reason}: no complete check`}). Save it in Settings.` });
+    }).catch(error => updateTestSessions({ recording: '', status: `Recording failed: ${error instanceof Error ? error.message : 'unknown error'}` }));
+  }
+
+  function saveTestSession(id: string, videoOnly: boolean) {
+    const session = testSessionsRef.current.sessions.find(s => s.id === id);
+    if (!session) return;
+    const base = sessionBaseName(session.manifest);
+    if (videoOnly) downloadBlob(session.video, `${base}.webm`);
+    else downloadBlob(session.file(), `${base}.clarte-session`);
+  }
+
   /** Writes the recorded replay set to a file the person chooses to keep; nothing is stored by the app. */
   async function exportReplayFile() {
     try {
       const exported = await camera.exportReplay();
       if (!exported || !exported.entries.length) { updateReplay({ status: 'Nothing recorded yet. Turn recording on, then calibrate and run a check.' }); return; }
       const geometry = camera.geometry();
-      const blob = buildReplayFile({ createdAt: Date.now(), model: MODEL_VERSION, viewport: viewport(), pixelRatio: window.devicePixelRatio || 1, camera: geometry ? { width: geometry.width, height: geometry.height } : null }, exported.entries, exported.images);
+      const blob = buildReplayFile({ createdAt: Date.now(), model: MODEL_VERSION, viewport: viewport(), pixelRatio: window.devicePixelRatio || 1, camera: geometry ? { width: geometry.width, height: geometry.height } : null, crop: settingsRef.current.normalizedCrop ? 'normalized' : 'upstream' }, exported.entries, exported.images);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url; anchor.download = `clarte-replay-${new Date().toISOString().replace(/[:.]/g, '-')}.bin`;
@@ -556,11 +750,15 @@ export function App() {
   }
 
   function changeSettings(next: SettingsValue) {
+    const previousTeam = settingsRef.current.team, previousCrop = settingsRef.current.normalizedCrop;
     settingsRef.current = next;
     setSettings(next);
     camera.preview(false);
     clearInput();
-    if (sessionRef.current.kind === 'camera' && sessionRef.current.phase === 'calibration' && calibrationRun.current.pace !== next.pace) resetCalibration();
+    const teamChanged = next.team !== previousTeam, cropChanged = next.normalizedCrop !== previousCrop;
+    if (teamChanged) camera.setBaseEstimator(next.team && teamModelRef.current ? teamModelRef.current.weights : null);
+    if (cropChanged) camera.setNormalizedCrop(next.normalizedCrop);
+    if (sessionRef.current.kind === 'camera' && (sessionRef.current.phase === 'calibration' && (calibrationRun.current.pace !== next.pace || teamChanged) || cropChanged)) resetCalibration();
     stopSpeech();
   }
 
@@ -598,7 +796,7 @@ export function App() {
     if (!validationRun.current || !['ready', 'intro', 'intro-paused'].includes(validationRun.current.state.kind) || validationRun.current.motion !== checkMotion()) prepareValidation();
     const run = validationRun.current;
     if (run?.state.kind === 'ready') { run.introduce(performance.now()); clearInput(); setValidation(run.state); return; }
-    if (run?.start(performance.now())) { clearInput(); stopSpeech(); setValidation(run.state); }
+    if (run?.start(performance.now())) { sessionRecorder.current?.event(performance.now(), { type: 'check-start' }); clearInput(); stopSpeech(); setValidation(run.state); }
   }
 
   function pauseValidation(reason: PauseReason) {
@@ -629,6 +827,9 @@ export function App() {
 
   function openPhrases() {
     const run = validationRun.current;
+    if (run?.state.kind === 'complete') sessionRecorder.current?.event(performance.now(), { type: 'check-complete' });
+    const result = run?.state.kind === 'complete' ? run.state.result : null;
+    endTestSession(result ? 'check complete' : 'check skipped', Boolean(result), result?.kind === 'measured' ? { medianPx: result.medianPx, p90Px: result.p90Px, bins: result.bins } : null);
     if (run && run.state.kind !== 'complete') { run.cancel('manual'); setValidation(run.state); }
     stopSpeech();
     clearInput();
@@ -649,6 +850,7 @@ export function App() {
         } else cancelGaze();
       } else {
         updateDwell({ type: 'tick', now });
+        if (current.kind === 'camera' && current.phase === 'compose' && refit.current && refit.current.expired(now)) { endRefit(); setAnnouncement('Could not re-align; navigation continues with the previous calibration.'); }
         if (current.kind === 'camera') {
           const blinkMode = current.phase === 'compose' && settingsRef.current.selection === 'blink';
           if (blinkMode) { blink.tick(now); setBlinkPreview(blink.state.kind === 'preview' ? blink.state.target : null); }
@@ -707,8 +909,10 @@ export function App() {
       }
     };
     const storageChanged = (event: StorageEvent) => {
-      if (event.key !== null && event.key !== SAVED_CALIBRATION_KEY) return;
+      if (event.key !== null && event.key !== SAVED_CALIBRATION_KEY && event.key !== PROFILES_KEY) return;
       savedStore.externalChange();
+      refreshProfiles();
+      if (event.key === PROFILES_KEY) return;
       clearInput();
       try { const saved = savedStore.load(); savedModelRef.current = saved; setSavedModel(saved); setSavedStatus(saved ? 'Saved calibration changed in another tab.' : 'Saved calibration removed in another tab.'); }
       catch { savedModelRef.current = null; setSavedModel(null); setSavedStatus('Saved calibration changed but could not be loaded. Recalibrate or delete it.'); }
@@ -791,27 +995,42 @@ export function App() {
         {!active && <StagePage title={session.kind === 'starting' ? 'Starting camera' : session.kind === 'error' ? 'Camera unavailable' : session.kind === 'paused' ? 'Paused' : 'Start camera'} alert={session.kind === 'error'}>
           {session.kind === 'starting' ? <button onClick={() => stopSession()}>Cancel</button> : <button className="primary-button" onClick={() => { if (session.kind === 'paused' && session.mode === 'simulation') simulate(); else void startCamera(); }}>{session.kind === 'error' ? 'Retry' : session.kind === 'paused' ? 'Continue' : 'Start camera'}</button>}
           {session.kind === 'error' && <button onClick={() => stopSession()}>Stop</button>}
+          {session.kind !== 'starting' && <button onClick={openSettings}>Settings</button>}
         </StagePage>}
         {calibrationMode && <Calibration state={calibration} point={calibrationRun.current.point} viewport={calibrationRun.current.viewport} pace={settings.pace} status={savedStatus} recovery={recovery}
-          saved={savedChoice && Boolean(savedModel)} compatible={savedCompatibility} busy={restoring} onUse={() => { void useSavedCalibration(); }}
+          saved={savedChoice && Boolean(savedModel)} compatible={savedCompatibility} busy={restoring} profile={profiles.list.length > 1 ? profiles.active.name : ''} onUse={() => { void useSavedCalibration(); }}
           onToggle={toggleCalibration} onRestart={() => { void resetCalibration(); }} onCancel={() => stopSession()} />}
         {validationMode && <Validation state={validation} position={validationRun.current?.position ?? null} recovery={recovery} reducedMotion={checkMotion() === 'reduced'}
           onStart={startValidation} onPause={() => pauseValidation('manual')} onResume={resumeValidation} onCancel={() => stopSession()}
           onRestart={() => { prepareValidation(); startValidation(); }} onRecalibrate={() => { void resetCalibration(); }} onPhrases={openPhrases} />}
+        {composeMode && refitState && <section className="refit-stage dot-stage" aria-label="Re-aligning after the screen moved: look at the dot" role="status">
+          <p className="refit-title">Look at the dot</p>
+          <div className={`calibration-point phase-${refitState.kind}`} style={{ left: refitState.point.x, top: refitState.point.y, '--point-move': `${QUICK_REFIT.settleMs}ms` } as CSSProperties} aria-hidden="true" />
+        </section>}
         {composeMode && <section className="navigation-grid" aria-label={isSimulation ? 'Simulation targets, camera off' : 'Navigation targets'} onClick={event => background(event.target)}>
           {NAVIGATION_TARGETS.map(target => <DwellTarget key={target.id} id={target.id} label={target.label} state={dwell} preview={blinkPreview === target.id}
             selected={selected?.id === target.id} activation={selected?.id === target.id ? selected.sequence : 0} onClick={event => selectTarget(target.id, false, event.detail === 0)} />)}
         </section>}
       </>}
     </main>
+    {!controls && !settingsOpen && <button className="settings-toggle" aria-label="Settings" title="Settings" onClick={openSettings}><Icon name="settings" /></button>}
     {active && !controls && !settingsOpen && <button className="diagnostic-toggle" aria-label="Toggle gaze diagnostics" title="Toggle gaze diagnostics" aria-pressed={settings.pointer} onClick={() => { const next = { ...settingsRef.current, pointer: !settingsRef.current.pointer }; settingsRef.current = next; setSettings(next); }}><Icon name="eye" /></button>}
     <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
     <span className="sr-only" role="status">{isCamera ? 'Camera on' : isSimulation ? 'Simulation · camera off' : 'Camera off'}</span>
     {showDiagnostics && <div className="gaze-area" style={{ left: showDiagnostics.x, top: showDiagnostics.y, width: showDiagnostics.radius * 2, height: showDiagnostics.radius * 2 }} aria-hidden="true"><i /></div>}
     {settingsOpen && <Settings value={settings} camera={isCamera} simulation={isSimulation} canValidate={isCamera && !calibrationMode && calibrationRun.current.state.kind === 'complete'}
+      profiles={{ list: profiles.list, active: profiles.active, status: profiles.status, hasSaved: id => { try { return savedStore.hasSaved(id); } catch { return false; } }, onSelect: selectProfile, onCreate: createProfile, onRename: renameProfile, onRemove: removeProfile }}
       onChange={changeSettings} onClose={closeSettings} savedStatus={savedStatus} hasSaved={Boolean(savedModel) || Boolean(savedStatus)} fullscreenError={fullscreenError} onFullscreen={() => { void fullscreen(); }}
-      check={lastCheck} page={settingsPage} onPage={setSettingsPage}
-      developer={import.meta.env.DEV ? { recording: replay.recording, count: replay.count, status: replay.status, onRecording: setReplayRecording, onSave: () => { void exportReplayFile(); } } : null}
+      check={lastCheck} page={settingsPage} onPage={setSettingsPage} team={teamModel ? { improves: teamModel.evaluation.improves, people: teamModel.people, meanPretrainedPx: teamModel.evaluation.meanPretrainedPx, meanTeamPx: teamModel.evaluation.meanTeamPx } : null}
+      developer={import.meta.env.DEV ? { recording: replay.recording, count: replay.count, status: replay.status, onRecording: setReplayRecording, onSave: () => { void exportReplayFile(); },
+        sessions: {
+          enabled: testSessions.enabled, tester: testSessions.tester, recording: testSessions.recording, status: testSessions.status,
+          items: testSessions.sessions.map(s => ({ id: s.id, label: `${s.tester} #${s.sample}`, complete: s.complete, seconds: Math.round(s.durationMs / 1000), megabytes: s.video.size / 1e6 })),
+          onEnabled: enabled => updateTestSessions({ enabled, status: enabled ? 'Each Calibrate starts a new sample for this tester and stops when the free-flow check ends.' : '' }),
+          onTester: tester => updateTestSessions({ tester }),
+          onSave: id => saveTestSession(id, false), onVideo: id => saveTestSession(id, true),
+          onDiscard: id => updateTestSessions({ sessions: testSessionsRef.current.sessions.filter(s => s.id !== id) }),
+        } } : null}
       onDeleteSaved={() => { void deleteSavedCalibration(); }} onReset={() => { void resetCalibration(); }} onValidate={validate} onSimulation={simulate} onCamera={() => { void startCamera(); }} onStop={() => { closeSettings(); stopSession(); }} />}
   </div>;
 }

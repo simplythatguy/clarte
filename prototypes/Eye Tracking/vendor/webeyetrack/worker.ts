@@ -19,6 +19,7 @@ self.onmessage = async ({ data }: MessageEvent<unknown>) => {
       try { if (!(await tf.setBackend('webgl'))) await tf.setBackend('cpu'); } catch { await tf.setBackend('cpu'); }
       await tf.ready();
       const tracker = new WebEyeTrack();
+      tracker.normalizeCrop = !!payload && typeof payload === 'object' && 'normalizeCrop' in payload && payload.normalizeCrop === true;
       try { await tracker.initialize(`${self.location.origin}/vendor/webeyetrack`); }
       catch (error) { tracker.dispose(); throw error; }
       engine = new CalibrationEngine(tracker);
@@ -30,9 +31,12 @@ self.onmessage = async ({ data }: MessageEvent<unknown>) => {
         value = await engine.step(payload.frame, payload.at, payload.epoch);
       } else if (type === 'collect' && payload && typeof payload === 'object' && 'at' in payload && typeof payload.at === 'number' && 'x' in payload && typeof payload.x === 'number' && 'y' in payload && typeof payload.y === 'number') {
         value = engine.collect(payload.at, payload.x, payload.y);
-      } else if (type === 'train') value = await engine.train();
+      } else if (type === 'train') value = await engine.train(payload ?? undefined);
+      else if (type === 'trainingReport') value = engine.trainingReport();
+      else if (type === 'blend' && payload && typeof payload === 'object' && 'weight' in payload && typeof payload.weight === 'number') value = engine.setBlend(payload.weight);
       else if (type === 'exportCalibration') value = engine.exportCalibration();
       else if (type === 'restoreCalibration') value = engine.restoreCalibration(payload);
+      else if (type === 'baseEstimator' && payload && typeof payload === 'object' && 'weights' in payload) value = engine.setBaseEstimator(payload.weights);
       else if (type === 'recording' && development && payload && typeof payload === 'object' && 'enabled' in payload && typeof payload.enabled === 'boolean') { engine.setRecording(payload.enabled); value = engine.replayCount; }
       else if (type === 'record' && development && payload && typeof payload === 'object' && 'at' in payload && typeof payload.at === 'number' && 'x' in payload && typeof payload.x === 'number' && 'y' in payload && typeof payload.y === 'number') {
         value = await engine.record(payload.at, payload.x, payload.y);

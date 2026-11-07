@@ -1,5 +1,6 @@
 import { MODEL_FILES } from './tracking';
-const assets = new Set(MODEL_FILES);
+// The optional team model is a static local asset like the model files.
+const assets = new Set([...MODEL_FILES, '/team/team-estimator.json']);
 
 export function isLocalModelGet(url: string, method: string, origin: string): boolean {
   try {

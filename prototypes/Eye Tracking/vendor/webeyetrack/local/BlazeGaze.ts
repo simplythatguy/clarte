@@ -38,6 +38,17 @@ export default class BlazeGaze {
         });
     }
 
+    /** The frozen image encoder and the trainable gaze head, as nested models sharing this model's weights. */
+    encoder(): tf.LayersModel {
+        if (!this.model) throw new Error('Model is not loaded');
+        return this.model.getLayer('cnn_encoder') as unknown as tf.LayersModel;
+    }
+
+    head(): tf.LayersModel {
+        if (!this.model) throw new Error('Model is not loaded');
+        return this.model.getLayer('gaze_mlp') as unknown as tf.LayersModel;
+    }
+
     exportEstimator(): number[][] {
         return this.trainableVariables().map(weight => Array.from(weight.dataSync()));
     }

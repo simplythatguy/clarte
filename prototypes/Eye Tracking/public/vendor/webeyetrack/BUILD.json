@@ -5030,11 +5030,23 @@
     },
     {
       "path": "src/core/blink.ts",
-      "sha256": "9ba34b2c1326da3fc7e285a7a11d7efff1c0d6ad58247e8a6bb54edb0a8ae7e0"
+      "sha256": "0e064231a4d3208d24dd895ae72f2619e2e318e58745f6f1509be611f1e1de61"
+    },
+    {
+      "path": "src/core/calibration-models.ts",
+      "sha256": "0ed49c1f09201bd44eae3da26e37b537757a613739d2cbe24c974567a62f3ee6"
+    },
+    {
+      "path": "src/core/camera-motion.ts",
+      "sha256": "e0dc8a4ec7e5a406607b668c636b69401de1a8fa123608c06a35e9ee5d080a9b"
     },
     {
       "path": "src/core/dwell.ts",
       "sha256": "ceee6d3b8eae594ed9fe2bb75e72cd30738447776ad4a5284edda8da2807cbb5"
+    },
+    {
+      "path": "src/core/geometric-gaze.ts",
+      "sha256": "b453961268d87d8f04ae82d62e049ce8652031c228101b44b40dd6201520496f"
     },
     {
       "path": "src/core/head-position.ts",
@@ -5042,23 +5054,31 @@
     },
     {
       "path": "src/core/network.ts",
-      "sha256": "a6175c012ce7960fee6b221ae98d7cb905c8bd8cb34745323b58ed9a85a2bd2e"
+      "sha256": "18b9a997324f8b7e25c89d4f8f306e4b3e3b36442c028d14fecb015a2faa9cc1"
+    },
+    {
+      "path": "src/core/pose-normalize.ts",
+      "sha256": "d19ef485349c7eb8d0f88e0f83b93442b57459ce59068f0797939a945bdffcc4"
     },
     {
       "path": "src/core/saved-calibration.ts",
-      "sha256": "7ff5c5f829f33a2149cd60371f2c2bb8c165f3b1e232f92f541b1a3772ef3aee"
+      "sha256": "cc75c923e2a3e04d4ee8a7fa6d6d07e234a5c10e23292b6cde39a8103f8cf0c9"
     },
     {
       "path": "src/core/tracking.ts",
-      "sha256": "4070885f73bcfde2c1cfe39fcdb8421a44f38f8f8f6273cc00f7d913b7e738cc"
+      "sha256": "f2ca257d033e17ee9de018cd4c960b024cf32914d252628405dde1f82c26d1bf"
+    },
+    {
+      "path": "src/core/training.ts",
+      "sha256": "a5e35a881c06a72374bc1401f02cca560155d4e854cb13d60a7f58b477941a06"
     },
     {
       "path": "src/core/worker-engine.ts",
-      "sha256": "3f3ab6744e7c6ae5431d2bdec48c5052b86350f4ce6a67e5bb7b81ecac9fd349"
+      "sha256": "bf2df7aeb50be5b8589347cc7f36e8643b9960844ed72ec92c8efe907f1ccf6c"
     },
     {
       "path": "vendor/webeyetrack/local/BlazeGaze.ts",
-      "sha256": "b3fb4278fcc50bf1d1564213494fd4ec4e8645d1914a0cd53257a9983ccf4a4a"
+      "sha256": "8804cfaaeebc66e361a4b4d58b283675d3b2959ee791101fa15fdd4d103432b1"
     },
     {
       "path": "vendor/webeyetrack/local/FaceLandmarkerClient.ts",
@@ -5066,7 +5086,7 @@
     },
     {
       "path": "vendor/webeyetrack/local/WebEyeTrack.ts",
-      "sha256": "2d4c60d96c2c4c032daaae4fc4ae1e81f8f0549c0c12cb81150b141f4eb8c9c1"
+      "sha256": "e90b66c1098ed6c291c95c17279df1771391158d78779d91e4c3cc4f19144d57"
     },
     {
       "path": "vendor/webeyetrack/local/utils/filter.ts",
@@ -5074,7 +5094,7 @@
     },
     {
       "path": "vendor/webeyetrack/local/utils/mathUtils.ts",
-      "sha256": "f58b120a967e7fb11e220687b5472d9143d274570b95b9237e21b13cfb620610"
+      "sha256": "ce1370a4185ae5a0ff80b2347b33180f183a5956f850d2ec236c0fb469e88383"
     },
     {
       "path": "vendor/webeyetrack/local/utils/safeSVD.ts",
@@ -5082,7 +5102,7 @@
     },
     {
       "path": "vendor/webeyetrack/worker.ts",
-      "sha256": "690098314a5edf95079c1db972ac750ef5cf6410aa6de289d6bfe7e774cb6adf"
+      "sha256": "6a8ce21f45e8cd282822499497d4ea1630999f97e8775af027d457cdca7ffda2"
     }
   ],
   "disabledInputs": [
@@ -5456,15 +5476,15 @@
     },
     {
       "path": "public/vendor/webeyetrack/worker.js",
-      "sha256": "2473495f19c6167f2b6dee10580c76f1c6efb81a2531941fc455c3bc5b145f20"
+      "sha256": "6964a641920197566954c6454c643205b8f3e5ae03cb12b14bca636e7440bb34"
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.LEGAL.txt",
-      "sha256": "05776f75bffc9e8b86a15ebba258caffc64f44b4a8ab0cf0b77da58a87e14314"
+      "sha256": "a061d880425bc63a5682ef257140b72f66b39f2b5e9fca88f700e3ead23dba60"
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.map",
-      "sha256": "28953ae13ababd6f339fa2e4265b2bf4ce7bfe98f64266cb0d2d0966154be350"
+      "sha256": "bf9a322947e16c826f6a790e5ab23dc4c9f3d09b8f29d7695b7e7a146e4e882f"
     }
   ]
 }

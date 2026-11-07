@@ -2,15 +2,44 @@ import { STALE_MS } from './dwell';
 import type { GazeFrame } from './tracking';
 import type { EyeState } from './tracking';
 export const BLINK_TIMING = { steadyMs: 2000, minimumClosedMs: 60, maximumClosedMs: 500, minimumOpenMs: 180, refractoryMs: 500 };
+/**
+ * Eye-openness thresholds adapt to the person. Eye aspect ratio when open differs a lot between
+ * people (and more with facial weakness), so fixed thresholds miss blinks on wide eyes and invent
+ * them on narrow ones. After enough frames, closed/open become fractions of this person's typical
+ * open ratio; until then the previous fixed values apply.
+ */
+export const EYE_OPENNESS = {
+  fixed: { closed: .2, open: .23 },
+  closedRatio: .6, openRatio: .72,
+  /** Thresholds never leave these bounds, whatever is measured. */
+  bounds: [.12, .3] as const,
+  /** Frames needed before adapting; frames are learned only when both eyes agree and are plausibly open. */
+  minimumSamples: 45, capacity: 150, agreement: .08,
+};
 /** Bilateral EAR hysteresis. A wink and missing/invalid measurements are unknown. */
 export class BilateralEyes {
   private state: EyeState = 'unknown';
+  private samples: number[] = [];
+  private thresholds = { ...EYE_OPENNESS.fixed };
+  /** Learned openness is a trait of the person, so a reset keeps it. */
   reset() { this.state = 'unknown'; }
+  get openness(): { closed: number; open: number; adapted: boolean } { return { ...this.thresholds, adapted: this.samples.length >= EYE_OPENNESS.minimumSamples }; }
   observe(left: number, right: number): EyeState {
-    if (![left,right].every(n => Number.isFinite(n) && n >= 0 && n <= 1) || (left < .2) !== (right < .2) || (left >= .23) !== (right >= .23)) this.state = 'unknown';
-    else if (left < .2 && right < .2) this.state = 'closed';
-    else if (left >= .23 && right >= .23) this.state = 'open';
+    const { closed, open } = this.thresholds;
+    if (![left, right].every(n => Number.isFinite(n) && n >= 0 && n <= 1) || (left < closed) !== (right < closed) || (left >= open) !== (right >= open)) this.state = 'unknown';
+    else if (left < closed && right < closed) this.state = 'closed';
+    else if (left >= open && right >= open) this.state = 'open';
+    if ([left, right].every(n => Number.isFinite(n) && n > EYE_OPENNESS.bounds[0] && n <= 1) && Math.abs(left - right) < EYE_OPENNESS.agreement) this.learn((left + right) / 2);
     return this.state;
+  }
+  private learn(ratio: number): void {
+    this.samples.push(ratio);
+    if (this.samples.length > EYE_OPENNESS.capacity) this.samples.shift();
+    if (this.samples.length < EYE_OPENNESS.minimumSamples || this.samples.length % 15 !== 0) return;
+    // Blinks are a small share of frames, so the median of plausible frames is the open ratio.
+    const sorted = [...this.samples].sort((a, b) => a - b), median = sorted[Math.floor(sorted.length / 2)];
+    const [lo, hi] = EYE_OPENNESS.bounds, clamp = (v: number) => Math.min(hi, Math.max(lo, v));
+    this.thresholds = { closed: clamp(median * EYE_OPENNESS.closedRatio), open: clamp(median * EYE_OPENNESS.openRatio) };
   }
 }
 export type BlinkSelectionState =

@@ -15,7 +15,8 @@
     "preview": "vite preview --host localhost --port 4318 --strictPort",
     "check:runtime": "node scripts/runtime-browser-check.mjs",
     "check:model": "node scripts/check-model-training.mjs",
-    "check:import": "node scripts/check-import.mjs"
+    "check:import": "node scripts/check-import.mjs",
+    "test:sessions": "node scripts/run-sessions.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "0.10.18",

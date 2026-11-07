@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits. Documents the four-column, two-row navigation grid. Document Check results and development-only replay recording."
+      "reason": "Standalone nested-path setup, current flow, privacy, license, verification commands and acceptance limits. Documents the four-column, two-row navigation grid. Document Check results and development-only replay recording. Document development-only test sessions and the replay runner. Document calibration training, adaptive blink thresholds, posture bank and the Settings button. Link the accuracy log. Document the geometric blend, camera-moved refit, profiles and the pose-normalized crop comparison."
     },
     {
       "path": "package.json",
@@ -43,7 +43,7 @@
     },
     {
       "path": "src/styles.css",
-      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics. Layout request: four-column, two-row navigation grid with uniform blue targets. Check results tables and offset map."
+      "reason": "Latest user request: light mode with dark text, visible reference dots, blue targets, distinct preview/selection and readable diagnostics. Layout request: four-column, two-row navigation grid with uniform blue targets. Check results tables and offset map. Settings note and test-session list. Settings toggle. Quick-refit overlay; inline profile controls."
     },
     {
       "path": "index.html",
@@ -51,11 +51,11 @@
     },
     {
       "path": "src/App.tsx",
-      "reason": "Accuracy request: head guard fed by real head pose gates learning from selections. Probabilistic target classifier seeded by the check, check results summary, development-only replay recording."
+      "reason": "Accuracy request: head guard fed by real head pose gates learning from selections. Probabilistic target classifier seeded by the check, check results summary, development-only replay recording. Development-only test-session recording per tester and sample; optional team starting estimator. Settings button on every page; posture-keyed correction bank. Estimator blend applied from the check; camera-moved re-anchoring and one-dot refit; named profiles; pose-normalized crop setting (dev)."
     },
     {
       "path": "tests/app.test.mjs",
-      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume. Accuracy request: target ids follow the four-column, two-row navigation grid. Follow the target classifier and check seeding."
+      "reason": "Retain eight boundary regressions for blur/hide deadline crossings and pending final acknowledgements, including adjacent controls and explicit resume. Accuracy request: target ids follow the four-column, two-row navigation grid. Follow the target classifier and check seeding. Covers the camera-moved reaction and named profiles."
     },
     {
       "path": "src/components/Targets.tsx",
@@ -63,19 +63,19 @@
     },
     {
       "path": "src/components/Settings.tsx",
-      "reason": "Accuracy request: a Learn from selections toggle for the in-memory selection correction. Check results page after the free-flow check; development-only replay recording controls."
+      "reason": "Accuracy request: a Learn from selections toggle for the in-memory selection correction. Check results page after the free-flow check; development-only replay recording controls. Team model setting; development-only test-session controls (tester name, record switch, Save session, Download video, Discard). Profile selector; pose-normalized crop toggle (dev)."
     },
     {
       "path": "src/core/webeyetrack.ts",
-      "reason": "Accuracy request: the pointer follows the unclipped estimate through a One Euro filter instead of the fixed-gain Kalman output. Development replay pass-through on the tracker runtime and camera session."
+      "reason": "Accuracy request: the pointer follows the unclipped estimate through a One Euro filter instead of the fixed-gain Kalman output. Development replay pass-through on the tracker runtime and camera session. Starting-estimator pass-through; camera stream accessor for development test-session recording. Training options and report pass-through. Blend weight and pose-normalized crop commands through the runtime and camera session."
     },
     {
       "path": "src/core/validation.ts",
-      "reason": "Accuracy request: score screen-correction models leave-one-reference-out on the check’s own samples, keep aggregates only, and expose the reference an admitted sample measured for development replay."
+      "reason": "Accuracy request: score screen-correction models leave-one-reference-out on the check’s own samples, keep aggregates only, and expose the reference an admitted sample measured for development replay. Scores the network and geometric estimates on the check and picks the blend weight; camera cancel reason."
     },
     {
       "path": "src/core/worker-engine.ts",
-      "reason": "Accuracy request: report head pose per frame. Development replay: optional, bounded, in-memory recording of instructed frames exported only by explicit request; off and unreachable in production."
+      "reason": "Accuracy request: report head pose per frame. Development replay: optional, bounded, in-memory recording of instructed frames exported only by explicit request; off and unreachable in production. Validated starting estimator before calibration. Bounded training options and training report. Fits the geometric estimator at training, blends it with the network, exports/restores it, runs camera-motion detection."
     },
     {
       "path": "tsconfig.json",
@@ -83,19 +83,19 @@
     },
     {
       "path": "vendor/webeyetrack/worker.ts",
-      "reason": "Development replay commands, accepted only when a development page initializes the worker."
+      "reason": "Development replay commands, accepted only when a development page initializes the worker. Starting-estimator command. Training options and report commands. Blend command; pose-normalized crop init option."
     },
     {
       "path": "public/vendor/webeyetrack/BUILD.json",
-      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json. Rebuilt by `npm run build:vendor`."
     },
     {
       "path": "public/vendor/webeyetrack/worker.js",
-      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json. Rebuilt by `npm run build:vendor`."
     },
     {
       "path": "public/vendor/webeyetrack/worker.js.map",
-      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json."
+      "reason": "Rebuilt by `npm run build:vendor` from the adapted worker and calibration engine sources; inputs and outputs are hashed in BUILD.json. Rebuilt by `npm run build:vendor`."
     },
     {
       "path": "src/core/head-position.ts",
@@ -103,7 +103,59 @@
     },
     {
       "path": "src/core/tracking.ts",
-      "reason": "Accuracy request: carry the head pose through the worker result parser and frame normalizer."
+      "reason": "Accuracy request: carry the head pose through the worker result parser and frame normalizer. Carries per-estimator estimates and camera motion on worker results and frames."
+    },
+    {
+      "path": "scripts/adapt-webeyetrack.py",
+      "reason": "Add `setBaseEstimator` so calibration can start from a team estimator. Real calibration training in adapt() with held-out early stopping. Pose-normalized crop option."
+    },
+    {
+      "path": "src/core/network.ts",
+      "reason": "Allow the one optional static team model file alongside the local model files."
+    },
+    {
+      "path": "vendor/webeyetrack/LOCAL-ADAPTATIONS.patch",
+      "reason": "Regenerated from the adapter after adding `setBaseEstimator`. Regenerated after the adapt() rewrite. Regenerated after the pose-normalization adaptation."
+    },
+    {
+      "path": "vendor/webeyetrack/local/WebEyeTrack.ts",
+      "reason": "Regenerated by the adapter: `setBaseEstimator`. Regenerated by the adapter: bounded calibration training with held-out early stopping and a training report. Regenerated by the adapter: optional pose-normalized eye crop and head vector."
+    },
+    {
+      "path": "src/core/blink.ts",
+      "reason": "Accuracy request: eye-openness thresholds adapt to the person within fixed bounds; blink selection logic unchanged."
+    },
+    {
+      "path": "vendor/webeyetrack/local/BlazeGaze.ts",
+      "reason": "Regenerated by the adapter: nested encoder/head accessors for calibration training."
+    },
+    {
+      "path": "public/vendor/webeyetrack/worker.js.LEGAL.txt",
+      "reason": "Rebuilt by `npm run build:vendor`: linked legal comments for the current worker inputs. Rebuilt by `npm run build:vendor`."
+    },
+    {
+      "path": "scripts/check-privacy.mjs",
+      "reason": "Follows the saved-calibration key set with the optional geometric field; audits the profile directory."
+    },
+    {
+      "path": "src/components/Calibration.tsx",
+      "reason": "Names the profile whose saved calibration is offered."
+    },
+    {
+      "path": "src/components/Validation.tsx",
+      "reason": "Shows when the check was cancelled because the camera moved."
+    },
+    {
+      "path": "src/core/saved-calibration.ts",
+      "reason": "Optional geometric estimator in the saved calibration record."
+    },
+    {
+      "path": "vendor/webeyetrack/local/utils/mathUtils.ts",
+      "reason": "Regenerated by the adapter: optional pre-warp homography composed into the face crop."
+    },
+    {
+      "path": "tests/validation.test.ts",
+      "reason": "Covers estimator scoring and blend selection on the free-flow check."
     }
   ],
   "files": [

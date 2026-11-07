@@ -37,7 +37,7 @@ $('run').addEventListener('click', async () => {
       const score = await harness.run(experiment, frames);
       scores.push(score);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${score.name}</td><td>${round(score.fitMedianPx)}</td><td>${round(score.lodoMedianPx)}</td><td>${round(score.lodoP90Px)}</td><td>${round(score.checkMedianPx)}</td><td>${round(score.checkP90Px)}</td>`;
+      tr.innerHTML = `<td>${score.name}</td><td>${round(score.fitMedianPx)}</td><td>${round(score.lodoMedianPx)}</td><td>${round(score.lodoP90Px)}</td><td>${round(score.checkMedianPx)}</td><td>${round(score.checkP90Px)}</td><td>${score.checkCell === null ? '—' : `${(score.checkCell * 100).toFixed(0)}%`}</td>`;
       rows.append(tr);
     }
     const best = scores.filter(s => s.checkMedianPx !== null).sort((a, b) => a.checkMedianPx! - b.checkMedianPx!)[0] ?? scores.filter(s => s.lodoMedianPx !== null).sort((a, b) => a.lodoMedianPx! - b.lodoMedianPx!)[0];

@@ -1,5 +1,6 @@
 import { calibrationPoints, READING_MS } from './calibration';
 import { compareCorrections, type CorrectionReport } from './calibration-models';
+import { compareEstimators, type EstimatorReport } from './geometric-gaze';
 import { STALE_MS } from './dwell';
 import type { GazeFrame, Point, Viewport } from './tracking';
 
@@ -10,11 +11,12 @@ export const VALIDATION = {
 export type CheckCondition = 'still' | 'turn';
 export type CheckMotion = 'smooth' | 'reduced';
 export type PauseReason = 'manual' | 'hidden' | 'focus' | 'settings';
-export type CancelReason = 'manual' | 'restart' | 'viewport' | 'motion' | 'session';
+/** `camera`: the camera itself moved (lid tilt), so the frozen check no longer measures the calibrated pose. */
+export type CancelReason = 'manual' | 'restart' | 'viewport' | 'motion' | 'session' | 'camera';
 type Metrics = { coverage: number; measurementMs: number; coveredMs: number; bins: number; targets: number };
 export type ValidationResult = Metrics & { condition: CheckCondition; motion: CheckMotion; viewport: Viewport } & (
-  /** `corrections`: how each screen-space correction model would score on this run, leave-one-target-out. */
-  | { kind: 'measured'; medianPx: number; p90Px: number; corrections: CorrectionReport | null }
+  /** `corrections`: how each screen-space correction model would score on this run, leave-one-target-out. `estimators`: the network and geometric estimates alone and their best blend, in pixels. */
+  | { kind: 'measured'; medianPx: number; p90Px: number; corrections: CorrectionReport | null; estimators: EstimatorReport | null }
   | { kind: 'insufficient' }
 );
 export type ValidationState =
@@ -84,7 +86,7 @@ export class ValidationRun {
   lastAdmitted: { at: number; target: Point; index: number } | null = null;
   private settleUntil = 0;
   private readonly eligible = new Float64Array(VALIDATION.durationMs / VALIDATION.binMs);
-  private readonly samples: ({ error: number; target: number; raw: Point } | undefined)[] = Array.from({ length: this.eligible.length });
+  private readonly samples: ({ error: number; target: number; raw: Point; estimates: { network: Point | null; geometric: Point | null } | null } | undefined)[] = Array.from({ length: this.eligible.length });
 
   constructor(viewport: Viewport, readonly condition: CheckCondition, readonly motion: CheckMotion, random = Math.random) {
     this.viewport = { ...viewport };
@@ -159,7 +161,8 @@ export class ValidationRun {
     if (this.samples[index]) return false;
     const error = distance(raw, position.target);
     if (!Number.isFinite(error)) return false;
-    this.samples[index] = { error, target: position.index, raw: { x: raw.x, y: raw.y } };
+    const e = frame.estimates;
+    this.samples[index] = { error, target: position.index, raw: { x: raw.x, y: raw.y }, estimates: e ? { network: e.network ? { ...e.network } : null, geometric: e.geometric ? { ...e.geometric } : null } : null };
     this.lastAdmitted = { at: frame.at, target: { ...position.target }, index: position.index };
     return true;
   }
@@ -177,9 +180,12 @@ export class ValidationRun {
     const coverage = measurementMs > 0 ? coveredMs / measurementMs : 0;
     const metrics = { coverage, measurementMs, coveredMs, bins: errors.length, targets: targets.size, condition: this.condition, motion: this.motion, viewport: this.viewport };
     if (coverage < VALIDATION.minimumCoverage || errors.length < VALIDATION.minimumBins || targets.size < VALIDATION.minimumTargets) return { ...metrics, kind: 'insufficient' };
-    const corrections = compareCorrections(this.samples.flatMap((sample, index) => (sample && this.eligible[index] > 0 ? [{ estimate: sample.raw, target: sample.target }] : [])), this.targets, this.viewport);
+    const kept = this.samples.flatMap((sample, index) => (sample && this.eligible[index] > 0 ? [sample] : []));
+    const corrections = compareCorrections(kept.map(sample => ({ estimate: sample.raw, target: sample.target })), this.targets, this.viewport);
+    const asPair = (p: Point | null | undefined) => (p ? [p.x, p.y] : null);
+    const estimators = compareEstimators(kept.flatMap(sample => (sample.estimates ? [{ network: asPair(sample.estimates.network), geometric: asPair(sample.estimates.geometric), target: [this.targets[sample.target].x, this.targets[sample.target].y] }] : [])), Math.ceil(VALIDATION.minimumBins / 2));
     errors.sort((a, b) => a - b);
     const middle = Math.floor(errors.length / 2);
-    return { ...metrics, kind: 'measured', medianPx: errors.length % 2 ? errors[middle] : errors[middle - 1] + (errors[middle] - errors[middle - 1]) / 2, p90Px: errors[Math.ceil(.9 * errors.length) - 1], corrections };
+    return { ...metrics, kind: 'measured', medianPx: errors.length % 2 ? errors[middle] : errors[middle - 1] + (errors[middle] - errors[middle - 1]) / 2, p90Px: errors[Math.ceil(.9 * errors.length) - 1], corrections, estimators };
   }
 }

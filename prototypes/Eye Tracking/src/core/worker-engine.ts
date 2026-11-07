@@ -2,6 +2,10 @@ import { STALE_MS } from './dwell';
 import type { EyeState, WorkerGaze } from './tracking';
 import { readLearnedCalibration, type LearnedCalibration } from './saved-calibration';
 import { headPoseFromLandmarks } from './head-position';
+import { readTrainingOptions, type TrainingOptions, type TrainingReport } from './training';
+import { blend, blendWeight, boundWeight, fitGeometric, gazeFeatures, predictGeometric, type GazeFeatures, type GeometricState } from './geometric-gaze';
+import type { Estimates } from './tracking';
+import { CameraMotionDetector, faceBox, type CameraMotion } from './camera-motion';
 export type Observation = {
   eyePatch: ImageData; headVector: number[]; faceOrigin3D: number[]; gazeState: 'open' | 'closed'; eyeState: EyeState;
   normPog: number[]; rawNormPog: number[] | null; facialLandmarks: { x: number; y: number; z: number }[];
@@ -10,12 +14,15 @@ export type Observation = {
 };
 export type TrackerCore = {
   step(frame: ImageData, timestamp: number): Promise<Observation>;
-  adapt(eyes: ImageData[], heads: number[][], origins: number[][], labels: number[][]): Promise<void>;
+  adapt(eyes: ImageData[], heads: number[][], origins: number[][], labels: number[][], options?: TrainingOptions): Promise<void>;
   dispose(): void;
+  /** Outcome of the last adapt(), when the tracker reports one. */
+  lastTraining?: TrainingReport | null;
   exportCalibration?(): LearnedCalibration;
   restoreCalibration?(state: LearnedCalibration): void;
+  setBaseEstimator?(weights: number[][]): void;
 };
-type Sample = { eye: ImageData; head: number[]; origin: number[]; label: number[] };
+type Sample = { eye: ImageData; head: number[]; origin: number[]; label: number[]; features: GazeFeatures | null };
 /** One development replay record: the estimator's exact inputs for one instructed frame, plus what it predicted. */
 export type ReplayEntry = {
   at: number; kind: 'calibration' | 'check'; label: number[]; headVector: number[]; faceOrigin3D: number[];
@@ -46,8 +53,14 @@ export const canvasPng: ImageEncoder = async image => {
  * viewing), is bounded, lives in worker memory and leaves only through an explicit export.
  */
 export class CalibrationEngine {
-  private latest: { observation: Observation; at: number; capturedEpoch: number } | null = null;
+  private latest: { observation: Observation; at: number; capturedEpoch: number; features: GazeFeatures | null } | null = null;
   private samples: Sample[] = [];
+  /** The fitted geometric (iris and lid) estimator and its blend weight; null until a calibration fits one. */
+  private geometric: GeometricState | null = null;
+  private geometricReport: NonNullable<TrainingReport['geometric']> | null = null;
+  /** Lid-tilt / camera-move detection on the coarse background; runs on every other frame. */
+  private readonly motion = new CameraMotionDetector();
+  private motionFrames = 0;
   private lastAt = -Infinity;
   private recording = false;
   private replay: { entry: ReplayEntry; image: Blob }[] = [];
@@ -65,13 +78,22 @@ export class CalibrationEngine {
       const observation = await this.tracker.step(frame, at);
       if (this.disposed()) throw new Error('Tracker stopped');
       const valid = validObservation(observation);
+      // Geometric features come from the landmarks of this frame only; nothing is kept with them.
+      const features = valid ? gazeFeatures({ landmarks: observation.facialLandmarks, faceRt: observation.faceRt?.data.length === 16 ? observation.faceRt.data : null, origin: observation.faceOrigin3D, frame: { width: frame.width, height: frame.height } }) : null;
       // A trained estimator keeps no raw frame, except while a development replay is being recorded.
-      if (valid && (previous !== 'trained' || this.recording)) this.latest = { observation, at, capturedEpoch };
+      if (valid && (previous !== 'trained' || this.recording)) this.latest = { observation, at, capturedEpoch, features };
       this.state = previous;
       const raw = observation.rawNormPog;
       const facePresent = observation.facialLandmarks.length >= 478 && observation.facialLandmarks.every(p => [p.x, p.y, p.z].every(Number.isFinite));
       const pose = facePresent ? headPoseFromLandmarks(observation.facialLandmarks, frame) : null;
-      return { normPog: valid ? observation.normPog : [0, 0], rawNormPog: valid && raw?.length === 2 && raw.every(Number.isFinite) ? raw : null, face: valid, open: valid, facePresent, eyeState: facePresent ? observation.eyeState : 'unknown', at, pose };
+      const camera: CameraMotion | null = ++this.motionFrames % 2 === 0 ? this.motion.observe(frame, facePresent ? faceBox(observation.facialLandmarks, frame) : null, at) : null;
+      const network = valid && raw?.length === 2 && raw.every(Number.isFinite) ? [raw[0], raw[1]] : null;
+      // Trained: blend the network's estimate with the geometric one; the pointer, the check and selection all follow the blend.
+      const geometric = previous === 'trained' && this.geometric ? predictGeometric({ weights: this.geometric.weights, samples: 0, targets: 0, outliers: 0, heldOutMse: null, residual: 0 }, features) : null;
+      const fused = previous === 'trained' && this.geometric && network && geometric ? blend(network, geometric, this.geometric.weight) : network;
+      const clip = (v: number) => Math.max(-.5, Math.min(.5, v));
+      const estimates: Estimates<number[]> | null = valid ? { network, geometric } : null;
+      return { normPog: valid ? (fused && fused !== network ? [clip(fused[0]), clip(fused[1])] : observation.normPog) : [0, 0], rawNormPog: fused, face: valid, open: valid, facePresent, eyeState: facePresent ? observation.eyeState : 'unknown', at, pose, estimates, camera };
     } catch (error) { if (!this.disposed()) this.state = 'error'; throw error; }
   }
   collect(at: number, x: number, y: number): boolean {
@@ -80,31 +102,64 @@ export class CalibrationEngine {
         ![x, y].every(n => Number.isFinite(n) && n >= -.5 && n <= .5) ||
         this.now() < latest.capturedEpoch || this.now() - latest.capturedEpoch > STALE_MS) return false;
     const o = latest.observation;
-    this.samples.push({ eye: o.eyePatch, head: [...o.headVector], origin: [...o.faceOrigin3D], label: [x, y] });
+    this.samples.push({ eye: o.eyePatch, head: [...o.headVector], origin: [...o.faceOrigin3D], label: [x, y], features: latest.features });
     if (this.recording) void this.keep(o, at, [x, y], 'calibration');
     this.latest = null;
     return true;
   }
-  async train(): Promise<number> {
+  /** `options` bound how far the gaze head adapts; anything invalid falls back to the defaults. */
+  async train(options?: unknown): Promise<number> {
     if (this.state !== 'idle' || this.samples.length < 27 || new Set(this.samples.map(s => s.label.join(','))).size < 9) throw new Error('Finish the nine instructed targets first');
     this.state = 'training'; this.latest = null;
     const count = this.samples.length;
     try {
-      await this.tracker.adapt(this.samples.map(s => s.eye), this.samples.map(s => s.head), this.samples.map(s => s.origin), this.samples.map(s => s.label));
+      await this.tracker.adapt(this.samples.map(s => s.eye), this.samples.map(s => s.head), this.samples.map(s => s.origin), this.samples.map(s => s.label), readTrainingOptions(options));
       if (this.disposed()) throw new Error('Training cancelled');
+      this.fitGeometric();
       this.state = 'trained';
       return count;
     } catch (error) { if (!this.disposed()) this.state = 'error'; throw error; }
     finally { this.samples = []; }
   }
+  /** Fits the geometric estimator on the same labelled frames and weights it against the network by held-out error. */
+  private fitGeometric(): void {
+    const fit = fitGeometric(this.samples.flatMap(s => (s.features ? [{ features: s.features, label: [s.label[0], s.label[1]] as [number, number] }] : [])));
+    const network = this.tracker.lastTraining?.heldOutAfter;
+    const weight = fit ? blendWeight(fit.heldOutMse, typeof network === 'number' && Number.isFinite(network) ? network : null) : 0;
+    this.geometric = fit ? { weights: fit.weights, heldOutMse: fit.heldOutMse, weight, samples: fit.samples, targets: fit.targets } : null;
+    this.geometricReport = fit ? { samples: fit.samples, targets: fit.targets, outliers: fit.outliers, heldOutMse: fit.heldOutMse, weight } : null;
+  }
+  trainingReport(): TrainingReport | null {
+    const report = this.tracker.lastTraining;
+    return report ? { ...report, geometric: this.geometricReport } : null;
+  }
+  /** The geometric estimator's share of the blend, from a measured check; bounded. */
+  setBlend(weight: unknown): number {
+    if (this.state !== 'trained' || !this.geometric) throw new Error('No calibrated estimators to blend');
+    this.geometric = { ...this.geometric, weight: boundWeight(weight) };
+    if (this.geometricReport) this.geometricReport = { ...this.geometricReport, weight: this.geometric.weight };
+    return this.geometric.weight;
+  }
   exportCalibration(): LearnedCalibration {
     if (this.state !== 'trained' || !this.tracker.exportCalibration) throw new Error('No trained estimator to save');
-    return readLearnedCalibration(this.tracker.exportCalibration());
+    return readLearnedCalibration({ ...this.tracker.exportCalibration(), geometric: this.geometric });
   }
   restoreCalibration(payload: unknown): boolean {
     if (this.state !== 'idle' || this.samples.length || !this.tracker.restoreCalibration) throw new Error('Reset before restoring calibration');
-    this.tracker.restoreCalibration(readLearnedCalibration(payload));
+    const learned = readLearnedCalibration(payload);
+    this.tracker.restoreCalibration({ weights: learned.weights, affine: learned.affine, faceWidthCm: learned.faceWidthCm });
+    this.geometric = learned.geometric ?? null;
+    this.geometricReport = null;
     this.latest = null; this.state = 'trained'; return true;
+  }
+  /** Starts calibration from a shared estimator (a team model); only before any label is collected. */
+  setBaseEstimator(weights: unknown): boolean {
+    if (this.state !== 'idle' || this.samples.length || !this.tracker.setBaseEstimator) throw new Error('Choose the starting model before calibrating');
+    // Reuse the saved-calibration validator for the six estimator tensors.
+    const learned = readLearnedCalibration({ weights, affine: [1, 0, 0, 0, 1, 0], faceWidthCm: 1 });
+    this.tracker.setBaseEstimator(learned.weights);
+    this.latest = null;
+    return true;
   }
   /** Development only. Turning recording off discards what was recorded. */
   setRecording(enabled: boolean): void {
@@ -134,5 +189,5 @@ export class CalibrationEngine {
   exportReplay(): ReplayExport {
     return { entries: this.replay.map(r => r.entry), images: this.replay.map(r => r.image) };
   }
-  dispose(): void { this.state = 'disposed'; this.latest = null; this.samples = []; this.replay = []; this.tracker.dispose(); }
+  dispose(): void { this.state = 'disposed'; this.latest = null; this.samples = []; this.replay = []; this.geometric = null; this.motion.reset(); this.tracker.dispose(); }
 }

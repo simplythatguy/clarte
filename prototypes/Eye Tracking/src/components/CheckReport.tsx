@@ -12,6 +12,15 @@ export function CheckReport({ summary }: { summary: CheckSummary }) {
       Median error <strong>{round(summary.medianPx)} px</strong>, 90th percentile <strong>{round(summary.p90Px)} px</strong>, from {summary.bins} samples on {summary.references} references ({Math.round(summary.coverage * 100)}% coverage){summary.condition === 'turn' ? ', head turned' : ''}.
     </p>
     {summary.notes.map(note => <p key={note} className="check-note">{note}</p>)}
+    {(summary.estimators || summary.calibration) && <table className="check-table">
+      <caption>The two estimators behind the pointer (median error, lower is better)</caption>
+      <thead><tr><th scope="col">Estimator</th><th scope="col">Calibration held-out</th><th scope="col">This check</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Gaze network</th><td>{round(summary.calibration?.networkPx ?? null)}</td><td>{round(summary.estimators?.networkMedian ?? null)}</td></tr>
+        <tr><th scope="row">Geometric (iris and lids)</th><td>{round(summary.calibration?.geometricPx ?? null)}</td><td>{round(summary.estimators?.geometricMedian ?? null)}</td></tr>
+        <tr className="is-best"><th scope="row">Blend{summary.estimators?.blend ? ` (${Math.round(summary.estimators.blend.weight * 100)}% geometric)` : summary.calibration?.weight !== null && summary.calibration?.weight !== undefined ? ` (${Math.round(summary.calibration.weight * 100)}% geometric)` : ''}</th><td>—</td><td>{round(summary.estimators?.blend?.median ?? null)}</td></tr>
+      </tbody>
+    </table>}
     {summary.models.length > 0 && <table className="check-table">
       <caption>How each correction model would score on this check (held-out, lower is better)</caption>
       <thead><tr><th scope="col">Model</th><th scope="col">Median</th><th scope="col">90th pct</th></tr></thead>
