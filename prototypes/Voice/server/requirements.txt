@@ -1,0 +1,17 @@
+# Python 3.11. Cloning and speech run on ElevenLabs; this service decodes,
+# scores and selects recordings locally, then calls the ElevenLabs API.
+fastapi==0.162.2
+uvicorn[standard]==0.54.0
+python-multipart==0.0.33
+httpx==0.28.1
+soundfile==0.14.0
+librosa==0.11.0
+numpy==1.26.4
+scipy==1.17.1
+pyloudnorm==0.2.0
+# Local speaker check for old recordings (Apache-2.0); pulls in CPU torch.
+resemblyzer==0.1.4
+# resemblyzer's webrtcvad still imports pkg_resources.
+setuptools==80.10.2
+# tests
+pytest==9.2.0
