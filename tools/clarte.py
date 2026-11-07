@@ -485,6 +485,9 @@ def start_ui(env, log_dir, procs):
     engine_port = start_engine(env, log_dir, procs)
     if engine_port != 8765:
         log("S0 talks to whatever is on 8765; the engine started here is on another port")
+    # serve.mjs starts its own engine on 8765 unless one is already listening, and ours takes a
+    # minute or more to load, so let it bind first.
+    wait_ports(procs, [engine_port], READY_TIMEOUT)
     procs.append(Proc("ui", [node_exe(ensure_node()), UI / "s_all" / "serve.mjs"], UI / "s_all", dict(env, PORT=str(base)), log_dir))
 
     def smoke():
