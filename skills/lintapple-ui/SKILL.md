@@ -6,7 +6,7 @@ description: Check an implemented web UI with Lint Apple against the project's d
 # Check rendered UI with Lint Apple
 
 Source: https://lintapple.vercel.app/ and https://github.com/gholtzap/lintapple.
-This is Clarte's integration skill for the Node/browser checker. It requires a rendered web page; it cannot lint pen.dev canvas files or screenshots.
+This is Clarte's integration skill for the Node/browser checker. It requires a rendered web page; it measures the rendered page rather than HTML source or screenshots.
 
 1. Read the project's UI rules, tokens, existing `ui-policy.json`, package scripts, and installed Lint Apple version. Keep deliberate design choices. Match the policy to the actual design; stock defaults are not the product specification. Use the installed version's README/schema for policy fields; do not invent options.
 2. Reuse the project's existing runner. For a requested new integration, upstream documents Node.js 22+ and `npm install -D lintapple@0.1.24`, followed by `npx lintapple init`. Use the project's package manager, inspect generated changes, and set the real app URL. Do not initialize or change dependencies for an audit unless requested; an ad hoc run may use `npx --yes lintapple@0.1.24 <url> --config <policy-path> --json` with a temporary project-derived policy. The version was checked against npm when this skill was written; prefer a compatible existing pin over changing it.
@@ -16,4 +16,4 @@ This is Clarte's integration skill for the Node/browser checker. It requires a r
 6. Confirm each finding against the rendered page and design contract. Fix actual causes when edits are authorized. Correct an incorrect policy rather than changing an intentional design, but never weaken accessibility or add broad exceptions to hide defects. Rerun affected checks after fixes.
 7. Personally inspect screenshots and exercise the user flow, keyboard/focus behavior, and changed normal/reduced motion. A linter pass does not establish visual taste, backend success, or full interaction correctness. Report page/state, version, policy, viewports/themes, findings, unresolved coverage, and the inspected evidence.
 
-For pen.dev-led work, derive tokens and layout rules from the approved design after implementation. Keep canvas review and rendered-page results distinct. Read [upstream details](references/upstream-readme.md) for supported checks, annotation examples, policy configuration, and coverage limits. Consult the current installed API if it differs from this pinned reference.
+For `design-html` work, derive tokens and layout rules from the approved design and inspect the rendered HTML. Read [upstream details](references/upstream-readme.md) for supported checks, annotation examples, policy configuration, and coverage limits. Consult the current installed API if it differs from this pinned reference.

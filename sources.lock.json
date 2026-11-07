@@ -395,58 +395,58 @@
       "sha256": "ae512af838c78b8750471c42cd2b20fa32319553e61d84c9a23d171b40ce14aa"
     },
     {
-      "path": "skills/design-pen/references/upstream-sections/craft.md",
-      "source": "design-html/sections/craft.md",
-      "repository": "gstack",
-      "sha256": "cd8daae4fcd8329fbe0a5bf7ceca2dd81bfd5faf9ba7a30a075e4bd64694a526"
+      "path": "skills/lintapple-ui/references/upstream-readme.md",
+      "source": "README.md",
+      "repository": "lintapple",
+      "sha256": "8a1031a152b93c10f37d0c952cc77193f088dcaf3ca4ddd6ecb9808df4d970aa"
     },
     {
-      "path": "skills/design-pen/references/upstream-sections/detector-install-offer.md",
-      "source": "design-html/sections/detector-install-offer.md",
-      "repository": "gstack",
-      "sha256": "629f6f1ecc63615fe2fc18b0fab69718a7438f293b9ac505964a03a1657aefd6"
-    },
-    {
-      "path": "skills/design-pen/references/upstream-sections/doctrine.md",
-      "source": "design-html/sections/doctrine.md",
-      "repository": "gstack",
-      "sha256": "db00be4d927e48ebeff614f761a8d118b294c527fab4596bf48b54a7296503fd"
-    },
-    {
-      "path": "skills/design-pen/references/upstream-sections/manifest.json",
-      "source": "design-html/sections/manifest.json",
-      "repository": "gstack",
-      "sha256": "ee8c7be0156b2d58ca89cce255bf0662da106a3feda213ad978eab8dbcdcb9c7"
-    },
-    {
-      "path": "skills/design-pen/references/upstream-sections/preamble.md",
-      "source": "design-html/sections/preamble.md",
-      "repository": "gstack",
-      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
-    },
-    {
-      "path": "skills/design-pen/references/upstream-sections/pretext-patterns.md",
-      "source": "design-html/sections/pretext-patterns.md",
-      "repository": "gstack",
-      "sha256": "12c49fbb61977f3736926ed50609f1a230c8cdae4eea9999994802dbdc9c3310"
-    },
-    {
-      "path": "skills/design-pen/references/design-html.source.md",
+      "path": "skills/design-html/SKILL.md",
       "source": "design-html/SKILL.md",
       "repository": "gstack",
       "sha256": "72755b94ac7ee21523b86b865be286c4716fa9bb9752f8a210259d44d0ed3fc8"
     },
     {
-      "path": "skills/design-pen/references/ux-principles.md",
+      "path": "skills/design-html/sections/craft.md",
+      "source": "design-html/sections/craft.md",
+      "repository": "gstack",
+      "sha256": "cd8daae4fcd8329fbe0a5bf7ceca2dd81bfd5faf9ba7a30a075e4bd64694a526"
+    },
+    {
+      "path": "skills/design-html/sections/detector-install-offer.md",
+      "source": "design-html/sections/detector-install-offer.md",
+      "repository": "gstack",
+      "sha256": "629f6f1ecc63615fe2fc18b0fab69718a7438f293b9ac505964a03a1657aefd6"
+    },
+    {
+      "path": "skills/design-html/sections/doctrine.md",
       "source": "design-html/sections/doctrine.md",
       "repository": "gstack",
       "sha256": "db00be4d927e48ebeff614f761a8d118b294c527fab4596bf48b54a7296503fd"
     },
     {
-      "path": "skills/lintapple-ui/references/upstream-readme.md",
-      "source": "README.md",
-      "repository": "lintapple",
-      "sha256": "8a1031a152b93c10f37d0c952cc77193f088dcaf3ca4ddd6ecb9808df4d970aa"
+      "path": "skills/design-html/sections/manifest.json",
+      "source": "design-html/sections/manifest.json",
+      "repository": "gstack",
+      "sha256": "ee8c7be0156b2d58ca89cce255bf0662da106a3feda213ad978eab8dbcdcb9c7"
+    },
+    {
+      "path": "skills/design-html/sections/preamble.md",
+      "source": "design-html/sections/preamble.md",
+      "repository": "gstack",
+      "sha256": "3eeee274045c6af4a3a4a88895944a348e3f8613232f44e04875fd1318861705"
+    },
+    {
+      "path": "skills/design-html/sections/pretext-patterns.md",
+      "source": "design-html/sections/pretext-patterns.md",
+      "repository": "gstack",
+      "sha256": "12c49fbb61977f3736926ed50609f1a230c8cdae4eea9999994802dbdc9c3310"
+    },
+    {
+      "path": "skills/design-html/vendor/pretext.js",
+      "source": "design-html/vendor/pretext.js",
+      "repository": "gstack",
+      "sha256": "c85e755d86d33718e66978d18a2733eb5d11cf44747f58846bd390ed0d6f24e7"
     }
   ],
   "lintapple_npm": "0.1.24"

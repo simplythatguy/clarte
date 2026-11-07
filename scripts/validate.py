@@ -31,13 +31,13 @@ for skill in skills:
         if not (skill / 'sections' / section).is_file():
             errors.append(f'Missing section: {skill.name}/{section}')
 
-required = {'office-hours', 'autoplan', 'plan-ceo-review', 'plan-design-review', 'plan-devex-review', 'plan-eng-review', 'design-pen', 'untangle-codebase', 'sol-loop', 'pr', 'setup-matt-pocock-skills', 'lintapple-ui'}
+required = {'office-hours', 'autoplan', 'plan-ceo-review', 'plan-design-review', 'plan-devex-review', 'plan-eng-review', 'design-html', 'untangle-codebase', 'sol-loop', 'pr', 'setup-matt-pocock-skills', 'lintapple-ui'}
 if {p.name for p in skills} != required:
     errors.append('Skill catalog does not match required dependency closure')
 
 # Resolve Markdown file links, excluding remote URLs and fragment-only links.
-# Archived upstream source uses runtime-relative paths and is integrity-checked above.
-local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').glob('*.md'), * (ROOT / 'skills/design-pen').glob('*.md'), ROOT / 'skills/lintapple-ui/SKILL.md', * (ROOT / 'skills/setup-matt-pocock-skills').glob('*.md')]
+# Upstream sources use runtime-relative paths and are integrity-checked above.
+local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').glob('*.md'), ROOT / 'skills/lintapple-ui/SKILL.md', * (ROOT / 'skills/setup-matt-pocock-skills').glob('*.md')]
 for path in local_docs:
     for target in re.findall(r'\]\(([^\s)]+)\)', path.read_text()):
         if '://' in target or target.startswith(('#', 'mailto:')):
