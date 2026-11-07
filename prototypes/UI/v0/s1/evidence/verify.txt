@@ -1,0 +1,59 @@
+ok   200% 1440x900 calib-ready
+ok   200% 1440x900 idle
+ok   200% 1440x900 listening
+ok   200% 1440x900 paused
+ok   200% 1440x900 composing-pending
+ok   200% 1440x900 composing-empty
+ok   200% 1440x900 page2
+ok   200% 1440x900 speaking
+ok   200% 1440x900 say-again
+ok   200% 1440x900 menu
+ok   200% 1440x900 menu-selection
+ok   200% 1440x900 menu-display
+ok   200% 1440x900 menu-phrases
+ok   200% 1440x900 worst-long
+ok   200% 1440x900 worst-nomatch
+ok   200% 1280x720 calib-ready
+ok   200% 1280x720 idle
+ok   200% 1280x720 listening
+ok   200% 1280x720 paused
+ok   200% 1280x720 composing-pending
+ok   200% 1280x720 composing-empty
+ok   200% 1280x720 page2
+ok   200% 1280x720 speaking
+ok   200% 1280x720 say-again
+ok   200% 1280x720 menu
+ok   200% 1280x720 menu-selection
+ok   200% 1280x720 menu-display
+ok   200% 1280x720 menu-phrases
+ok   200% 1280x720 worst-long
+ok   200% 1280x720 worst-nomatch
+ok   Space after Tab focus on "More" then gaze movement leaves the message unchanged
+ok   looking away at ~70% of a dwell: no preview, no selection (dwelling:G3 → dwelling:delete)
+ok   voice failure while listening shows: The voice did not play + Listening (flow listening)
+ok   calibration target at 200%: target 28px, ring 28px, offset 0px
+ok   caption pill width while typing: 300, 300, 300, 300, 300, 300 px
+ok   G–N letters 1440x900: 34.8px × 1 line → 57.6px × 2 lines at 200%
+ok   G–N letters 1280x720: 30.2px × 1 line → 36.0px × 2 lines at 200%
+ok   arc after leaving at 227°: peak 267°, last 0° (holds within the tracker's lag, drains, never completes)
+ok   top-rail ring centres, composing-pending at 100%: 153, 153, 153, 153
+ok   top-rail ring centres, menu-selection at 100%: 152, 152, 152, 152
+ok   top-rail ring centres, menu-display at 100%: 152, 152, 152, 152
+ok   top-rail ring centres, composing-pending at 200%: 134, 134, 134, 134
+ok   top-rail ring centres, menu-selection at 200%: 131, 131, 131, 131
+ok   top-rail ring centres, menu-display at 200%: 131, 131, 131, 131
+ok   worst-long at 200% 1440x900: message shows 123px for a 123px line
+ok   worst-long at 200% 1280x720: message shows 123px for a 123px line
+ok   click speak from (720, 470) then hold still in dwell mode: speaking after 2.6 s (Stop did not fire)
+ok   click speak from (1260, 760) then hold still in dwell mode: speaking after 2.6 s (Stop did not fire)
+ok   Space 270 ms into a dwell in dwell mode: nothing committed
+ok   glance away and back mid-dwell: largest step between samples 40° (peak 360°)
+ok   screen change at +40 ms: copy 0.89, its labels at least 1, chosen card shown committed: true
+ok   reduced motion, leaving mid-dwell: arc opacity 0.82 → 0.47 → 0.23 → 0.10 → 0.04 → 0.02 → 0.01 → 0.00
+ok   calibration result at 200% 1280x720: shown whole on 2 line(s)
+ok   typed glyphs over three groups: i → is → mor → mor; overlays seen: 2
+ok   idle 1.5 s after typing "Tired but good tired": 0 message mutations, 0 overlays left
+ok   glance of 250 ms then back: the arc goes down to 0° before refilling (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13…)
+ok   incoming Menu at +110 ms: screen 0.00, its labels at least 1 (one fade, not two)
+ok   cut by an ellipsis: never; muted End shows "Finish the word first" at opacity 1 in rgb(110, 110, 115), inside its card: true
+all checks passed

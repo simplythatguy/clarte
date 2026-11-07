@@ -1,0 +1,27 @@
+  phase calibration-position
+calibration shown (the full sequence is in the motion clip); Escape skips it
+  phase idle
+  phase listening
+  phase more-idle
+  phase idle
+  phase composing-pending
+  candidate shows "Now"
+  phase more
+  More, other word offers "Not"
+  phase composing-ready
+  message "Not now maybe later"
+  phase composing-ready
+  phase speaking
+  spoken; Say again offered
+  phase more-idle
+  phase menu
+  phase menu-settings
+  phase menu-demo
+  phase idle
+  phase composing-pending
+  with noise, candidate "Was"
+  dead band: 40 samples across x=360±22, quadrant Q1 with 0 flips
+  phase idle
+  phase calibration-position
+  phase idle
+walkthrough complete

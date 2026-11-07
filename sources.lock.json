@@ -810,6 +810,7 @@
   ],
   "lintapple_npm": "0.1.24",
   "authored_skills": [
-    "skills/lintapple-ui"
+    "skills/lintapple-ui",
+    "skills/apple-hig-ui"
   ]
 }

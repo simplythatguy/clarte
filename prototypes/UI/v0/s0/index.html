@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clarte Light, live</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #F5F5F7;
+    --surface: #FFFFFF;
+    --ink: #1D1D1F;
+    --ink-2: #6E6E73;
+    --ink-3: #86868B;
+    --hairline: #D2D2D7;
+    --accent: #0071E3;
+    --g1: #E3F0FA; --g1-ink: #1E5A82;
+    --g2: #ECE4F8; --g2-ink: #59409A;
+    --g3: #E2F3EA; --g3-ink: #2B6A4C;
+    --g4: #FBEADD; --g4-ink: #8A4A22;
+    --radius-tile: 40px;
+    --font: "Satoshi", "SF Pro Display", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --dwell-group: 600ms;
+    --dwell-control: 900ms;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { background: var(--canvas); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .screen { position: relative; width: 100vw; height: 100vh; }
+
+  .tile {
+    position: absolute; width: calc(25vw - 56px); height: calc(50vh - 78px);
+    border-radius: var(--radius-tile); padding: 32px; cursor: pointer; user-select: none;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: background-color 150ms var(--ease-out), opacity 300ms var(--ease-out);
+  }
+  .tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  .q1 { left: 28px; top: 38px; }
+  .q4 { right: 28px; top: 38px; }
+  .q5 { left: 28px; bottom: 38px; }
+  .q8 { right: 28px; bottom: 38px; }
+  .q6 { left: calc(25vw + 28px); bottom: 38px; }
+  .q7 { right: calc(25vw + 28px); bottom: 38px; }
+  .tile[aria-disabled="true"] { opacity: .38; cursor: default; }
+
+  .orbs { display: flex; align-items: center; }
+  .orbs .id { width: 44px; height: 44px; border-radius: 50%; background: currentColor; position: relative; z-index: 1; }
+  .orbs svg { width: 48px; height: 48px; margin-left: -18px; overflow: visible; }
+  .orbs circle { fill: none; stroke-width: 4; }
+  .orbs .track { stroke: currentColor; opacity: .3; }
+  .orbs .fill { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 132; stroke-dashoffset: 132; opacity: 0; transition: stroke-dashoffset 150ms var(--ease-out), opacity 150ms var(--ease-out); }
+  .tile.dwelling .orbs .fill { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset var(--dwell) linear, opacity 50ms linear; }
+  .tile.committed .orbs .fill { stroke-dashoffset: 0; opacity: 1; transition: none; }
+  .orbs .bloom { stroke: var(--accent); opacity: 0; transform-origin: 50% 50%; }
+  .tile.committed .orbs .bloom { animation: bloom 450ms var(--ease-out) forwards; }
+  @keyframes bloom { from { opacity: .35; transform: scale(1); } to { opacity: 0; transform: scale(2.4); } }
+  .control .orbs .id { display: none; }
+  .control .orbs svg { margin-left: 0; }
+  .control .orbs .icon { position: absolute; width: 44px; height: 44px; }
+  .control .orbs { position: relative; width: 48px; height: 48px; align-items: center; justify-content: center; }
+
+  .group .letters { font-size: 36px; font-weight: 700; letter-spacing: 0.14em; line-height: 1.1; }
+  .group .count { display: flex; gap: 6px; margin-top: 14px; }
+  .group .count i { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+  .g1 { background: var(--g1); color: var(--g1-ink); }
+  .g2 { background: var(--g2); color: var(--g2-ink); }
+  .g3 { background: var(--g3); color: var(--g3-ink); }
+  .g4 { background: var(--g4); color: var(--g4-ink); }
+  .tile.group.focused { filter: brightness(.97); }
+
+  .control { color: var(--ink); }
+  .control .label { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; overflow-wrap: anywhere; }
+  .control .hint { font-size: 20px; font-weight: 500; color: var(--ink-2); margin-top: 6px; }
+  .primary { background: var(--ink); color: #fff; }
+  .primary .hint { color: rgba(255,255,255,.62); }
+  .primary .orbs .track { stroke: #fff; }
+  .secondary { background: var(--surface); }
+  .icon { width: 44px; height: 44px; }
+
+  .rest { position: absolute; left: 25vw; width: 50vw; top: 0; height: 50vh; padding: 56px 44px 0; display: flex; flex-direction: column; }
+  .status { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; color: var(--ink-2); }
+  .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); transition: background-color 300ms; }
+  .status.live i { background: #2B6A4C; }
+  .status.offline i { background: #B3261E; }
+  .partner { margin-top: 28px; font-size: 26px; font-weight: 500; line-height: 1.35; color: var(--ink-2); max-width: 40ch; min-height: 1.35em; }
+  .rule { height: 1px; background: var(--hairline); margin: 28px 0; }
+  .message { font-size: 52px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; min-height: 1.1em; }
+  .message .sent { color: var(--ink-3); font-weight: 500; }
+  .tok { display: inline-block; width: 30px; height: 30px; border-radius: 50%; }
+  .tok.g1 { background: var(--g1-ink); } .tok.g2 { background: var(--g2-ink); }
+  .tok.g3 { background: var(--g3-ink); } .tok.g4 { background: var(--g4-ink); }
+  .ghost { color: var(--ink-3); transition: opacity 150ms var(--ease-out); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .grid { position: absolute; inset: 0; display: none; grid-template: repeat(2, 1fr) / repeat(4, 1fr); pointer-events: none; }
+  .grid div { border: 1px dashed rgba(0,113,227,.45); color: rgba(0,113,227,.8); font: 600 14px/1 var(--font); padding: 10px; }
+  .show-grid .grid { display: grid; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile.dwelling .orbs .fill { transition: stroke-dashoffset var(--dwell) steps(4, end); }
+    .tile.committed .orbs .bloom { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main class="screen" id="screen">
+
+  <section class="tile group g1 q1" data-action="G1" data-group="1" tabindex="0" role="button" aria-label="A B C D E F">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="letters">ABCDEF</div><div class="count"><i></i></div></div>
+  </section>
+
+  <section class="tile group g2 q4" data-action="G2" data-group="2" tabindex="0" role="button" aria-label="G H I J K L M N">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="letters">GHIJKLMN</div><div class="count"><i></i><i></i></div></div>
+  </section>
+
+  <section class="tile group g3 q5" data-action="G3" data-group="3" tabindex="0" role="button" aria-label="O P Q R S">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="letters">OPQRS</div><div class="count"><i></i><i></i><i></i></div></div>
+  </section>
+
+  <section class="tile group g4 q8" data-action="G4" data-group="4" tabindex="0" role="button" aria-label="T U V W X Y Z">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="letters">TUVWXYZ</div><div class="count"><i></i><i></i><i></i><i></i></div></div>
+  </section>
+
+  <div class="rest" aria-live="polite">
+    <span class="status" id="status"><i></i><span id="statusText">Starting the engine</span></span>
+    <p class="partner" id="partner"></p>
+    <div class="rule"></div>
+    <p class="message" id="message"></p>
+  </div>
+
+  <section class="tile control primary q6" data-action="primary" tabindex="0" role="button" aria-label="Accept">
+    <div class="orbs">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg>
+    </div>
+    <div><div class="label" id="acceptLabel">…</div><div class="hint" id="acceptHint">Accept</div></div>
+  </section>
+
+  <section class="tile control secondary q7" data-action="delete" tabindex="0" role="button" aria-label="Delete">
+    <div class="orbs">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11v12H9l-6-6z"/><path d="M13 10l4 4M17 10l-4 4"/></svg>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/><circle class="bloom" cx="24" cy="24" r="21"/></svg>
+    </div>
+    <div><div class="label">Delete</div><div class="hint" id="deleteHint">Last group</div></div>
+  </section>
+
+  <div class="grid" aria-hidden="true">
+    <div>Q1</div><div>Q2 rest</div><div>Q3 rest</div><div>Q4</div>
+    <div>Q5</div><div>Q6</div><div>Q7</div><div>Q8</div>
+  </div>
+</main>
+
+<script>
+/*
+  Live wiring of the light-direction mock to the local prediction engine.
+
+  Engine: POST http://127.0.0.1:8765/api/predict with {history, message, groups}; the Accept card
+  shows likely[0]. Start it with
+    cd ~/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction
+    methods/neural/.venv/bin/python ui/server.py
+
+  Input: look (hover) at a tile to dwell, or click it; keys 1 2 3 4 select a group, Enter or Space
+  accepts, Backspace deletes, S sends the reply (speaks it and adds it to the history), P adds the
+  partner's next line, R resets the conversation, G shows the backend quadrant grid.
+*/
+const API = 'http://127.0.0.1:8765/api/predict';
+const GROUP_NAMES = { 1: 'g1', 2: 'g2', 3: 'g3', 4: 'g4' };
+
+const state = {
+  history: [
+    ['partner', 'Did you sleep at all?'],
+    ['user', 'Not much. My back hurts'],
+    ['partner', 'Do you want to go outside for a bit? It is sunny.'],
+  ],
+  message: [],
+  groups: '',
+  likely: [],
+  sent: null,
+  online: false,
+  busy: null,
+};
+
+const el = {
+  screen: document.getElementById('screen'),
+  status: document.getElementById('status'),
+  statusText: document.getElementById('statusText'),
+  partner: document.getElementById('partner'),
+  message: document.getElementById('message'),
+  acceptLabel: document.getElementById('acceptLabel'),
+  acceptHint: document.getElementById('acceptHint'),
+  deleteHint: document.getElementById('deleteHint'),
+  accept: document.querySelector('[data-action="primary"]'),
+  del: document.querySelector('[data-action="delete"]'),
+};
+
+function lastPartner() {
+  for (let i = state.history.length - 1; i >= 0; i--) if (state.history[i][0] === 'partner') return state.history[i][1];
+  return '';
+}
+
+function render() {
+  el.partner.textContent = lastPartner();
+  el.message.replaceChildren();
+  if (state.sent && !state.message.length && !state.groups) {
+    const s = document.createElement('span'); s.className = 'sent'; s.textContent = state.sent; el.message.append(s);
+  }
+  state.message.forEach((w, i) => { const s = document.createElement('span'); s.textContent = i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w; el.message.append(s); });
+  for (const d of state.groups) { const t = document.createElement('span'); t.className = `tok ${GROUP_NAMES[d]}`; el.message.append(t); }
+  const best = state.likely[0] || '';
+  if (best && state.online) { const g = document.createElement('span'); g.className = 'ghost'; g.textContent = best; el.message.append(g); }
+
+  const hasWord = Boolean(best) && state.online;
+  el.acceptLabel.textContent = hasWord ? best : (state.online ? 'No word' : '…');
+  el.acceptHint.textContent = state.groups ? 'Accept' : 'Next word';
+  el.accept.setAttribute('aria-disabled', String(!hasWord));
+  el.accept.setAttribute('aria-label', hasWord ? `Accept ${best}` : 'Accept');
+  const canDelete = state.groups.length > 0 || state.message.length > 0;
+  el.deleteHint.textContent = state.groups ? 'Last group' : 'Last word';
+  el.del.setAttribute('aria-disabled', String(!canDelete));
+}
+
+function setStatus(text, cls) {
+  el.statusText.textContent = text;
+  el.status.className = `status ${cls || ''}`.trim();
+}
+
+async function predict() {
+  if (state.busy) state.busy.abort();
+  const ctl = new AbortController(); state.busy = ctl;
+  try {
+    const res = await fetch(API, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctl.signal,
+      body: JSON.stringify({ history: state.history, message: state.message, groups: state.groups }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (ctl !== state.busy) return;
+    state.likely = Array.isArray(data.likely) ? data.likely : [];
+    state.online = true;
+    setStatus('Replying', 'live');
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    state.online = false; state.likely = [];
+    setStatus('Engine offline', 'offline');
+  } finally {
+    if (ctl === state.busy) state.busy = null;
+    render();
+  }
+}
+
+const actions = {
+  group(d) { state.groups += d; state.sent = null; render(); predict(); },
+  accept() {
+    const best = state.likely[0];
+    if (!best || !state.online) return;
+    state.message.push(best); state.groups = ''; state.sent = null; render(); predict();
+  },
+  delete() {
+    if (state.groups) state.groups = state.groups.slice(0, -1);
+    else if (state.message.length) state.message.pop();
+    else return;
+    render(); predict();
+  },
+  send() {
+    if (!state.message.length) return;
+    const text = state.message.join(' ');
+    state.history.push(['user', text]);
+    state.sent = text.charAt(0).toUpperCase() + text.slice(1);
+    state.message = []; state.groups = '';
+    if ('speechSynthesis' in window) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(text)); }
+    render(); predict();
+  },
+  partner() {
+    const line = prompt("Partner's next line");
+    if (line && line.trim()) { state.history.push(['partner', line.trim()]); state.message = []; state.groups = ''; state.sent = null; render(); predict(); }
+  },
+  reset() {
+    state.history = state.history.slice(0, 3); state.message = []; state.groups = ''; state.sent = null; render(); predict();
+  },
+};
+
+function act(tile) {
+  if (tile.getAttribute('aria-disabled') === 'true') return;
+  const a = tile.dataset.action;
+  if (tile.dataset.group) actions.group(tile.dataset.group);
+  else if (a === 'primary') actions.accept();
+  else if (a === 'delete') actions.delete();
+}
+
+/* Dwell: a steady pointer on a tile fills its ring, then commits. Click commits at once. */
+const dwell = new Map();
+function commitVisual(tile) {
+  tile.classList.remove('dwelling');
+  tile.classList.add('committed');
+  setTimeout(() => tile.classList.remove('committed'), 450);
+}
+for (const tile of document.querySelectorAll('.tile')) {
+  const ms = tile.classList.contains('group') ? 600 : 900;
+  tile.style.setProperty('--dwell', `${ms}ms`);
+  tile.addEventListener('pointerenter', () => {
+    if (tile.getAttribute('aria-disabled') === 'true') return;
+    tile.classList.add('focused');
+    const t = setTimeout(() => {
+      tile.classList.add('dwelling');
+      const t2 = setTimeout(() => { commitVisual(tile); act(tile); dwell.delete(tile); }, ms);
+      dwell.set(tile, { t2 });
+    }, tile.classList.contains('group') ? 150 : 250);
+    dwell.set(tile, { t });
+  });
+  tile.addEventListener('pointerleave', () => {
+    tile.classList.remove('focused', 'dwelling');
+    const d = dwell.get(tile); if (d) { clearTimeout(d.t); clearTimeout(d.t2); dwell.delete(tile); }
+  });
+  tile.addEventListener('click', () => {
+    const d = dwell.get(tile); if (d) { clearTimeout(d.t); clearTimeout(d.t2); dwell.delete(tile); }
+    commitVisual(tile); act(tile);
+  });
+  tile.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commitVisual(tile); act(tile); } });
+}
+
+addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (k >= '1' && k <= '4') { const tile = document.querySelector(`[data-group="${k}"]`); commitVisual(tile); act(tile); }
+  else if ((k === 'Enter' || k === ' ') && !(e.target instanceof HTMLElement && e.target.classList.contains('tile'))) { e.preventDefault(); commitVisual(el.accept); actions.accept(); }
+  else if (k === 'Backspace') { e.preventDefault(); commitVisual(el.del); actions.delete(); }
+  else if (k === 's' || k === 'S') actions.send();
+  else if (k === 'p' || k === 'P') actions.partner();
+  else if (k === 'r' || k === 'R') actions.reset();
+  else if (k === 'g' || k === 'G') el.screen.classList.toggle('show-grid');
+});
+if (location.hash === '#grid') el.screen.classList.add('show-grid');
+
+window.clarteLive = { state, predict, actions };
+render();
+predict();
+</script>
+</body>
+</html>

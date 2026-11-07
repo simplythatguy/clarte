@@ -1,0 +1,29 @@
+{
+  "windowMs": 764,
+  "Layout": {
+    "count": 0,
+    "ms": 0
+  },
+  "UpdateLayoutTree": {
+    "count": 25,
+    "ms": 1.3
+  },
+  "Paint": {
+    "count": 22,
+    "ms": 0.47
+  },
+  "PrePaint": {
+    "count": 50,
+    "ms": 0.78
+  },
+  "Commit": {
+    "count": 46,
+    "ms": 1.16
+  },
+  "RunTask": {
+    "count": 619,
+    "ms": 22.56
+  },
+  "longestTaskMs": 1.26,
+  "frames": 46
+}

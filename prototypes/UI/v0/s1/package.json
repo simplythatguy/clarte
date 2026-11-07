@@ -1,0 +1,24 @@
+{
+  "name": "clarte-ui-v0-style1-rails",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5101 --strictPort",
+    "build": "tsc --noEmit -p . && vite build",
+    "preview": "vite preview --port 5101 --strictPort",
+    "check": "node ../shared/check-layout.mjs http://localhost:5101 evidence/layout"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "playwright": "1.64.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.6"
+  }
+}

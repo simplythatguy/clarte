@@ -1,0 +1,173 @@
+human-interface-guidelines	Human Interface Guidelines	555
+accessibility	Accessibility	16986
+app-icons	App icons	15228
+color	Color	21008
+components	Components	209
+design-principles	Design principles	9265
+designing-for-iphone-duo	Designing for iPhone Duo	15631
+designing-for-macos	Designing for macOS	3458
+foundations	Foundations	178
+gestures	Gestures	17809
+getting-started	Getting started	181
+inputs	Inputs	178
+layout	Layout	18656
+materials	Materials	11892
+patterns	Patterns	175
+pointing-devices	Pointing devices	23340
+technologies	Technologies	200
+typography	Typography	39373
+widgets	Widgets	38816
+dark-mode	Dark Mode	7439
+inclusion	Inclusion	14591
+keyboards	Keyboards	17614
+playing-haptics	Playing haptics	9836
+siri	Siri	12137
+voiceover	VoiceOver	5309
+icons	Icons	11792
+images	Images	13068
+complications	Complications	19675
+sidebars	Sidebars	6619
+content	Content	94
+layout-and-organization	Layout and organization	126
+menus-and-actions	Menus and actions	114
+navigation-and-search	Navigation and search	122
+presentation	Presentation	104
+selection-and-input	Selection and input	118
+status	Status	92
+system-experiences	System experiences	116
+designing-for-games	Designing for games	11525
+designing-for-ios	Designing for iOS	3181
+split-views	Split views	6803
+toolbars	Toolbars	15201
+dock-menus	Dock menus	1761
+file-management	File management	10750
+game-controls	Game controls	10998
+going-full-screen	Going full screen	5924
+the-menu-bar	The menu bar	26330
+branding	Branding	4019
+immersive-experiences	Immersive experiences	16064
+motion	Motion	7786
+privacy	Privacy	15097
+right-to-left	Right to left	9705
+sf-symbols	SF Symbols	19744
+spatial-layout	Spatial layout	8789
+writing	Writing	9248
+apple-pencil-and-scribble	Apple Pencil and Scribble	13264
+eyes	Eyes	9764
+feedback	Feedback	3818
+notifications	Notifications	14072
+remotes	Remotes	6185
+designing-for-ipados	Designing for iPadOS	2806
+designing-for-tvos	Designing for tvOS	2552
+designing-for-visionos	Designing for visionOS	6436
+designing-for-watchos	Designing for watchOS	3909
+action-button	Action button	4617
+camera-control	Camera Control	4371
+digital-crown	Digital Crown	4777
+focus-and-selection	Focus and selection	10247
+gyro-and-accelerometer	Gyroscope and accelerometer	1598
+nearby-interactions	Nearby interactions	5727
+multitasking	Multitasking	6972
+ornaments	Ornaments	3253
+scroll-views	Scroll views	11973
+tab-bars	Tab bars	9145
+windows	Windows	15017
+sliders	Sliders	5082
+toggles	Toggles	7922
+charting-data	Charting data	7015
+collaboration-and-sharing	Collaboration and sharing	6305
+drag-and-drop	Drag and drop	14112
+entering-data	Entering data	4228
+launching	Launching	4842
+live-viewing-apps	Live-viewing apps	6445
+loading	Loading	3380
+managing-accounts	Managing accounts	8064
+managing-notifications	Managing notifications	6829
+modality	Modality	5372
+offering-help	Offering help	6576
+onboarding	Onboarding	4779
+playing-audio	Playing audio	12865
+playing-video	Playing video	14304
+printing	Printing	3322
+ratings-and-reviews	Ratings and reviews	3242
+searching	Searching	4539
+settings	Settings	6693
+undo-and-redo	Undo and redo	4060
+workouts	Workouts	4393
+context-menus	Context menus	8340
+airplay	AirPlay	6442
+always-on	Always On	3628
+app-clips	App Clips	28858
+apple-in-app-purchase	Apple In-App Purchase	20160
+apple-pay	Apple Pay	28090
+augmented-reality	Augmented reality	21824
+carekit	CareKit	16273
+carplay	CarPlay	8291
+game-center	Game Center	16673
+generative-ai	Generative AI	16552
+healthkit	HealthKit	8885
+homekit	HomeKit	21632
+icloud	iCloud	4572
+id-verifier	ID Verifier	4096
+imessage-apps-and-stickers	iMessage apps and stickers	4686
+live-photos	Live Photos	2701
+mac-catalyst	Mac Catalyst	12326
+machine-learning	Machine learning	37193
+maps	Maps	14226
+nfc	NFC	2951
+photo-editing	Photo editing	1841
+researchkit	ResearchKit	6783
+shareplay	SharePlay	15047
+shazamkit	ShazamKit	1808
+sign-in-with-apple	Sign in with Apple	17569
+tap-to-pay-on-iphone	Tap to Pay on iPhone	14424
+wallet	Wallet	31250
+live-activities	Live Activities	27132
+virtual-keyboards	Virtual keyboards	8356
+app-shortcuts	App Shortcuts	7942
+snippets	Snippets	3764
+charts	Charts	19215
+buttons	Buttons	16582
+menus	Menus	13953
+top-shelf	Top Shelf	8457
+watch-faces	Watch faces	3528
+disclosure-controls	Disclosure controls	2989
+image-views	Image views	3449
+text-views	Text views	2321
+web-views	Web views	1160
+boxes	Boxes	1781
+collections	Collections	2065
+column-views	Column views	1944
+labels	Labels	3707
+lists-and-tables	Lists and tables	7514
+lockups	Lockups	2573
+outline-views	Outline views	4160
+tab-views	Tab views	2972
+activity-views	Activity views	6462
+edit-menus	Edit menus	5683
+home-screen-quick-actions	Home Screen quick actions	3131
+pop-up-buttons	Pop-up buttons	2612
+pull-down-buttons	Pull-down buttons	4095
+path-controls	Path controls	1677
+search-fields	Search fields	12035
+token-fields	Token fields	2110
+action-sheets	Action sheets	3991
+alerts	Alerts	9612
+page-controls	Page controls	7543
+panels	Panels	5301
+popovers	Popovers	4571
+sheets	Sheets	10053
+color-wells	Color wells	1416
+combo-boxes	Combo boxes	1400
+digit-entry-views	Digit entry views	854
+image-wells	Image wells	998
+pickers	Pickers	5417
+segmented-controls	Segmented controls	5791
+steppers	Steppers	1501
+text-fields	Text fields	5095
+activity-rings	Activity rings	5649
+gauges	Gauges	3673
+progress-indicators	Progress indicators	6706
+rating-indicators	Rating indicators	1205
+controls	Controls	6204
+status-bars	Status bars	1816

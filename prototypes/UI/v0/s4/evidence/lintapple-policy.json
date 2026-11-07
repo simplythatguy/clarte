@@ -1,0 +1,29 @@
+{
+  "fonts": ["Satoshi", "SF Pro Display", "-apple-system", "BlinkMacSystemFont", "Helvetica Neue", "system-ui"],
+  "fontSizes": [20, 26, 28, 32, 36, 40, 44, 48, 52, 64],
+  "typeRules": [
+    { "selector": "h1", "sizes": [48, 64] },
+    { "selector": ".letters", "sizes": [28, 32] },
+    { "selector": ".q3 .label", "sizes": [32, 36, 40, 44] },
+    { "selector": ".q4 .label", "sizes": [40] },
+    { "selector": ".key .label", "sizes": [32, 44] },
+    { "selector": ".value", "sizes": [20] },
+    { "selector": ".partner", "sizes": [26] },
+    { "selector": ".status", "sizes": [20] },
+    { "selector": ".message", "sizes": [52] },
+    { "selector": ".transcript", "sizes": [44] },
+    { "selector": ".spell-word", "sizes": [64] }
+  ],
+  "minControlSize": 44,
+  "controlSizeRules": [],
+  "minControlGap": 8,
+  "minControlInset": 8,
+  "controlContainers": ["[data-ui-container]"],
+  "contentInsetRules": [],
+  "iconSizeRules": [{ "selector": ".ring .icon", "sizes": [28] }],
+  "minLayoutGap": 8,
+  "bannedCopy": ["unlock your potential", "seamlessly", "game-changing"],
+  "viewports": [{ "width": 1440, "height": 900 }, { "width": 1280, "height": 720 }],
+  "colorSchemes": ["light"],
+  "exceptions": []
+}

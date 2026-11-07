@@ -1,0 +1,45 @@
+ok   1440x900 idle: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-idle.png
+ok   1440x900 listening: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-listening.png
+ok   1440x900 composing-pending: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-composing-pending.png
+ok   1440x900 composing-ready: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-composing-ready.png
+ok   1440x900 composing-unknown: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-composing-unknown.png
+ok   1440x900 more-idle: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-more-idle.png
+ok   1440x900 more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-more.png
+ok   1440x900 speaking: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-speaking.png
+ok   1440x900 spoken: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-spoken.png
+ok   1440x900 menu: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-menu.png
+ok   1440x900 menu-settings: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-menu-settings.png
+ok   1440x900 menu-settings-more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-menu-settings-more.png
+ok   1440x900 menu-demo: 5 actions [G1, G2, G3, primary, delete] → evidence/layout/1440x900-menu-demo.png
+ok   1440x900 menu-phrases: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-menu-phrases.png
+ok   1440x900 menu-phrases-more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-menu-phrases-more.png
+ok   1440x900 spell: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-spell.png
+ok   1440x900 spell-pairs: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1440x900-spell-pairs.png
+ok   1440x900 spell-letters: 4 actions [G1, G2, primary, delete] → evidence/layout/1440x900-spell-letters.png
+ok   1440x900 calibration-position: 0 actions [] → evidence/layout/1440x900-calibration-position.png
+ok   1440x900 calibration-points: 0 actions [] → evidence/layout/1440x900-calibration-points.png
+ok   1440x900 calibration-validate: 0 actions [] → evidence/layout/1440x900-calibration-validate.png
+ok   1440x900 calibration-ready: 1 actions [primary] → evidence/layout/1440x900-calibration-ready.png
+ok   1280x720 idle: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-idle.png
+ok   1280x720 listening: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-listening.png
+ok   1280x720 composing-pending: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-composing-pending.png
+ok   1280x720 composing-ready: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-composing-ready.png
+ok   1280x720 composing-unknown: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-composing-unknown.png
+ok   1280x720 more-idle: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-more-idle.png
+ok   1280x720 more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-more.png
+ok   1280x720 speaking: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-speaking.png
+ok   1280x720 spoken: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-spoken.png
+ok   1280x720 menu: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-menu.png
+ok   1280x720 menu-settings: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-menu-settings.png
+ok   1280x720 menu-settings-more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-menu-settings-more.png
+ok   1280x720 menu-demo: 5 actions [G1, G2, G3, primary, delete] → evidence/layout/1280x720-menu-demo.png
+ok   1280x720 menu-phrases: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-menu-phrases.png
+ok   1280x720 menu-phrases-more: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-menu-phrases-more.png
+ok   1280x720 spell: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-spell.png
+ok   1280x720 spell-pairs: 6 actions [G1, G2, G3, G4, primary, delete] → evidence/layout/1280x720-spell-pairs.png
+ok   1280x720 spell-letters: 4 actions [G1, G2, primary, delete] → evidence/layout/1280x720-spell-letters.png
+ok   1280x720 calibration-position: 0 actions [] → evidence/layout/1280x720-calibration-position.png
+ok   1280x720 calibration-points: 0 actions [] → evidence/layout/1280x720-calibration-points.png
+ok   1280x720 calibration-validate: 0 actions [] → evidence/layout/1280x720-calibration-validate.png
+ok   1280x720 calibration-ready: 1 actions [primary] → evidence/layout/1280x720-calibration-ready.png
+layout ok in every phase

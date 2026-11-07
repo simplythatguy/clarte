@@ -1,0 +1,725 @@
+/*
+ * Style 3 · Stages, in the shared Clarte light skin (BRIEF "Visual direction", reference
+ * light-direction mock) with the motion system of MOTION.md. Decisions are in DESIGN.md.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* apple.com neutrals */
+  --canvas: #F5F5F7;
+  --surface: #FFFFFF;
+  --ink: #1D1D1F;
+  --ink-2: #6E6E73;
+  --ink-3: #86868B;
+  --ink-status: #636366;       /* 5.4:1: the 20 px status reads from across the table */
+  --hairline: #D2D2D7;
+  --accent: #0071E3;          /* dwell progress only */
+
+  /* one pastel face and one ink per letter group */
+  --g1-face: #E3F0FA; --g1-ink: #1E5A82;
+  --g2-face: #ECE4F8; --g2-ink: #59409A;
+  --g3-face: #E2F3EA; --g3-ink: #2B6A4C;
+  --g4-face: #FBEADD; --g4-ink: #8A4A22;
+
+  /* conversation state: a luminance ladder, red only for recording */
+  --listening: #D70015;
+  --composing: #6E6E73;
+  --speaking: #1D1D1F;
+  --ready: #AEAEB2;
+  --error: #C93400;
+
+  /* motion (MOTION.md "Tokens") */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 120ms;
+  --dur-cue: 150ms;
+  --dur-settle: 180ms;
+  --dur-enter: 200ms;
+  --dur-phase: 300ms;
+  --dur-bloom: 450ms;
+
+  --font: 'Satoshi', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+
+  /* type, ×text size (BRIEF "Type and contrast"; tracking by size, MOTION "Craft") */
+  --scale: 1;
+  --letter-cols: 7.4;
+  --letter-wrap: nowrap;
+  --fs-message: calc(52px * var(--scale));
+  --fs-title: calc(44px * var(--scale));
+  --fs-transcript: calc(44px * var(--scale));
+  --fs-word: calc(44px * var(--scale));
+  --fs-label: calc(38px * var(--scale));
+  --fs-letters: calc(30px * var(--scale));
+  --fs-letter: calc(64px * var(--scale));
+  --fs-value: calc(28px * var(--scale));
+  --fs-partner: calc(26px * var(--scale));
+  --fs-small: calc(20px * var(--scale));
+
+  /* geometry on an 8 px grid. Tiles float in canvas inside their quadrant: 80 px between tiles at
+     1440 × 900 (≥ 1°), 128 px across the row boundary, the widest gap. */
+  --inset-x: clamp(32px, 2.78vw, 48px);
+  --tile-w: calc(25vw - 2 * var(--inset-x));
+  --tile-h: calc(50vh - 128px);
+  --radius: 40px;
+  --calib-canvas: #EBEBEF;
+  --ring: 56px;
+}
+
+/* Narrower screens (1280 × 720): letter rows step down the scale to 28 px so eight letters fit. */
+@media (max-width: 1360px) { :root { --fs-letters: calc(28px * var(--scale)); } }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Group inks for text on the dark canvas (the word in progress, word colours): ≥ 7:1. Tiles keep
+     their pastel faces with the light-theme inks. */
+  --g1-text: #8CC2EE; --g2-text: #C3AEF2; --g3-text: #86D4AA; --g4-text: #F0AA7C;
+  --canvas: #161617;
+  --surface: #262628;
+  --ink: #F5F5F7;
+  --ink-2: #A1A1A6;
+  --ink-3: #8E8E93;
+  --ink-status: #A1A1A6;
+  --hairline: #3A3A3C;
+  /* Lighter than the system blue so the arc keeps ≥ 3:1 on every dark face (3.3–3.7:1) and the
+     caption keyword ≥ 4.5:1 on its tint (5.1:1). */
+  --accent: #5EB0FF;
+  --calib-canvas: #2A2A2C;      /* matched to the dark working screens' mean luminance */
+  --composing: #A1A1A6;
+  --speaking: #F5F5F7;
+  --ready: #636366;
+  --listening: #FF453A;
+  --error: #FF9F0A;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+html { background: var(--canvas); }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-kerning: normal;
+}
+
+p, h1 { margin: 0; }
+
+/* ——— Layers: one cross-fade in place per stage change ——— */
+
+.stage { position: fixed; inset: 0; }
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  opacity: 1;
+  /* A true cross-fade: both layers run the same 300 ms curve from the same frame, so their
+     opacities sum to one and mean luminance stays flat (BRIEF "Luminance" outranks MOTION's
+     staggered 150/300 ms, which dipped through bare canvas by 10%). */
+  transition: opacity var(--dur-phase) var(--ease-state);
+}
+@starting-style { .layer { opacity: 0; } }
+.layer[data-leaving] { opacity: 0; transition: opacity var(--dur-phase) var(--ease-state); }
+.layer[data-instant] { transition: none; }
+
+/* ——— State: a hairline band at the top edge and a status field above the reading column ——— */
+
+.band {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 6px;
+  background: var(--band, transparent);
+  transition: background-color var(--dur-phase) var(--ease-state);
+}
+.status {
+  position: fixed;
+  z-index: 2;
+  top: 56px;
+  left: calc(25vw + var(--inset-x));
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-status);
+  transition: opacity var(--dur-phase) var(--ease-state);
+}
+.status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--band, transparent);
+  transition: background-color var(--dur-phase) var(--ease-state);
+}
+[data-state="listening"] { --band: var(--listening); }
+[data-state="paused"] { --band: var(--ready); }
+[data-state="composing"] { --band: var(--composing); }
+[data-state="speaking"] { --band: var(--speaking); }
+[data-state="ready"] { --band: var(--ready); }
+.status[data-state="none"],
+.status[data-hidden] { opacity: 0; }
+
+/* ——— Tiles: cards floating inside their quadrant; the quadrant is the hit region ——— */
+
+.tile {
+  --face: var(--surface);
+  --face-focus: color-mix(in srgb, var(--surface) 94%, var(--ink));
+  --fg: var(--ink);
+  --track: var(--ink-3);
+  position: relative;
+  align-self: center;
+  justify-self: center;
+  width: var(--tile-w);
+  height: var(--tile-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* The mark's bottom sits on the tile's centre line and labels hang below it, so marks and first
+     baselines align across a row whatever the label length (MOTION "Craft"). */
+  justify-content: flex-start;
+  gap: 28px;
+  padding: 16px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--face);
+  color: var(--fg);
+  font: inherit;
+  text-align: center;
+  cursor: default;
+  container-type: size;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-cue) var(--ease-state);
+}
+
+.tile[data-kind="primary"] {
+  --face: var(--ink);
+  --face-focus: var(--ink);
+  --fg: var(--canvas);
+  --track: var(--canvas);
+}
+:root[data-theme="dark"] .tile[data-kind="primary"] {
+  /* The highest-contrast card without a light patch: a raised grey face with light text (6.9:1),
+     so a dark screen keeps one low luminance from calibration on. */
+  --face: #545456; --face-focus: #545456; --fg: #F5F5F7; --track: #F5F5F7;
+}
+/* Dark theme: no glare patches. Group faces are their text ink at 16% on the dark surface, with
+   the light text inks for letters and motif (a light-sensitive person chose this theme). */
+:root[data-theme="dark"] .tile[data-group] {
+  --face: color-mix(in srgb, var(--gtext) 16%, var(--surface));
+  --face-focus: color-mix(in srgb, var(--gtext) 26%, var(--surface));
+  --fg: var(--gtext);
+  --track: var(--gtext);
+}
+
+.tile[data-group] {
+  --face: var(--gface);
+  --face-focus: color-mix(in srgb, var(--gface) 88%, var(--gink));
+  --fg: var(--gink);
+  --track: var(--gink);
+}
+[data-group="G1"] { --gface: var(--g1-face); --gink: var(--g1-ink); --gtext: var(--g1-text, var(--g1-ink)); }
+[data-group="G2"] { --gface: var(--g2-face); --gink: var(--g2-ink); --gtext: var(--g2-text, var(--g2-ink)); }
+[data-group="G3"] { --gface: var(--g3-face); --gink: var(--g3-ink); --gtext: var(--g3-text, var(--g3-ink)); }
+[data-group="G4"] { --gface: var(--g4-face); --gink: var(--g4-ink); --gtext: var(--g4-text, var(--g4-ink)); }
+
+/* A wide action (Done listening, Start) is one card that spans its quadrants without touching
+   their edges; a two-quadrant action (Speak, Stop, Say again) is a card centred on the boundary. */
+.tile[data-span="4"] {
+  width: calc(50vw + 48px);
+  height: 144px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+}
+.tile[data-span="4"] .tile__mark { margin-top: 0; }
+/* A two-quadrant action (Speak, Stop, Say again) is a wide card across both quadrants, the same
+   form as Done: its extent is honest, and its ink area matches one card (luminance). */
+.tile[data-span="2"] {
+  width: calc(50vw - 80px);
+  height: 144px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+}
+.tile[data-span="2"] .tile__mark { margin-top: 0; }
+/* Above 100% text the whole cluster centres, so wrapped labels stay inside the card. */
+:root[data-text="large"] .tile { justify-content: center; }
+:root[data-text="large"] .tile__mark { margin-top: 0; }
+
+/* Quiet Q1 (no word yet): the card stays (constant luminance), the ring goes, the check fades to
+   35% so the card reads as unavailable rather than blank. */
+.tile[aria-disabled="true"] .ring-wrap { visibility: hidden; }
+.tile[aria-disabled="true"] .icon { opacity: 0.35; }
+.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 6px; }
+
+/* Focus cue at the end of the intent delay: one step of the face, track fully opaque. The step is
+   an overlay whose opacity changes, so the cue is composited: no paint during a dwell. */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--face-focus);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+  transition: opacity var(--dur-cue) var(--ease-state);
+}
+.tile[data-dwell="focus"]::before { opacity: 1; }
+.tile > * { position: relative; }
+
+/* ——— The mark: the two-circle motif (group dot + dwell ring) or the ring around an icon ——— */
+
+.tile__mark {
+  margin-top: calc(50cqh - var(--ring));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.motif-dot {
+  width: 36px;
+  height: 36px;
+  margin-right: -12px;
+  border-radius: 50%;
+  background: var(--fg);
+}
+.mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--ring);
+  height: var(--ring);
+  color: var(--fg);
+}
+.mark .icon { grid-area: 1 / 1; width: 28px; height: 28px; }
+
+.ring-wrap { position: absolute; inset: 0; }
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0.3;
+  will-change: opacity;
+  transition: opacity var(--dur-cue) var(--ease-state);
+}
+.ring__track {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 1.5;
+}
+.tile[data-dwell="focus"] .ring { opacity: 1; }
+
+/* The arc: two half-ring blades, each inside a container clipped to one half of the ring; only
+   their transform animates (arc.ts), so drawing it costs no layout and no paint. */
+.arc { position: absolute; inset: 0; opacity: 0; will-change: opacity; transition: opacity var(--dur-cue) var(--ease-state); }
+.tile:is([data-dwell="focus"], [data-dwell="drain"], [data-dwell="done"]) .arc,
+.cal-target[data-state="active"] .arc { opacity: 1; transition: none; }
+.arc-half { position: absolute; inset: 0; }
+.arc-half--right { clip-path: inset(0 0 0 50%); }
+.arc-half--left { clip-path: inset(0 50% 0 0); }
+.arc-blade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  will-change: transform;
+}
+.arc-half--right .arc-blade { clip-path: inset(0 50% 0 0); }
+.arc-half--left .arc-blade { clip-path: inset(0 0 0 50%); }
+.tile[data-dwell="release"] .arc { opacity: 0; }
+
+/* The bloom: a copy of the ring, transform and opacity only, never moves layout. */
+.ring-bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ——— Labels ——— */
+
+.tile__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: calc(var(--fs-label) * 1.1);
+}
+.tile__label {
+  font-size: min(var(--fs-label), calc(100cqw / (var(--chars, 1) * 0.6)), calc((100cqh - 100px) / 2.4));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.tile[data-kind="primary"] .tile__label { font-size: min(var(--fs-word), calc(100cqw / (var(--chars, 1) * 0.58)), calc((100cqh - 100px) / 2.4)); letter-spacing: -0.025em; }
+/* Wide cards (one row: mark, then label) size their label by the card's height, not as a stack. */
+.tile:is([data-span="2"], [data-span="4"]) .tile__label { font-size: min(var(--fs-word), calc(100cqh - 24px)); }
+.label-stack { display: grid; max-width: 100%; justify-items: center; }
+.label-stack > * { grid-area: 1 / 1; }
+/* One swap layer: a label, or a group's letter rows and count. The incoming layer fades in on the
+   same curve the outgoing one fades out on (--ease-out), so the stack never dips. */
+.swap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+  transition: opacity var(--dur-cue) var(--ease-out);
+  @starting-style { opacity: 0; }
+}
+.swap--leaving { pointer-events: none; }
+.tile__name {
+  font-size: min(var(--fs-small), calc(100cqw / (var(--chars, 1) * 0.55)), calc((100cqh - 100px) / 4.5));
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: 0;
+}
+.tile[data-kind="control"] .tile__name + .label-stack .tile__label { font-size: min(var(--fs-value), calc(100cqw / (var(--chars, 1) * 0.6)), calc((100cqh - 100px) / 3)); }
+
+/* A group tile prints every letter, one row, tracked; at large text it balances into two rows. */
+.tile[data-group] .tile__label {
+  font-size: max(24px, min(var(--fs-letters), calc(100cqw / var(--letter-cols)), calc((100cqh - 112px) / 2.5)));
+  letter-spacing: 0.14em;
+  word-spacing: -0.16em;
+  margin-right: -0.14em;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.letter-row { white-space: nowrap; }
+:root[data-text="large"] .letter-row { display: block; }
+.tile[data-single] .tile__label { font-size: min(var(--fs-letter), 60cqw, calc((100cqh - 100px) / 1.3)); letter-spacing: 0; margin: 0; }
+.tile__count { display: flex; gap: 6px; }
+.tile__count i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.9; }
+
+/* ——— Rest zones: the reading column is Q2–Q3 on every stage ——— */
+
+.rest {
+  grid-row: 1;
+  grid-column: 2 / span 2;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 112px var(--inset-x) 56px;
+  overflow: hidden;
+}
+.text-window {
+  position: relative;
+  /* Room for ascenders and accents above a tight display line box, inside the clip. */
+  padding-block: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.partner {
+  flex: none;
+  font-size: var(--fs-partner);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink-2);
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+/* Large text: the status sits higher and the rest zone gives its padding to the text, so a long
+   word in progress keeps all of its lines in view. */
+:root[data-text="large"] .status { top: 32px; }
+:root[data-text="large"] .rest { padding-top: calc(32px + var(--fs-small) + 16px); padding-bottom: 24px; }
+:root[data-text="large"] .text-window { padding-block: 4px; }
+/* Earlier lines are above the window: an ellipsis hangs in the margin of the first line. */
+.rest { position: relative; }
+.rest[data-clipped]::before {
+  content: '…';
+  position: absolute;
+  top: var(--more-top);
+  /* Inside the rest zone's own margin, so the clip never cuts it. */
+  right: calc(100% - var(--inset-x) + 4px);
+  font-size: min(var(--fs-value), 28px);
+  line-height: var(--more-line);
+  font-weight: 500;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.rest.is-tight .partner,
+.rest.is-tight .rule { display: none; }
+.rule {
+  flex: none;
+  width: 100%;
+  height: 1px;
+  margin: 28px 0;
+  border: 0;
+  background: var(--hairline);
+}
+
+.message,
+.sentence,
+.transcript,
+.menu-title {
+  font-size: var(--fs-message);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.message { position: relative; }
+.transcript { font-size: var(--fs-transcript); font-weight: 500; line-height: 1.25; letter-spacing: -0.015em; }
+.menu-title { font-size: var(--fs-title); }
+
+/* The word in progress (BRIEF "The word in progress"): typed glyphs in their group's ink, the
+   predicted rest as ghost letters; each glyph arrives in place by opacity, nothing slides. */
+.wip { white-space: nowrap; }
+/* At large text a long word in progress may break across lines rather than leave the column. */
+:root[data-text="large"] .wip { white-space: normal; }
+.glyph {
+  color: var(--gtext, var(--ink-3));
+  transition: opacity var(--dur-cue) var(--ease-out), color var(--dur-cue) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+.glyph--ghost { color: var(--ink-3); }
+.glyph--dot {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin: 0 0.12em;
+  border-radius: 50%;
+  background: var(--gtext);
+  vertical-align: 0.05em;
+}
+.glyph-cell { position: relative; }
+/* A letter the decoder replaced: it fades out on top while its successor fades in. */
+.glyph-out { position: absolute; left: 0; top: 0; pointer-events: none; }
+.glyph-out .glyph { transition: none; }
+.glyph-leaving { position: absolute; color: var(--gtext, var(--ink-3)); pointer-events: none; }
+.glyph-leaving.glyph--dot { width: 0.5em; height: 0.5em; }
+
+/* Accepted: the glyphs settle from group ink to ink over 180 ms; colour only. */
+.letter--settle {
+  color: var(--ink);
+  transition: color var(--dur-settle) var(--ease-state);
+  @starting-style { color: var(--gtext, var(--ink)); }
+}
+.letter--predicted { @starting-style { color: var(--ink-3); } }
+.letter--kept { color: var(--gtext, var(--ink)); }
+
+/* Speaking: spoken words in ink, the current word underlined, the rest still to come in tertiary. */
+.sentence[data-speaking] .word[data-said="next"] { color: var(--ink-3); }
+.sentence[data-speaking] .word[data-said="now"] {
+  text-decoration: underline 3px var(--ink);
+  text-underline-offset: 0.16em;
+}
+
+.spelled { display: flex; align-items: baseline; }
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.85em;
+  margin-left: 4px;
+  background: var(--ink);
+  align-self: center;
+}
+
+/* A failure, where the person is reading, until their next selection. */
+.problem {
+  flex: none;
+  margin-top: 16px;
+  padding-left: 18px;
+  position: relative;
+  max-width: 34em;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.problem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.42em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--error);
+}
+
+/* ——— Calibration (MOTION "The calibration sequence") ——— */
+
+.calib {
+  position: absolute;
+  inset: 0;
+  /* Calibrate at the working brightness (R-1 §27): the cards of a working screen darken its mean
+     luminance to about 0.84, so calibration sits on a canvas one step darker that matches it. */
+  background: var(--calib-canvas);
+}
+
+.calib__face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(38vh, 38vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  background: transparent;
+  transition: border-color var(--dur-enter) var(--ease-state), background-color var(--dur-enter) var(--ease-state);
+}
+.calib__face[data-passed] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.captions {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+/* Beside the active calibration target, travelling with the dot. */
+.captions--at {
+  left: 0;
+  top: 0;
+  align-items: flex-start;
+  transition: translate var(--move) var(--ease-move);
+}
+.caption {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--ink-2);
+  transition: opacity var(--dur-enter) var(--ease-out), color var(--dur-cue) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+.caption[data-current] { color: var(--ink); }
+.caption__body { display: grid; }
+.caption__body > * { grid-area: 1 / 1; }
+.caption__full { visibility: hidden; }
+.caption mark {
+  /* The accent, one step darker so the keyword keeps 4.5:1 on its own 14% tint. */
+  color: color-mix(in srgb, var(--accent) 78%, #000);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+:root[data-theme="dark"] .caption mark { color: var(--accent); }
+.caption__caret {
+  width: 1px;
+  height: 1.1em;
+  margin-left: 2px;
+  background: var(--ink);
+  transition: opacity var(--dur-cue) var(--ease-state) 500ms;
+}
+.caption__caret[data-done] { opacity: 0; }
+
+.cal-target {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  transition: opacity var(--dur-enter) var(--ease-out), border-color var(--dur-cue) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+.cal-target[data-state="active"] { border-color: transparent; }
+.cal-target[data-state="active"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.cal-target .cal-mark { position: absolute; inset: -1.5px; }
+.cal-target .cal-mark .ring__track { stroke: var(--ink); }
+.cal-target[data-state="active"] { border-color: transparent; }
+.cal-target[data-state="active"] .ring { opacity: 1; }
+.cal-target .arc-blade { border-width: 2px; }
+
+.cal-guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: translate var(--move) var(--ease-move), opacity var(--dur-enter) var(--ease-out);
+}
+.cal-guide[data-hidden] { opacity: 0; }
+
+.calib--ready {
+  inset: 0 0 50%;
+  /* Ready carries the ink Start card, so it already sits at working luminance on the plain canvas. */
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 40px;
+}
+.calib__title { font-size: var(--fs-message); font-weight: 700; letter-spacing: -0.025em; }
+.calib__result { font-size: var(--fs-partner); font-weight: 500; color: var(--ink-2); }
+
+/* ——— Keyboard and click actions: state changes with no motion (MOTION "Choreography") ——— */
+
+:root[data-input="key"] :is(.layer, .glyph, .swap, .letter--settle, .tile, .tile::before, .ring, .ring__track, .arc, .band, .status, .status i) { transition: none; }
+
+/* ——— Reduced motion: the same information, no movement ——— */
+
+@media (prefers-reduced-motion: reduce) {
+  .arc { display: none; }
+  /* Commit is a colour step, not just the last opacity step (MOTION "Reduced motion"). */
+  .ring__track { transition: stroke var(--dur-press) var(--ease-state); }
+  .tile[data-dwell="done"] .ring__track { stroke: var(--accent); stroke-width: 3; }
+  .cal-guide { transition: opacity var(--dur-enter) var(--ease-out); }
+  /* The caption moves to the next target at once; it never travels. */
+  .captions--at { transition: none; }
+  /* Calibration teaches the app's reduced-motion commit: the ring turns accent on completion. */
+  .cal-target[data-state="commit"] { border-color: transparent; }
+  .cal-target[data-state="commit"] .ring { opacity: 1; }
+  .cal-target[data-state="commit"] .ring__track { stroke: var(--accent); stroke-width: 3; }
+}
+

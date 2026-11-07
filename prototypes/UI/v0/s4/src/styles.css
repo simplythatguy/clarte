@@ -1,0 +1,591 @@
+/* Clarte UI v0 · Style 4 · Split, in the shared light skin (BRIEF "Visual direction", MOTION.md).
+ *
+ * Cards float in canvas. Each card sits inside its backend quadrant, centred on the quadrant's
+ * column, with a 56 px column gutter and a wider row gutter (vertical accuracy is the worse axis).
+ * Colour: the four group faces and inks, the state strip and dot, the dwell accent, errors.
+ * Motion: transform, opacity and colour only; nothing changes layout.
+ */
+
+:root {
+  color-scheme: light;
+  --canvas: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #ececef;
+  --page-face: #ededf0;
+  --page-face-2: #e2e2e6;
+  --ink-2-on-page: #5f5f64;
+  --cal-canvas: #e9e9ec;
+  --ink: #1d1d1f;
+  --ink-hover: #2c2c2e;
+  --on-ink: #ffffff;
+  --ink-2: #6e6e73;
+  --ink-3: #86868b;
+  /* Ghost letters: tertiary renders at 2.95:1 once anti-aliased at 52 px; this keeps 3:1. */
+  --ghost: #7a7a7f;
+  --hairline: #d2d2d7;
+  --accent: #0071e3;
+  --error: #d70015;
+
+  --g1-face: #e3f0fa; --g1-face-2: #d3e6f6; --g1-ink: #1e5a82;
+  --g2-face: #ece4f8; --g2-face-2: #e1d5f4; --g2-ink: #59409a;
+  --g3-face: #e2f3ea; --g3-face-2: #d1ebdd; --g3-ink: #2b6a4c;
+  --g4-face: #fbeadd; --g4-face-2: #f7dcc8; --g4-ink: #8a4a22;
+
+  --state-listening: #d70015;
+  --state-composing: #1d1d1f;
+  --state-speaking: #248a3d;
+
+  --font: 'Satoshi', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+
+  /* MOTION.md tokens */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 120ms;
+  --dur-cue: 150ms;
+  --dur-settle: 180ms;
+  --dur-enter: 200ms;
+  --dur-phase: 300ms;
+  --dur-bloom: 450ms;
+
+  --scale: 1;
+  --gc: 3.889vw;          /* column gutter: 56 px at 1440, 50 px at 1280 */
+  --top: 4.444vh;         /* 40 px at 900 */
+  --card-h: 39.111vh;     /* 352 px at 900 */
+  --card-w: calc(25vw - var(--gc));
+  --radius: 40px;
+  --ring: 64px;
+  --label-row: 32px; /* cap height of the 44 px label */
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #121214;
+  --surface: #232326;
+  --surface-2: #2c2c30;
+  --page-face: #26262a;
+  --page-face-2: #303035;
+  --ink-2-on-page: #a1a1a6;
+  --cal-canvas: #121214;
+  --ink: #ececef;
+  --ink-hover: #dcdce0;
+  --on-ink: #1d1d1f;
+  --ink-2: #a1a1a6;
+  --ink-3: #8e8e93;
+  --ghost: #98989d;
+  --hairline: #3a3a3c;
+  --accent: #2997ff;
+  --error: #ff453a;
+  --g1-face: #1d2b36; --g1-face-2: #243644; --g1-ink: #a9d2f0;
+  --g2-face: #262033; --g2-face-2: #2f2840; --g2-ink: #c9b6f0;
+  --g3-face: #1b2b23; --g3-face-2: #22352b; --g3-ink: #a3dcbd;
+  --g4-face: #33251c; --g4-face-2: #3e2d22; --g4-ink: #f2c19f;
+  --state-listening: #ff453a;
+  --state-composing: #f5f5f7;
+  --state-speaking: #30d158;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root, .app { height: 100%; }
+.stage { position: fixed; inset: 0; }
+/* The outgoing scene when calibration starts or ends: a still copy that only fades. */
+.stage-out { pointer-events: none; animation: content-out var(--dur-cue) var(--ease-out) both; }
+.stage-out * { animation: none !important; transition: none !important; }
+
+/* ---- State strip: the partner's cue at the top edge ------------------------------------- */
+
+.strip {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background-color: transparent;
+  transition: background-color var(--dur-phase) var(--ease-state);
+}
+.strip--listening { background-color: var(--state-listening); }
+.strip--composing { background-color: var(--state-composing); }
+.strip--speaking { background-color: var(--state-speaking); }
+
+/* ---- Cards ----------------------------------------------------------------------------- */
+
+.tile {
+  position: fixed;
+  width: var(--card-w);
+  height: var(--card-h);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  font: inherit;
+  color: var(--ink);
+  background-color: var(--face);
+  display: grid;
+  place-items: center;
+  container-type: inline-size;
+  cursor: default;
+  outline: none;
+  --face: var(--surface);
+  --face-2: var(--surface-2);
+  --mark: var(--ink);
+  --track: var(--ink-3);
+  transition: background-color var(--dur-cue) var(--ease-state);
+}
+.tile > * { grid-area: 1 / 1; width: calc(100% - 48px); display: flex; justify-content: center; }
+/* Every card hangs its content from one line, so rings and labels align across a row. */
+.tile { place-items: start center; }
+.tile > * { margin-top: max(16px, calc(var(--card-h) / 2 - 84px * var(--scale))); }
+
+.q1, .q5 { left: calc(var(--gc) / 2); }
+.q2, .q6 { left: calc(25vw + var(--gc) / 2); }
+.q3 { left: calc(50vw + var(--gc) / 2); }
+.q4 { left: calc(75vw + var(--gc) / 2); }
+.q1, .q2, .q3, .q4 { top: var(--top); }
+.q5, .q6 { top: calc(100vh - var(--top) - var(--card-h)); }
+
+.face-white { --face: var(--surface); --face-2: var(--surface-2); }
+/* Page items (menu, More, Settings, phrases) take a neutral face at the pastels' luminance, so
+   opening a page does not brighten the screen (mean luminance stays within about 2%). */
+.key.face-white { --face: var(--page-face); --face-2: var(--page-face-2); }
+/* Secondary values on the page face keep 4.5:1 (#6E6E73 there measures 4.34:1). */
+.key.face-white .value { color: var(--ink-2-on-page); }
+.face-ink { --face: var(--ink); --face-2: var(--ink-hover); --mark: var(--on-ink); --track: var(--on-ink); color: var(--on-ink); }
+.face-none { --face: transparent; --face-2: transparent; }
+.face-group { color: var(--group-ink); --mark: var(--group-ink); --track: var(--group-ink); }
+.face-group[data-group='G1'] { --face: var(--g1-face); --face-2: var(--g1-face-2); }
+.face-group[data-group='G2'] { --face: var(--g2-face); --face-2: var(--g2-face-2); }
+.face-group[data-group='G3'] { --face: var(--g3-face); --face-2: var(--g3-face-2); }
+.face-group[data-group='G4'] { --face: var(--g4-face); --face-2: var(--g4-face-2); }
+[data-group='G1'] { --group-ink: var(--g1-ink); }
+[data-group='G2'] { --group-ink: var(--g2-ink); }
+[data-group='G3'] { --group-ink: var(--g3-ink); }
+[data-group='G4'] { --group-ink: var(--g4-ink); }
+
+/* Focus cue: one static step of the face. Commit returns it to rest over 150 ms. */
+.tile[data-dwell='focus'], .tile[data-dwell='dwell'], .tile[data-dwell='preview'] { background-color: var(--face-2); }
+
+.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 6px; }
+
+/* A quiet card is visible but offers nothing (keys while listening or speaking). */
+.tile .content { transition: opacity var(--dur-phase) var(--ease-state); }
+.tile[aria-disabled='true'] .content { opacity: 0.32; }
+
+/* ---- Content and its cross-fade ------------------------------------------------------------ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(12px + 8px * var(--scale));
+  max-width: 100%;
+  text-align: center;
+}
+
+.content-out { animation: content-out var(--dur-cue) var(--ease-out) both; pointer-events: none; }
+.content-in.is-entering { animation: content-in var(--dur-phase) var(--ease-out) 100ms both; }
+.content-out.is-quick { animation-duration: 100ms; }
+.content-in.is-entering.is-quick { animation: content-in 120ms var(--ease-out) 50ms both; }
+@keyframes content-out { to { opacity: 0; } }
+/* Labels sit on the floor of a row as tall as the largest label's line, trimmed to cap height and
+   baseline, so every label in a row of cards shares one baseline whatever its size. */
+.label-text { display: block; text-box: trim-both cap alphabetic; }
+.letters-row:first-child { text-box: trim-start cap; }
+@keyframes content-in { from { opacity: 0; } }
+
+.label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: calc(var(--label-row) * var(--scale));
+  font-size: min(calc(40px * var(--scale)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.58)), 4px));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.q3 .label { font-size: min(calc(44px * var(--scale)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.58)), 4px)); letter-spacing: -0.02em; }
+.tone-word .label, .q3.tone-word .label { font-size: min(calc(44px * var(--scale)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.56)), 4px)); letter-spacing: -0.025em; }
+.key .label { font-size: min(calc(32px * var(--scale)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.58)), 4px)); }
+.value { font-size: calc(20px * var(--scale)); font-weight: 500; color: var(--ink-2); line-height: 1.2; }
+.face-ink .value { color: color-mix(in srgb, var(--on-ink) 72%, transparent); }
+
+/* The letters: the only text on a group card. One row, two rows of four from 150% text. */
+.letters {
+  display: block;
+  /* Every group at the size the widest row (eight letters) allows, so peers look alike. */
+  font-size: min(calc(32px * var(--scale)), calc((100cqi - 40px) / (1 * var(--n) - 0.28)));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  word-spacing: -0.08em;
+  line-height: 1.25;
+  margin-right: -0.1em; /* the tracking after the last letter, so the row centres optically */
+  white-space: nowrap;
+  color: var(--group-ink);
+}
+.letters-row { display: inline; }
+.letters { --n: 8; }
+@media (max-width: 1399px) { .letters { font-size: min(calc(28px * var(--scale)), calc((100cqi - 40px) / (1 * var(--n) - 0.28))); } }
+.app[data-large-text] .letters { --n: 4; line-height: 1.15; }
+/* From 150% text a card budgets its height: a smaller ring, tighter gaps, and page labels that stay
+   under 1.4× so a phrase of four words still fits (checked at 1280 × 720 and 200%). */
+.app[data-large-text] { --ring: 48px; --label-row: 0px; }
+.app[data-large-text] .tile { place-items: center; }
+.app[data-large-text] .tile > * { margin-top: 0; }
+.app[data-large-text] .content { gap: 12px; }
+.app[data-large-text] .key .label { font-size: min(calc(22px * var(--scale)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.58)), 4px)); }
+.app[data-large-text] .value { font-size: calc(16px * var(--scale)); }
+/* Back, More and Delete grow less than the way forward, so at 200% Q4 never out-shouts Q3. */
+.app[data-large-text] .q4 .label { font-size: min(calc(40px * min(var(--scale), 1.4)), round(down, calc((100cqi - 48px) / (var(--chars) * 0.58)), 4px)); }
+.app[data-large-text] .letters-row { display: block; }
+
+.pips { display: flex; gap: 6px; height: 6px; }
+.pips > span { width: 6px; height: 6px; border-radius: 50%; background: var(--group-ink); }
+
+/* ---- The two-circle motif and the dwell ring --------------------------------------------- */
+
+.motif { display: flex; align-items: center; }
+.motif-dot { width: var(--ring); height: var(--ring); border-radius: 50%; background: var(--group-ink); }
+
+.ring {
+  position: relative;
+  width: var(--ring);
+  height: var(--ring);
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--mark);
+}
+.motif .ring {
+  margin-left: calc(var(--ring) * -0.3);
+  border-radius: 50%;
+  background-color: var(--face);
+  transition: background-color var(--dur-cue) var(--ease-state);
+}
+.tile[data-dwell='focus'] .motif .ring,
+.tile[data-dwell='dwell'] .motif .ring,
+.tile[data-dwell='preview'] .motif .ring { background-color: var(--face-2); }
+.ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ring-track {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 1.5;
+  opacity: 0.3;
+  transition: opacity var(--dur-cue) var(--ease-state), stroke var(--dur-cue) var(--ease-state);
+}
+/* The arc. Each half is a ring clipped to one side; it rotates about the centre into the other
+   side's window, so 0 to 180° fills the right half and the second turn fills the left. */
+.arc { position: absolute; inset: 0; opacity: 0; transition: opacity 0s linear var(--dur-cue); }
+/* Visible only while dwelling, latched or draining (the hide waits out the 150 ms drain), so the
+   half-rings' clip edges never leave a hairline on a card at rest. */
+.tile[data-dwell] .arc { opacity: 1; transition: none; }
+.arc-r { clip-path: inset(0 0 0 50%); }
+.arc-l { clip-path: inset(0 50% 0 0); }
+.arc-half {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.arc-r .arc-half { clip-path: inset(0 50% 0 0); }
+.arc-l .arc-half { clip-path: inset(0 0 0 50%); }
+.ring-bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.ring .icon { width: 28px; height: 28px; }
+
+.tile[data-dwell='focus'] .ring-track,
+.tile[data-dwell='dwell'] .ring-track,
+.tile[data-dwell='preview'] .ring-track { opacity: 1; }
+.tile[data-dwell='selected'] .ring-track { stroke: var(--accent); opacity: 1; }
+
+/* ---- The conversation: bare canvas in Q7 + Q8 ------------------------------------------ */
+
+/* The outgoing scene's conversation fades out in place while the new one fades in. */
+.rest-out { position: absolute; inset: 0; display: flex; flex-direction: column; pointer-events: none; animation: content-out var(--dur-cue) var(--ease-out) both; }
+
+.rest {
+  position: absolute;
+  container-type: inline-size;
+  left: calc(50vw + var(--gc) / 2 + 8px);
+  right: calc(var(--gc) / 2);
+  top: calc(100vh - var(--top) - var(--card-h));
+  bottom: var(--top);
+}
+.rest-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: content-in var(--dur-phase) var(--ease-out) 100ms both;
+}
+
+.status {
+  animation: content-in var(--dur-cue) var(--ease-out) both;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 calc(16px * var(--scale));
+  font-size: calc(20px * var(--scale));
+  font-weight: 500;
+  line-height: 1.2;
+  /* 20 px text needs 4.5:1; secondary ink renders at 4.3:1 here, so the status is ink and its
+     dot carries the state colour. */
+  color: var(--ink);
+  flex: none;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); transition: background-color var(--dur-phase) var(--ease-state); }
+.status--listening .status-dot { background: var(--state-listening); }
+.status--composing .status-dot { background: var(--state-composing); }
+.status--speaking .status-dot { background: var(--state-speaking); }
+
+.partner {
+  margin: 0;
+  flex: 0 1 auto;
+  min-height: 0;
+  font-size: calc(26px * var(--scale));
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: var(--partner-lines, 2);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+.app[data-large-text] { --partner-lines: 1; }
+/* At large text the conversation also uses the strip of Q7/Q8 next to the row line that the
+   engine's dead band already keeps (31 px clear of the line) and most of the bottom margin. */
+.app[data-large-text] .rest { top: calc(50vh + 3.5vmin); bottom: 16px; }
+/* From 150% text the status line gives its room to the message (the top strip still shows the
+   state and the status stays in the accessibility tree), except Listening: recording is always
+   said in words. */
+.app[data-large-text] .status:not(.status--listening) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); margin: 0; }
+
+.rule { flex: none; height: 1px; background: var(--hairline); margin: calc(12px + 4px * var(--scale)) 0; }
+
+.message, .transcript {
+  margin: 0;
+  flex: 1 1 0;
+  /* At least one whole line, whatever sits above it; the partner turn yields first. */
+  min-height: calc(52px * var(--scale) * 1.3);
+  overflow: hidden;
+  font-size: calc(52px * var(--scale));
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  /* Taller than the face's inline box, so whole-line scrolling never shows a sliver. */
+  line-height: 1.3;
+  text-wrap: pretty;
+  /* A word wider than the line (200% text) breaks rather than leaving the zone. */
+  overflow-wrap: anywhere;
+  /* Room for the spoken-word pill at the left edge without moving the text. */
+  padding-inline: 0.14em;
+  margin-left: -0.14em;
+}
+.transcript { font-weight: 500; letter-spacing: -0.015em; font-size: calc(44px * var(--scale)); }
+
+.m-word { border-radius: 12px; }
+.m-said { color: var(--ink-2); }
+/* The spoken word: one pill highlight, swapped instantly on the speech boundary. */
+.m-word.is-spoken {
+  background-color: color-mix(in srgb, var(--state-speaking) 16%, transparent);
+  box-shadow: 0.12em 0 0 color-mix(in srgb, var(--state-speaking) 16%, transparent), -0.12em 0 0 color-mix(in srgb, var(--state-speaking) 16%, transparent);
+  transition: none;
+}
+.m-word.is-target { text-decoration: underline 2px var(--ink-3); text-underline-offset: 0.18em; }
+
+/* The word in progress: typed glyphs in their group ink, the rest of the guess as ghost letters. */
+.glyph { transition: color var(--dur-cue) var(--ease-state); }
+.glyph > span { animation: content-in var(--dur-cue) var(--ease-out) both; }
+.glyph.is-typed { color: var(--group-ink); }
+.glyph.is-ghost { color: var(--ghost); }
+.glyph-dot { display: inline-block; width: 0.3em; height: 0.3em; margin: 0 0.07em; border-radius: 50%; background: var(--group-ink); vertical-align: 0.1em; }
+/* Accepted: the glyphs settle from group ink to plain ink. */
+.settle { animation: settle var(--dur-settle) var(--ease-state) both; }
+@keyframes settle { from { color: var(--group-ink); } }
+.word-coloured > span[data-group] { color: var(--group-ink); }
+
+.app[data-large-text] .notice + .partner, .app[data-large-text] .notice ~ .rule { display: none; }
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 calc(12px * var(--scale));
+  font-size: calc(20px * var(--scale));
+  color: var(--ink);
+  flex: none;
+}
+.notice::before { content: ''; flex: none; width: 8px; height: 8px; margin-top: 0.5em; border-radius: 50%; background: var(--error); }
+
+.rest-title { margin: 0; font-size: calc(48px * var(--scale)); font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; }
+
+.spell-word {
+  margin: 0;
+  align-self: flex-start;
+  min-width: 50%;
+  min-height: 1.3em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+  /* A long name shrinks to the zone's width rather than running out of it. */
+  font-size: min(calc(64px * var(--scale)), calc(100cqi / (var(--chars, 8) * 0.62)));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.spell-caret { display: inline-block; width: 2px; height: 0.8em; margin-left: 6px; vertical-align: -0.04em; background: var(--ink); }
+
+/* ---- Calibration --------------------------------------------------------------------------- */
+
+.calibration { position: absolute; inset: 0; }
+/* The canvas tone is static; only the scene on it fades, so entering calibration never flashes
+   the page brighter for a frame (council round 5). */
+.calibration > * { animation: content-in var(--dur-phase) var(--ease-out) both; }
+/* Leaving calibration, the keys arrive with the same phase cross-fade as any scene change. */
+.keypad { animation: content-in var(--dur-phase) var(--ease-out) 100ms both; }
+/* Calibrate at the working brightness: the bare calibration screens take a canvas tone whose
+   luminance matches the app's measured mean (0.80–0.84), instead of the brighter empty canvas. */
+.calibration:is(.cal-position, .cal-points, .cal-validate) { background: var(--cal-canvas); }
+
+.cal-target {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  display: grid;
+  place-items: center;
+  animation: content-in var(--dur-enter) var(--ease-out) both;
+}
+.cal-target svg { position: absolute; inset: 0; overflow: visible; }
+.cal-outline { fill: none; stroke: var(--ink); stroke-width: 1.5; opacity: 0.3; transition: opacity var(--dur-cue) var(--ease-state); }
+.cal-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: butt; /* the same flat ends as the app's arc */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transform: rotate(-90deg);
+  transform-origin: 14px 14px;
+  opacity: 0;
+}
+.cal-target.is-active .cal-outline { opacity: 1; }
+.cal-target.is-active .cal-arc {
+  opacity: 1;
+  stroke-dashoffset: 0;
+  /* The target holds, then its ring fills over the last 450 ms: the visible fill of a letter dwell. */
+  transition: stroke-dashoffset 450ms linear calc(var(--settle-ms, 1800ms) - 450ms);
+}
+.cal-target.is-done .cal-arc { opacity: 0; transition: opacity var(--dur-cue) var(--ease-state); }
+.cal-centre { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); opacity: 0; transition: opacity var(--dur-cue) var(--ease-state); }
+.cal-target.is-active .cal-centre { opacity: 1; }
+.cal-bloom { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--accent); opacity: 0; pointer-events: none; }
+
+.cal-guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform var(--travel-ms, 1200ms) var(--ease-move), opacity var(--dur-cue) var(--ease-out);
+  will-change: transform;
+  opacity: 0;
+}
+.cal-guide.is-moving { opacity: 1; transition: transform var(--travel-ms, 1200ms) var(--ease-move), opacity var(--dur-enter) var(--ease-out); }
+
+.cal-face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38vmin;
+  height: 38vmin;
+  margin: -19vmin 0 0 -19vmin;
+  overflow: visible;
+}
+.cal-face circle { fill: transparent; stroke: var(--ink); stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: stroke var(--dur-enter) var(--ease-state), fill var(--dur-enter) var(--ease-state); }
+.cal-face.is-found circle { stroke: var(--accent); fill: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+.caption { position: absolute; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.caption-line {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  font-size: calc(20px * var(--scale));
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+  animation: content-in var(--dur-enter) var(--ease-out) both;
+  transition: color var(--dur-phase) var(--ease-state);
+}
+.caption-line.is-past { color: var(--ink-2); }
+.caption-line .untyped { color: transparent; }
+.caption-line .key { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 6px; padding: 0 3px; margin: 0 -3px; }
+.caption-line .untyped .key { color: transparent; background: transparent; }
+
+.cal-ready {
+  position: absolute;
+  left: calc(var(--gc) / 2 + 24px);
+  width: calc(50vw - var(--gc) - 48px);
+  top: var(--top);
+  height: var(--card-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+.cal-title { margin: 0; font-size: calc(64px * var(--scale)); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.cal-result { margin: 0; font-size: calc(26px * var(--scale)); color: var(--ink-2); line-height: 1.35; }
+
+/* ---- First render: what is on screen at load is simply there ----------------------------- */
+
+:root:not([data-settled]) :is(.content-in, .glyph > span, .settle, .rest-inner, .calibration > *, .keypad, .status) { animation-duration: 0s; animation-delay: 0s; }
+
+/* ---- Keyboard input: content swaps without animation ----------------------------------- */
+
+/* Zero duration rather than `animation: none`: an animation started under the keyboard finishes
+   at once and stays finished when the pointer moves again (removing `animation` and restoring it
+   would replay it). Outgoing copies end immediately, so they are removed at once. */
+:root[data-input='keyboard'] :is(.content-in, .content-out, .glyph > span, .settle, .rest-inner, .rest-out, .calibration > *, .keypad, .status) { animation-duration: 0s; animation-delay: 0s; }
+:root[data-input='keyboard'] :is(.strip, .tile, .tile .content, .status-dot, .ring-track) { transition-duration: 0s; }
+
+/* ---- Reduced motion: the same information, nothing moving ------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .arc { display: none; }
+  /* The track itself becomes the progress: 3 px accent, a quarter brighter at each step. */
+  .tile[data-dwell] .ring-track { stroke: var(--accent); stroke-width: 3; }
+  .tile[data-dwell][data-step='0'] .ring-track { opacity: 0.2; }
+  .tile[data-dwell][data-step='1'] .ring-track { opacity: 0.4; }
+  .tile[data-dwell][data-step='2'] .ring-track { opacity: 0.6; }
+  .tile[data-dwell][data-step='3'] .ring-track { opacity: 0.8; }
+  .tile[data-dwell][data-step='4'] .ring-track, .tile[data-dwell='selected'] .ring-track { opacity: 1; }
+  .ring-bloom, .cal-bloom { display: none; }
+  .cal-guide, .cal-guide.is-moving { transition: opacity var(--dur-enter) var(--ease-out); }
+  /* Calibration: the ring appears in four opacity steps across the settle instead of sweeping. */
+  .cal-arc { stroke-dashoffset: 0; }
+  .cal-target.is-active .cal-outline { opacity: 0.3; }
+  .cal-target.is-active .cal-arc { transition: opacity var(--settle-ms, 1800ms) steps(4, jump-start); }
+}
