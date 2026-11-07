@@ -1,0 +1,670 @@
+/* Clarte voice. Built for people with tremor, fatigue or low vision: large
+   type, targets of at least 64 px, one task per screen, nothing on a timer.
+   Atkinson Hyperlegible Next was designed by the Braille Institute for
+   low-vision readers; Clarte blue matches the eye-tracking prototype. */
+
+:root {
+  --paper: #f2f5f8;
+  --surface: #ffffff;
+  --ink: #142231;
+  --muted: #4c5b6a;
+  --line: #c9d3dd;
+  --blue: #2152bf;
+  --blue-ink: #ffffff;
+  --blue-soft: #dfe8fa;
+  --record: #b3263a;
+  --good: #1b6f49;
+  --warn-soft: #fff1d6;
+  --warn-ink: #6b4100;
+  --focus: #f0a400;
+  --target: 4rem; /* 64 px minimum hit target */
+  --radius-control: 14px;
+  --radius-panel: 22px;
+  font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  font-size: 125%; /* 20 px body */
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+}
+
+.app {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+main {
+  padding-top: 1rem;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+h1:focus {
+  outline: none;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin: 1.5rem 0 0;
+}
+
+p {
+  margin: 0;
+  max-width: 36em;
+}
+
+code,
+pre {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.85em;
+}
+
+.hidden {
+  display: none;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.row > * {
+  flex: 1 1 10rem;
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.fine {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.error {
+  color: var(--record);
+  font-weight: 700;
+}
+
+.notice {
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  border-radius: var(--radius-control);
+  padding: 1rem 1.25rem;
+}
+
+/* Header */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 5rem;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 1rem;
+}
+
+.wordmark {
+  background: none;
+  border: 0;
+  padding: 0.5rem 0;
+  min-height: var(--target);
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.wordmark span {
+  font-weight: 400;
+  color: var(--blue);
+}
+
+/* Controls */
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:where(button, input, textarea, summary, label.drop):focus-visible {
+  outline: 4px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.primary,
+.secondary,
+.destructive {
+  min-height: var(--target);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-control);
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.primary {
+  background: var(--blue);
+  color: var(--blue-ink);
+}
+
+.secondary {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.secondary.small {
+  min-height: 3.25rem;
+  min-width: 5rem;
+  padding: 0.5rem 1rem;
+}
+
+.destructive {
+  background: var(--record);
+  color: #fff;
+}
+
+.quiet {
+  background: none;
+  border: 0;
+  min-height: 3rem;
+  padding: 0.5rem 0.25rem;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .primary:not(:disabled):hover {
+    background: #1a439f;
+  }
+  .secondary:not(:disabled):hover,
+  .choice:hover,
+  .voice-row:hover {
+    border-color: var(--blue);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea {
+  font-weight: 400;
+  min-height: var(--target);
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  resize: vertical;
+}
+
+.check {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.check input {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  margin: 0.1rem 0 0;
+  accent-color: var(--blue);
+}
+
+.check.compact {
+  align-items: center;
+  min-height: 3.25rem;
+  gap: 0.5rem;
+}
+
+.command {
+  background: var(--ink);
+  color: #fff;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-control);
+  margin: 0;
+  overflow-x: auto;
+}
+
+/* Choosing a source */
+.choices {
+  display: grid;
+  gap: 1rem;
+}
+
+.choice,
+.voice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel);
+  cursor: pointer;
+}
+
+.choice-title,
+.voice-row-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.choice-body,
+.voice-row-meta {
+  color: var(--muted);
+}
+
+.voice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Files */
+.drop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1.5rem;
+  border: 2px dashed var(--blue);
+  border-radius: var(--radius-panel);
+  background: var(--blue-soft);
+  cursor: pointer;
+}
+
+.drop.compact {
+  padding: 1rem 1.5rem;
+  min-height: var(--target);
+  justify-content: center;
+}
+
+.drop input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.drop:focus-within {
+  outline: 4px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.drop-title {
+  font-weight: 700;
+  color: var(--blue);
+  font-size: 1.15rem;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.file-list li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  min-height: var(--target);
+}
+
+.file-list li > span:first-child {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.file-size {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Recording */
+.record .prompt {
+  font-size: 2.4rem;
+  line-height: 1.25;
+  min-height: 6rem;
+}
+
+.record-progress {
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.record-progress-fill {
+  height: 100%;
+  background: var(--good);
+  transition: width 300ms ease;
+}
+
+.record-button {
+  --level: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 7rem;
+  border-radius: var(--radius-panel);
+  border: 3px solid var(--record);
+  background: var(--surface);
+  color: var(--record);
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.record-button.is-live {
+  background: var(--record);
+  color: #fff;
+}
+
+.record-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  /* The dot grows with your voice, so you can see the microphone hears you. */
+  transform: scale(calc(1 + var(--level) * 0.9));
+  transition: transform 80ms linear;
+}
+
+.take {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+audio {
+  width: 100%;
+  min-height: 3.5rem;
+}
+
+.take audio {
+  flex: 1 1 16rem;
+}
+
+/* Speaking */
+.speak {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--surface);
+  border-radius: var(--radius-panel);
+  padding: 1.5rem;
+  border: 2px solid var(--line);
+}
+
+.phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.phrase {
+  min-height: 3.5rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.segmented {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.segmented legend {
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  padding: 0;
+}
+
+.segmented label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: var(--target);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.segmented label.is-on {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  font-weight: 700;
+}
+
+.segmented label:focus-within {
+  outline: 4px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The voice strip: the one picture of what the voice is made from. */
+.strip {
+  margin: 0;
+}
+
+.strip-track {
+  position: relative;
+  height: 5.5rem;
+  border-radius: var(--radius-control);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(100% / 12 - 1px),
+    var(--line) calc(100% / 12 - 1px) calc(100% / 12)
+  ),
+    var(--surface);
+  border: 2px solid var(--line);
+  overflow: hidden;
+}
+
+.strip-block {
+  --q: 1;
+  position: absolute;
+  bottom: 0;
+  height: calc(35% + 60% * var(--q));
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--blue);
+  box-shadow: inset -1px 0 0 var(--surface);
+  cursor: pointer;
+  padding: 0;
+}
+
+.strip-block.is-playing {
+  background: var(--good);
+}
+
+.strip-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.strip-caption {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding-top: 0.4rem;
+  min-height: 2.6rem;
+}
+
+.strip-caption-marker {
+  position: absolute;
+  top: 0.4rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+@media (max-width: 34rem) {
+  .strip-caption {
+    flex-direction: column;
+  }
+  .strip-caption-marker {
+    position: static;
+    transform: none;
+  }
+}
+
+/* Choosing pieces */
+.pieces {
+  border: 2px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 0 1.25rem;
+  background: var(--surface);
+}
+
+.pieces[open] {
+  padding-bottom: 1.25rem;
+}
+
+.pieces > * + * {
+  margin-top: 1rem;
+}
+
+.pieces summary {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.piece-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.piece-list li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 0.4rem 0;
+}
+
+.piece-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.piece-quality {
+  font-weight: 700;
+}
+
+.piece-list li.is-other .piece-quality {
+  color: var(--warn-ink);
+}
+
+.danger {
+  border-top: 2px solid var(--line);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 34rem) {
+  :root {
+    font-size: 112.5%;
+  }
+  h1 {
+    font-size: 1.7rem;
+  }
+  .record .prompt {
+    font-size: 1.9rem;
+  }
+  .segmented {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* Keep "Make my voice" well apart from Back/Skip so a tremor can't hit it by accident. */
+.record > .primary {
+  margin-top: 1.5rem;
+}
