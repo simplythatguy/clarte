@@ -806,6 +806,48 @@
       "source": "LICENSE",
       "repository": "gstack",
       "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
+    },
+    {
+      "path": "skills/teach/GLOSSARY-FORMAT.md",
+      "source": "skills/productivity/teach/GLOSSARY-FORMAT.md",
+      "repository": "matt",
+      "sha256": "9b99859ec28437668130d8f2ce5a342938970f8a1ed4fd38c3eab4f4b5fff210"
+    },
+    {
+      "path": "skills/teach/LEARNING-RECORD-FORMAT.md",
+      "source": "skills/productivity/teach/LEARNING-RECORD-FORMAT.md",
+      "repository": "matt",
+      "sha256": "701fa34b6748aa89e6c960ffb815257f481a7d77fb2900f9028f7edf3fdd6052"
+    },
+    {
+      "path": "skills/teach/LICENSE.txt",
+      "source": "LICENSE",
+      "repository": "matt",
+      "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+    },
+    {
+      "path": "skills/teach/MISSION-FORMAT.md",
+      "source": "skills/productivity/teach/MISSION-FORMAT.md",
+      "repository": "matt",
+      "sha256": "8cacbb3c0644d3ae0ea4965564797099401a6930a23f7cf462918576587f2418"
+    },
+    {
+      "path": "skills/teach/RESOURCES-FORMAT.md",
+      "source": "skills/productivity/teach/RESOURCES-FORMAT.md",
+      "repository": "matt",
+      "sha256": "e9cacf34026e11a8d1c8f9de88abe5bcbf654f4ebdb25cae8c0de0d5f48f44ec"
+    },
+    {
+      "path": "skills/teach/SKILL.md",
+      "source": "skills/productivity/teach/SKILL.md",
+      "repository": "matt",
+      "sha256": "550482c2d674b085c9043b87bfdc14a8f2ec453c736119e7fcbb1e9332bffeba"
+    },
+    {
+      "path": "skills/teach/agents/openai.yaml",
+      "source": "skills/productivity/teach/agents/openai.yaml",
+      "repository": "matt",
+      "sha256": "5856f3ae8aec742f1499c640aecdd5f1d6af5fa210a7c6ec794de8263a6f733f"
     }
   ],
   "lintapple_npm": "0.1.24",
