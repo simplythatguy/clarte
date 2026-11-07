@@ -1,0 +1,476 @@
+--- a/BlazeGaze.ts
++++ b/BlazeGaze.ts
+@@ -16,7 +16,7 @@
+         try {
+             // Load model from local directory (adjust path if needed)
+             this.model = await tf.loadLayersModel(path);
+-            console.log('✅ BlazeGaze model loaded successfully');
++            
+         } catch (error) {
+             console.error('❌ Error loading BlazeGaze model from path:', path);
+             console.error(error);
+@@ -25,6 +25,27 @@
+         
+         // Freeze the ``cnn_model`` layers but keep the gaze_MLP trainable
+         this.model.getLayer('cnn_encoder').trainable = false;
++    }
++
++    dispose(): void { this.model?.dispose(); this.model = null; }
++
++    trainableVariables(): tf.Variable[] {
++        if (!this.model) throw new Error('Model is not loaded');
++        return this.model.trainableWeights.map(weight => {
++            const tensor = weight.read();
++            if (!(tensor instanceof tf.Variable)) throw new Error('Expected a trainable TFJS variable');
++            return tensor;
++        });
++    }
++
++    exportEstimator(): number[][] {
++        return this.trainableVariables().map(weight => Array.from(weight.dataSync()));
++    }
++
++    restoreEstimator(weights: number[][]): void {
++        const variables = this.trainableVariables();
++        if (weights.length !== variables.length || weights.some((values, i) => values.length !== variables[i].size || !values.every(Number.isFinite))) throw new Error('Invalid estimator weights');
++        tf.tidy(() => variables.forEach((variable, i) => variable.assign(tf.tensor(weights[i], variable.shape))));
+     }
+ 
+     predict(image: tf.Tensor, head_vector: tf.Tensor, face_origin_3d: tf.Tensor): tf.Tensor {
+--- a/FaceLandmarkerClient.ts
++++ b/FaceLandmarkerClient.ts
+@@ -1,37 +1,16 @@
+-import { FaceLandmarker, FilesetResolver, DrawingUtils, FaceLandmarkerResult } from "@mediapipe/tasks-vision";
+-
+-// References
+-// https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker/web_js#video
++import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+ export default class FaceLandmarkerClient {
+-  private faceLandmarker: any;
+-
+-  constructor() {
+-  }
+-
++  private faceLandmarker: FaceLandmarker | null = null;
+   async initialize() {
+-    const filesetResolver = await FilesetResolver.forVisionTasks(
+-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+-    );
+-    this.faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+-      baseOptions: {
+-        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+-        delegate: "GPU",
+-      },
+-      outputFaceBlendshapes: true,
+-      outputFacialTransformationMatrixes: true,
+-      runningMode: "IMAGE",
+-      numFaces: 1,
++    const files = await FilesetResolver.forVisionTasks('/vendor/webeyetrack/vision/wasm');
++    this.faceLandmarker = await FaceLandmarker.createFromOptions(files, {
++      baseOptions: { modelAssetPath: '/vendor/webeyetrack/vision/face_landmarker.task', delegate: 'CPU' },
++      outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
++      runningMode: 'IMAGE', numFaces: 1,
+     });
+   }
+-
+   async processFrame(frame: ImageData): Promise<FaceLandmarkerResult | null> {
+-    if (!this.faceLandmarker) {
+-      console.error("FaceLandmarker is not loaded yet.");
+-      return null;
+-    }
+-
+-    let result: FaceLandmarkerResult;
+-    result = await this.faceLandmarker.detect(frame);
+-    return result;
++    return this.faceLandmarker?.detect(frame) ?? null;
+   }
++  dispose() { this.faceLandmarker?.close(); this.faceLandmarker = null; }
+ }
+--- a/WebEyeTrack.ts
++++ b/WebEyeTrack.ts
+@@ -1,3 +1,4 @@
++import { BilateralEyes } from "../../../src/core/blink";
+ import { FaceLandmarkerResult, NormalizedLandmark, Matrix as MediaPipeMatrix } from "@mediapipe/tasks-vision";
+ import * as tf from '@tensorflow/tfjs';
+ import { Matrix } from 'ml-matrix';
+@@ -36,22 +37,20 @@
+   normPogs: number[][]
+ ): { supportX: SupportX, supportY: tf.Tensor } {
+ 
+-  // Implementation for generating support samples
+-  const supportX: SupportX = {
+-    eyePatches: tf.stack(eyePatches.map(patch => tf.browser.fromPixels(patch)), 0).toFloat().div(tf.scalar(255.0)), // Convert ImageData to tensor
+-    headVectors: tf.tensor(headVectors, [headVectors.length, 3], 'float32'),
+-    faceOrigins3D: tf.tensor(faceOrigins3D, [faceOrigins3D.length, 3], 'float32')
+-  };
+-
+-  // Convert normPogs to tensor
+-  const supportY = tf.tensor(normPogs, [normPogs.length, 2], 'float32');
+-
+-  return { supportX, supportY };
++  return tf.tidy(() => ({
++    supportX: {
++      eyePatches: tf.stack(eyePatches.map(patch => tf.browser.fromPixels(patch)), 0).toFloat().div(255),
++      headVectors: tf.tensor2d(headVectors, [headVectors.length, 3]),
++      faceOrigins3D: tf.tensor2d(faceOrigins3D, [faceOrigins3D.length, 3])
++    },
++    supportY: tf.tensor2d(normPogs, [normPogs.length, 2])
++  }));
+ }
+ 
+ export default class WebEyeTrack {
+   
+   // Instance variables
++  private readonly bilateralEyes = new BilateralEyes();
+   private blazeGaze: BlazeGaze;
+   private faceLandmarkerClient: FaceLandmarkerClient;
+   private faceWidthComputed: boolean = false;
+@@ -65,101 +64,17 @@
+ 
+   // Public variables
+   public loaded: boolean = false;
+-  public latestMouseClick: { x: number, y: number, timestamp: number } | null = null;
+   public latestGazeResult: GazeResult | null = null;
+-  public calibData: {
+-    supportX: SupportX[],
+-    supportY: tf.Tensor[],
+-    timestamps: number[],
+-    ptType: ('calib' | 'click')[]
+-  } = {
+-    supportX: [],
+-    supportY: [],
+-    timestamps: [],
+-    ptType: ['calib']
+-  };
+-
+-  // Configuration
+-  public maxPoints: number = 5;
+-  public clickTTL: number = 60; // Time-to-live for click points in seconds
+-
+-  constructor(
+-      maxPoints: number = 5,
+-      clickTTL: number = 60 // Time-to-live for click points in seconds
+-    ) {
+-
+-    // Initialize services
++  constructor() {
+     this.blazeGaze = new BlazeGaze();
+     this.faceLandmarkerClient = new FaceLandmarkerClient();
+     this.kalmanFilter = new KalmanFilter2D();
+-    
+-    // Storing configs
+-    this.maxPoints = maxPoints;
+-    this.clickTTL = clickTTL;
+   }
+ 
+   async initialize(baseUrl?: string): Promise<void> {
+     await this.faceLandmarkerClient.initialize();
+     await this.blazeGaze.loadModel(baseUrl);
+     this.loaded = true;
+-  }
+-
+-  pruneCalibData() {
+-    
+-    // Prune the calibration data to keep only the last maxPoints points
+-    tf.tidy(() => {
+-      if (this.calibData.supportX.length > this.maxPoints) {
+-        this.calibData.supportX = this.calibData.supportX.slice(-this.maxPoints);
+-        this.calibData.supportY = this.calibData.supportY.slice(-this.maxPoints);
+-        this.calibData.timestamps = this.calibData.timestamps.slice(-this.maxPoints);
+-        this.calibData.ptType = this.calibData.ptType.slice(-this.maxPoints);
+-      }
+-
+-      // Apply time-to-live pruning for 'click' points
+-      const currentTime = Date.now();
+-      const ttl = this.clickTTL * 1000; // Convert seconds to milliseconds
+-
+-      // Filter all together
+-      const filteredIndices = this.calibData.timestamps.map((timestamp, index) => {
+-        return (currentTime - timestamp <= ttl || this.calibData.ptType[index] !== 'click') ? index : -1;
+-      }).filter(index => index !== -1);
+-      this.calibData.supportX = filteredIndices.map(index => this.calibData.supportX[index]);
+-      this.calibData.supportY = filteredIndices.map(index => this.calibData.supportY[index]);
+-      this.calibData.timestamps = filteredIndices.map(index => this.calibData.timestamps[index]);
+-      this.calibData.ptType = filteredIndices.map(index => this.calibData.ptType[index]);
+-    })
+-  }
+-
+-  async handleClick(x: number, y: number): Promise<void> {
+-    console.log(`🖱️ Global click at: (${x}, ${y}), ${this.loaded}`);
+-
+-    // Debounce clicks based on the latest click timestamp
+-    if (this.latestMouseClick && (Date.now() - this.latestMouseClick.timestamp < 1000)) {
+-      console.log("🖱️ Click ignored due to debounce");
+-      this.latestMouseClick = { x, y, timestamp: Date.now() };
+-      return;
+-    }
+-
+-    // Avoid pts that are too close to the last click
+-    if (this.latestMouseClick &&
+-        Math.abs(x - this.latestMouseClick.x) < 0.05 &&
+-        Math.abs(y - this.latestMouseClick.y) < 0.05) {
+-      console.log("🖱️ Click ignored due to proximity to last click");
+-      this.latestMouseClick = { x, y, timestamp: Date.now() };
+-      return;
+-    }
+-
+-    this.latestMouseClick = { x, y, timestamp: Date.now() };
+-
+-    if (this.loaded && this.latestGazeResult) {
+-      // Adapt the model based on the click position
+-      await this.adapt(
+-        [this.latestGazeResult?.eyePatch as ImageData],
+-        [this.latestGazeResult?.headVector as number[]],
+-        [this.latestGazeResult?.faceOrigin3D as number[]],
+-        [[x, y]]
+-      );
+-    }
+   }
+ 
+   computeFaceOrigin3D(frame: ImageData, normFaceLandmarks: Point[], faceLandmarks: Point[], faceRT: Matrix): number[] {
+@@ -207,6 +122,7 @@
+     // If intrinsics matrix is not set, initialize it
+     if (!this.intrinsicsMatrixSet) {
+       this.intrinsicsMatrix = createIntrinsicsMatrix(width, height);
++      this.intrinsicsMatrixSet = true;
+     }
+ 
+     // Convert the normalized landmarks to non-normalized coordinates
+@@ -248,96 +164,65 @@
+   }
+ 
+   async adapt(
+-    eyePatches: ImageData[],
+-    headVectors: number[][],
+-    faceOrigins3D: number[][],
+-    normPogs: number[][],
+-    stepsInner: number = 1,
+-    innerLR: number = 1e-5,
+-    ptType: 'calib' | 'click' = 'calib'
++    eyePatches: ImageData[], headVectors: number[][], faceOrigins3D: number[][],
++    normPogs: number[][], stepsInner = 1, innerLR = 1e-5
+   ): Promise<void> {
+-
+-    // Prune old calibration data
+-    this.pruneCalibData();
+-
+-    // Prepare the inputs
++    if (eyePatches.length < 9 || eyePatches.length !== normPogs.length ||
++        headVectors.length !== normPogs.length || faceOrigins3D.length !== normPogs.length) {
++      throw new Error('Calibration requires at least nine paired observations');
++    }
++    const { supportX, supportY } = generateSupport(eyePatches, headVectors, faceOrigins3D, normPogs);
+     const opt = tf.train.adam(innerLR, 0.85, 0.9, 1e-8);
+-    let { supportX, supportY } = generateSupport(
+-      eyePatches,
+-      headVectors,
+-      faceOrigins3D,
+-      normPogs
+-    );
+-
+-    // Append the new support data to the calibration data
+-    this.calibData.supportX.push(supportX);
+-    this.calibData.supportY.push(supportY);
+-    this.calibData.timestamps.push(Date.now());
+-    this.calibData.ptType.push(ptType);
+-
+-    // Now extend the supportX and supportY tensors with prior calib data
+-    let tfEyePatches: tf.Tensor;
+-    let tfHeadVectors: tf.Tensor;
+-    let tfFaceOrigins3D: tf.Tensor;
+-    let tfSupportY: tf.Tensor;
+-    if (this.calibData.supportX.length > 1) {
+-      tfEyePatches = tf.concat(this.calibData.supportX.map(s => s.eyePatches), 0);
+-      tfHeadVectors = tf.concat(this.calibData.supportX.map(s => s.headVectors), 0);
+-      tfFaceOrigins3D = tf.concat(this.calibData.supportX.map(s => s.faceOrigins3D), 0);
+-      tfSupportY = tf.concat(this.calibData.supportY, 0);
+-    } else {
+-      // If there is no prior calibration data, we use the current supportX and supportY
+-      tfEyePatches = supportX.eyePatches;
+-      tfHeadVectors = supportX.headVectors;
+-      tfFaceOrigins3D = supportX.faceOrigins3D;
+-      tfSupportY = supportY;
+-    }
+-
+-    // Perform a single forward pass to compute an affine transformation.
+-    // Uses the async .array() (not .arraySync()) so reading the tensors back
+-    // from the GPU doesn't force a synchronous stall — .arraySync() blocks
+-    // until the GPU finishes and flushes its command queue, which can jank
+-    // rendering elsewhere on the page even though this runs in a worker.
+-    if (tfEyePatches.shape[0] > 3) {
+-      const supportPreds = tf.tidy(() => {
+-        return this.blazeGaze.predict(
+-          tfEyePatches,
+-          tfHeadVectors,
+-          tfFaceOrigins3D
+-        );
+-      })
+-      const [supportPredsNumber, supportYNumber] = await Promise.all([
+-        supportPreds.array() as Promise<number[][]>,
+-        tfSupportY.array() as Promise<number[][]>
+-      ]);
+-      tf.dispose(supportPreds);
+-      const affineMatrixML = computeAffineMatrixML(
+-        supportPredsNumber,
+-        supportYNumber
+-      )
+-      if (this.affineMatrix) {
+-        tf.dispose(this.affineMatrix);
++    try {
++      const preds = tf.tidy(() => this.blazeGaze.predict(supportX.eyePatches, supportX.headVectors, supportX.faceOrigins3D));
++      try {
++        const [predicted, labels] = await Promise.all([preds.array(), supportY.array()]);
++        const affine = computeAffineMatrixML(predicted as number[][], labels as number[][]);
++        if (!affine.flat().every(Number.isFinite)) throw new Error('Calibration produced a nonfinite transform');
++        this.affineMatrix?.dispose();
++        this.affineMatrix = tf.tensor2d(affine, [2, 3]);
++      } finally { preds.dispose(); }
++      const variables = this.blazeGaze.trainableVariables();
++      for (let step = 0; step < stepsInner; step++) {
++        const loss = opt.minimize(() => tf.tidy(() => {
++          const prediction = this.blazeGaze.predict(supportX.eyePatches, supportX.headVectors, supportX.faceOrigins3D);
++          const transformed = this.affineMatrix ? applyAffineMatrix(this.affineMatrix, prediction) : prediction;
++          return tf.losses.meanSquaredError(supportY, transformed).asScalar();
++        }), true, variables);
++        if (!loss) throw new Error('Calibration training did not produce a loss');
++        try { if (!(await loss.data()).every(Number.isFinite)) throw new Error('Calibration training diverged'); }
++        finally { loss.dispose(); }
++        await tf.nextFrame();
+       }
+-      this.affineMatrix = tf.tensor2d(affineMatrixML, [2, 3], 'float32');
+-    }
+-
+-    tf.tidy(() => {
+-      for (let i = 0; i < stepsInner; i++) {
+-        const { grads, value: loss } = tf.variableGrads(() => {
+-          const preds = this.blazeGaze.predict(tfEyePatches, tfHeadVectors, tfFaceOrigins3D);
+-          const predsTransformed = this.affineMatrix ? applyAffineMatrix(this.affineMatrix, preds) : preds;
+-          const loss = tf.losses.meanSquaredError(tfSupportY, predsTransformed);
+-          return loss.asScalar();
+-        });
+-
+-        // Apply grads manually
+-        // @ts-ignore
+-        opt.applyGradients(grads);
+-
+-        // Optionally log
+-        loss.data().then(val => console.log(`Loss = ${val[0].toFixed(4)}`));
+-      }
+-    });
++      this.kalmanFilter = new KalmanFilter2D();
++      this.latestGazeResult = null;
++    } finally {
++      tf.dispose([supportX.eyePatches, supportX.headVectors, supportX.faceOrigins3D, supportY]);
++      opt.dispose();
++    }
++  }
++
++  exportCalibration(): { weights: number[][]; affine: number[]; faceWidthCm: number } {
++    if (!this.affineMatrix || !this.faceWidthComputed) throw new Error('No trained calibration to save');
++    return { weights: this.blazeGaze.exportEstimator(), affine: Array.from(this.affineMatrix.dataSync()), faceWidthCm: this.faceWidthCm };
++  }
++
++  restoreCalibration(state: { weights: number[][]; affine: number[]; faceWidthCm: number }): void {
++    this.blazeGaze.restoreEstimator(state.weights);
++    this.affineMatrix?.dispose();
++    this.affineMatrix = tf.tensor2d(state.affine, [2, 3]);
++    this.faceWidthCm = state.faceWidthCm; this.faceWidthComputed = true;
++    this.perspectiveMatrixSet = false; this.intrinsicsMatrixSet = false;
++    this.kalmanFilter = new KalmanFilter2D(); this.latestGazeResult = null;
++  }
++
++  dispose(): void {
++    this.loaded = false;
++    this.latestGazeResult = null;
++    this.affineMatrix?.dispose();
++    this.affineMatrix = null;
++    this.blazeGaze.dispose();
++    this.faceLandmarkerClient.dispose();
+   }
+ 
+   async step(frame: ImageData, timestamp: number): Promise<GazeResult> {
+@@ -346,6 +231,7 @@
+     const tic2 = performance.now();
+     // result = null; // For testing purposes, we can set result to null to simulate no face detected
+     if (!result || !result.faceLandmarks || result.faceLandmarks.length === 0) {
++      this.bilateralEyes.reset();
+       return {
+         facialLandmarks: [],
+         faceRt: {rows: 0, columns: 0, data: []}, // Placeholder for face transformation matrix
+@@ -354,8 +240,8 @@
+         headVector: [0, 0, 0], // Placeholder for head vector
+         faceOrigin3D: [0, 0, 0], // Placeholder for face
+         metric_transform: {rows: 3, columns: 3, data: [1, 0, 0, 1, 0, 0, 1, 0, 0]}, // Placeholder for metric transform
+-        gazeState: 'closed', // Default to closed state if no landmarks
+-        normPog: [0, 0], // Placeholder for normalized point of gaze
++        gazeState: 'closed', eyeState: 'unknown', // Default to closed state if no landmarks
++        normPog: [0, 0], rawNormPog: null, // Placeholder for normalized point of gaze
+         durations: {
+           faceLandmarker: tic2 - tic1,
+           prepareInput: 0,
+@@ -375,7 +261,8 @@
+     let gaze_state: 'open' | 'closed' = 'open';
+     const leftEAR = computeEAR(result.faceLandmarks[0], 'left');
+     const rightEAR = computeEAR(result.faceLandmarks[0], 'right');
+-    if ( leftEAR < 0.2 || rightEAR < 0.2) {
++    const eyeState = this.bilateralEyes.observe(leftEAR, rightEAR);
++    if (eyeState !== 'open') {
+       gaze_state = 'closed';
+     }
+     // gaze_state = 'closed';
+@@ -390,8 +277,8 @@
+         headVector: headVector,
+         faceOrigin3D: faceOrigin3D,
+         metric_transform: {rows: 3, columns: 3, data: [1, 0, 0, 1, 0, 0, 1, 0, 0]}, // Placeholder, should be computed
+-        gazeState: gaze_state,
+-        normPog: [0, 0],
++        gazeState: gaze_state, eyeState,
++        normPog: [0, 0], rawNormPog: null,
+         durations: {
+           faceLandmarker: tic2 - tic1,
+           prepareInput: tic3 - tic2,
+@@ -431,6 +318,8 @@
+     const normPog = predNormPog.arraySync() as number[][];
+     tf.dispose(predNormPog);
+ 
++    const rawNormPog = [...normPog[0]];
++
+     // Apply Kalman filter to smooth the gaze point
+     const kalmanOutput = this.kalmanFilter.step(normPog[0]);
+     const tic5 = performance.now();
+@@ -457,8 +346,9 @@
+       headVector: headVector,
+       faceOrigin3D: faceOrigin3D,
+       metric_transform: {rows: 3, columns: 3, data: [1, 0, 0, 1, 0, 0, 1, 0, 0]}, // Placeholder, should be computed
+-      gazeState: gaze_state,
++      gazeState: gaze_state, eyeState,
+       normPog: kalmanOutput,
++      rawNormPog,
+       durations: durations,
+       timestamp: timestamp
+     };
+--- a/types.ts
++++ b/types.ts
+@@ -25,9 +25,11 @@
+   metric_transform: Matrix; // [4, 4]
+ 
+   // Gaze state (blinking)
++  eyeState: 'open' | 'closed' | 'unknown';
+   gazeState: 'open' | 'closed';
+ 
+   // PoG (normalized screen coordinates)
++  rawNormPog: Array<number> | null; // Pre-Kalman, unclipped estimator output
+   normPog: Array<number>; // [2,] - Normalized screen coordinates
+ 
+   // Meta data
+--- a/utils/mathUtils.ts
++++ b/utils/mathUtils.ts
+@@ -33,7 +33,7 @@
+   const X = new Matrix(srcAug);   // [N, 3]
+   const Y = new Matrix(dst);      // [N, 2]
+ 
+-  const A = solve(X, Y); // [3, 2]
++  const A = solve(X, Y, true); // [3, 2]
+   return A.transpose().to2DArray(); // [2, 3]
+ }
+ 
