@@ -99,4 +99,6 @@ All repositories were read from shallow Git clones pinned in the lockfile. No up
 
 `sources.lock.json` is the source of the skill inventory. Copied `skills/<name>/SKILL.md` records identify upstream skills; `authored_skills` lists Clarte-authored skill directories. Add or rename entries there alongside the actual files; the validator does not keep a second catalog in Python.
 
+Clarte's adaptations are kept apart from the exact copies. Each upstream skill has one `skills/<name>/CLARTE.md` overlay, listed under `clarte_overlays` and built on the shared contract in [Skills for Clarte](skills-for-clarte.md). When a skill is refreshed from upstream, re-read its overlay against the new text and update it in the same change.
+
 Run `python3 scripts/validate.py` after a tooling change. It checks copied-file hashes, the declared inventory, entrypoint metadata, licenses, sections, and local links in repository docs and each skill's top-level Markdown. Archived reference documents retain their upstream link context and are covered by file hashes. The gstack source marks `runtime_relative_links` because its unmodified files reference its external installation; those links require the full runtime rather than the Clarte checkout.

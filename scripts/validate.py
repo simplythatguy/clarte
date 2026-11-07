@@ -39,15 +39,27 @@ for skill in skills:
         if not (skill / 'sections' / section).is_file():
             errors.append(f'Missing section: {skill.name}/{section}')
 
+# Each upstream skill carries one Clarte overlay; overlays are Clarte-authored, never upstream copies.
+overlays = {Path(path) for path in lock.get('clarte_overlays', [])}
+if overlays != {skill / 'CLARTE.md' for skill in upstream_skills}:
+    errors.append('Clarte overlays do not match the upstream skills in the source manifest')
+for overlay in sorted(overlays):
+    if not (ROOT / overlay).is_file():
+        errors.append(f'Missing Clarte overlay: {overlay}')
+    if str(overlay) in {record['path'] for record in lock['copied_files']}:
+        errors.append(f'Clarte overlay recorded as an upstream copy: {overlay}')
+
 # Resolve Markdown file links, excluding remote URLs and fragment-only links.
-# Runtime-relative upstream links require the external runtime documented in the manifest.
-local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').rglob('*.md')]
+# Runtime-relative upstream links require the external runtime documented in the manifest;
+# Clarte overlays are always checked, including in those folders.
+local_docs = [ROOT / 'README.md', ROOT / 'AGENTS.md', * (ROOT / 'docs').rglob('*.md'),
+              * (ROOT / overlay for overlay in sorted(overlays) if (ROOT / overlay).is_file())]
 for skill in skills:
     source = upstream_skills.get(skill.relative_to(ROOT))
     if source and lock['repositories'][source].get('runtime_relative_links', False):
         continue
     local_docs.extend(skill.glob('*.md'))
-for path in local_docs:
+for path in dict.fromkeys(local_docs):
     for target in re.findall(r'\]\(([^\s)]+)\)', path.read_text()):
         if '://' in target or target.startswith(('#', 'mailto:')):
             continue
@@ -63,4 +75,4 @@ for name in lock['repositories']:
 if errors:
     print('\n'.join(errors), file=sys.stderr)
     sys.exit(1)
-print(f"Validated {len(skills)} skills and {len(lock['copied_files'])} exact upstream files; sections, licenses and local links present.")
+print(f"Validated {len(skills)} skills and {len(lock['copied_files'])} exact upstream files with {len(overlays)} Clarte overlays; sections, licenses and local links present.")

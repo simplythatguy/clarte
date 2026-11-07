@@ -85,7 +85,8 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 | `s3/` | Stages: one screen per phase (listen, compose, speak), fewest and largest targets | per phase | 5103 |
 | `s4/` | Split: a 2×2 letter keypad on the left, controls top-right, text bottom-right | Q7, Q8 | 5104 |
 | `s5/` | Dialogue: the conversation as a thread, whole-reply predictions from the partner's words | Q2, Q3 | 5105 |
-| `s_all/` | Preview of all six: one page with a vertical S0–S5 switcher at the top right | — | 5100 |
+| `s6/` | Orb: the owner's 2026-11-07 concept on style 5's grid. A white page, frosted glass cards that turn white as they are looked at, and a light-orange orb that holds the message and reacts to the conversation. Two equally likely words branch into Q1 and Q4, a report-style setup comes first, and the type is Atkinson Hyperlegible Next | Q2, Q3 | 5106 |
+| `s_all/` | Preview of all seven: one page with a vertical S0–S6 switcher at the top right | — | 5100 |
 
 Run everything with one command from the repository root; it starts any style server and the prediction engine that are not already running:
 
@@ -93,7 +94,7 @@ Run everything with one command from the repository root; it starts any style se
 node prototypes/UI/v0/s_all/serve.mjs
 ```
 
-Then open http://localhost:5100. Each of `s1`–`s5` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief and a `REPORT.md` written by its builder with evidence, council scores and open questions.
+Then open http://localhost:5100. Each of `s1`–`s6` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
 
 **Onboarding is out of scope for v0.** The product keeps the calibration and onboarding flow from `prototypes/Eye Tracking`. The styles still contain the simulated calibration they were built with, but `?onboarding=off` opens any of them straight into the app, and `s_all` always loads them that way.
 
