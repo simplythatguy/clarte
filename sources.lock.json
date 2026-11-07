@@ -794,6 +794,18 @@
       "source": "LICENSE",
       "repository": "emil",
       "sha256": "4ff5bdb7887ec1435c9cab0e8d1a7caee704d894d65c2a008ccc68b1cc2f260b"
+    },
+    {
+      "path": "skills/diagram/SKILL.md",
+      "source": "diagram/SKILL.md",
+      "repository": "gstack",
+      "sha256": "b57372f3dfdbd0f7881d5d24baf6bbc02126b588c7177cf1fca2262c519cd0c2"
+    },
+    {
+      "path": "skills/diagram/LICENSE.txt",
+      "source": "LICENSE",
+      "repository": "gstack",
+      "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
     }
   ],
   "lintapple_npm": "0.1.24",
