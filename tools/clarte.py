@@ -529,7 +529,7 @@ def start_eyes(env, log_dir, procs):
 
 # name -> (description, provision, start). start returns (ports to wait for, URLs, smoke test).
 APPS = {
-    "ui": ("UI v0 switcher with S0-S5 and the prediction engine", provision_ui, start_ui),
+    "ui": ("UI v0 switcher with S0-S6 and the prediction engine", provision_ui, start_ui),
     "predict": ("Word Prediction engine and its test page", provision_engine, start_predict),
     "autocomplete": ("Autocomplete server and its test page", provision_engine, start_autocomplete),
     "voice": ("Voice cloning page and service (needs ELEVENLABS_API_KEY in .env)", provision_voice, start_voice),
