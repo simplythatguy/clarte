@@ -1,0 +1,6 @@
+# uv dependency overrides (uv pip sync requirements.txt --override overrides.txt).
+# webrtcvad-wheels in requirements.txt provides the webrtcvad module resemblyzer imports.
+webrtcvad; sys_platform == 'never'
+# numba and llvmlite stopped shipping macOS x86_64 wheels after these versions (librosa needs them).
+numba==0.62.1; sys_platform == 'darwin' and platform_machine == 'x86_64'
+llvmlite==0.45.1; sys_platform == 'darwin' and platform_machine == 'x86_64'

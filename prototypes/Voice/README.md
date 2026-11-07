@@ -4,21 +4,23 @@ Clarte speaks in a voice made from the person's own recordings: old ones from be
 
 ## Run
 
-Two processes: the voice service (Python) and the page (Vite).
+From the repository root, put the key in `.env` (`cp .env.example .env`, then fill in `ELEVENLABS_API_KEY`) and run `./clarte voice` (Windows: `clarte voice`); it sets up both processes below and opens the page. See the root README.
+
+Manually, two processes: the voice service (Python) and the page (Vite).
 
 ```sh
 cd prototypes/Voice
 
 # once: Python 3.11 env for the service (about 1 GB, mostly CPU PyTorch for the speaker check)
 uv venv --python 3.11 server/.venv
-VIRTUAL_ENV=server/.venv uv pip install -r server/requirements.txt
+VIRTUAL_ENV=server/.venv uv pip install -r server/requirements.txt --overrides server/overrides.txt
 npm ci --ignore-scripts
 
 ELEVENLABS_API_KEY=sk_… npm run server   # http://127.0.0.1:4322
 npm run dev                              # http://localhost:4321
 ```
 
-Requirements: Python 3.11 with [uv](https://docs.astral.sh/uv/), ffmpeg (`brew install ffmpeg`), Node 22.12+, a browser with a microphone, and an ElevenLabs API key.
+Requirements: Python 3.11 with [uv](https://docs.astral.sh/uv/), Node 22.12+, a browser with a microphone, and an ElevenLabs API key. `server/overrides.txt` swaps resemblyzer's `webrtcvad` (source only, needs a C compiler) for the prebuilt `webrtcvad-wheels`. Recordings are decoded with ffmpeg from `PATH` when there is one, otherwise with the static build in the `imageio-ffmpeg` wheel.
 
 **API key.** Create a restricted key with **Text to Speech: Access** and **Voices: Write**, and nothing else. Set a credit limit and an expiry date, and turn on auto-disable if leaked. Pass it as `ELEVENLABS_API_KEY`, or put it in a file outside the repository and pass the path as `ELEVENLABS_API_KEY_FILE`. Never commit it.
 

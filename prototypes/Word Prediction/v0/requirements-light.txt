@@ -1,0 +1,2 @@
+# The Light runtime only (no torch): used on Intel Macs, where torch 2.9.1 has no wheel.
+numpy==2.3.5

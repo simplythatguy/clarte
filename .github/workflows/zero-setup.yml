@@ -1,0 +1,41 @@
+# Proves a clone runs with nothing installed but git: the LFS models are left as pointers
+# (lfs: false) so the launcher's own fetch path is exercised, and `clarte check` provisions,
+# starts, smoke-tests and stops every prototype. .tools holds every download (uv, Python,
+# Node, the LFS objects, wheels, Zig's cache); caching it keeps repeated runs off the owner's
+# LFS bandwidth quota, so keep the matrix to one job per platform.
+name: zero-setup
+
+on:
+  push:
+    branches: [aabdelwaly7/zero-setup]
+  workflow_dispatch:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/clarte.py', 'clarte', 'clarte.cmd', '**/requirements*.txt', '**/build-requirements.txt', '**/overrides.txt', 'prototypes/**/package-lock.json') }}
+          restore-keys: |
+            tools-${{ runner.os }}-${{ runner.arch }}-
+      - name: clarte check
+        if: runner.os != 'Windows'
+        run: ./clarte check
+      - name: clarte check (cmd)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: clarte.cmd check
+      - name: Sizes
+        if: always()
+        shell: bash
+        run: du -sh .tools prototypes/*/v0/.venv prototypes/Voice/server/.venv 2>/dev/null || true
