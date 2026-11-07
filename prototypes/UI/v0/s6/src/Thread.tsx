@@ -16,6 +16,7 @@ import { groupOf } from '../../shared/decoder.ts';
 import type { Live, Turn } from './model.ts';
 import { wordsOf } from './voice.ts';
 import { displayWord } from './text.ts';
+import { Mic, Speaker } from './icons.tsx';
 
 export type StateName = 'listening' | 'composing' | 'speaking';
 const STATE_LABEL: Record<StateName, string> = { listening: 'Listening', composing: 'Replying', speaking: 'Speaking' };
@@ -183,13 +184,16 @@ export function Thread({ state, turns, live, composition, context, wordColours }
     if (history) {
       const turns = [...history.children] as HTMLElement[];
       const newest = turns[turns.length - 1];
-      for (const t of turns) { t.style.removeProperty('-webkit-line-clamp'); t.classList.remove('clamped'); t.removeAttribute('data-cut'); }
+      // The clamp goes on a turn's text, not the turn, so its icon is never clipped.
+      const textOf = (t: HTMLElement) => t.querySelector<HTMLElement>(':scope > .turn-text') ?? t;
+      for (const t of turns) { const x = textOf(t); x.style.removeProperty('-webkit-line-clamp'); x.classList.remove('clamped'); t.removeAttribute('data-cut'); }
       const newestFirst = Boolean(newest && newest.scrollHeight > history.clientHeight + 1);
       history.toggleAttribute('data-newest-first', newestFirst);
       if (newestFirst && newest) {
-        const lineHeight = parseFloat(getComputedStyle(newest).lineHeight);
-        newest.style.setProperty('-webkit-line-clamp', String(Math.max(1, Math.floor(history.clientHeight / lineHeight))));
-        newest.classList.add('clamped');
+        const text = textOf(newest);
+        const lineHeight = parseFloat(getComputedStyle(text).lineHeight);
+        text.style.setProperty('-webkit-line-clamp', String(Math.max(1, Math.floor(history.clientHeight / lineHeight))));
+        text.classList.add('clamped');
       } else {
         const top = history.getBoundingClientRect().top;
         for (const t of turns) if (t.getBoundingClientRect().top < top - 1) t.setAttribute('data-cut', '');
@@ -219,7 +223,12 @@ export function Thread({ state, turns, live, composition, context, wordColours }
       <div ref={historyRef} className="history">
         {turns.map((turn) => (
           <p key={turn.id} className={`turn turn-${turn.who}${turn.holder ? ' turn-holder' : ''}`}>
-            {highlight && highlight.turnId === turn.id ? <Spoken text={turn.text} word={highlight.word} /> : turn.text}
+            {/* Heard turns carry a microphone on their left, spoken replies a speaker on their right. */}
+            <span className="turn-icon" aria-hidden="true">{turn.who === 'partner' ? <Mic /> : <Speaker />}</span>
+            <span className="sr-only">{turn.who === 'partner' ? 'Heard: ' : 'Said: '}</span>
+            <span className="turn-text">
+              {highlight && highlight.turnId === turn.id ? <Spoken text={turn.text} word={highlight.word} /> : turn.text}
+            </span>
           </p>
         ))}
       </div>
