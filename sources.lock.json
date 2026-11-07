@@ -856,8 +856,8 @@
     "skills/apple-hig-ui"
   ],
   "clarte_overlays": [
-    "skills/animate/CLARTE.md",
     "skills/animate-expo/CLARTE.md",
+    "skills/animate/CLARTE.md",
     "skills/animation-performance/CLARTE.md",
     "skills/animation-vocabulary/CLARTE.md",
     "skills/apple-design/CLARTE.md",
@@ -885,6 +885,7 @@
     "skills/review-animations/CLARTE.md",
     "skills/setup-matt-pocock-skills/CLARTE.md",
     "skills/sol-loop/CLARTE.md",
+    "skills/teach/CLARTE.md",
     "skills/untangle-codebase/CLARTE.md",
     "skills/write-swift/CLARTE.md"
   ]

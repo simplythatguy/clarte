@@ -24,7 +24,7 @@ Precedence when rules collide, highest first:
 
 | Surface | Where | Input | Who uses it |
 | --- | --- | --- | --- |
-| Conversation UI (listen, compose, speak) | `prototypes/UI/v0/` (`s0` to `s5`, `shared/`) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
+| Conversation UI (listen, compose, speak) | `prototypes/UI/v0/` (`s0` to `s6`, `shared/`) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
 | Eye tracking and calibration | `prototypes/Eye Tracking/` | webcam gaze: a steady look, then blinks to preview and confirm; mouse, touch and keys as alternates | the person; testers recording sessions |
 | Making a voice | `prototypes/Voice/` | pointer, touch and keyboard (Space records) | the person or someone helping them; designed for tremor, fatigue and low vision |
 | Prediction engines | `prototypes/Word Prediction/v0/`, `prototypes/Autocomplete/v0/` | Python API and plain test pages | developers |
@@ -112,6 +112,7 @@ Don't settle these silently. Follow the newer document if you must proceed, and 
 | [untangle-codebase](../skills/untangle-codebase/CLARTE.md) | one prototype at a time, with protected areas | occasional |
 | [pick-ui-library](../skills/pick-ui-library/CLARTE.md) | mostly to say no; dev pages and the voice app only | occasional |
 | [setup-matt-pocock-skills](../skills/setup-matt-pocock-skills/CLARTE.md) | not run yet; answers prepared | occasional |
+| [teach](../skills/teach/CLARTE.md) | learning a topic over several sessions, in a workspace outside the repository | occasional, only when asked |
 | [design-html](../skills/design-html/CLARTE.md) | inline HTML design and handoffs | needs the gstack runtime |
 | [diagram](../skills/diagram/CLARTE.md) | Clarte's standard diagrams | needs the gstack runtime |
 | [office-hours](../skills/office-hours/CLARTE.md) | problem framing before a new capability | needs the gstack runtime |
