@@ -1,0 +1,653 @@
+/*
+ * Style 1 · Rails in the shared light skin (BRIEF "Visual direction", MOTION.md).
+ * Tokens first; every size, colour, duration and curve below comes from them. Spacing sits on
+ * an 8 px grid. Decisions and their reasons are recorded in DESIGN.md.
+ */
+
+:root {
+  /* apple.com neutrals: canvas, surfaces, three inks, one hairline. */
+  --canvas: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-cue: #EBEBEE;      /* a white card one shade deeper: the focus cue */
+  --ink: #1D1D1F;
+  --ink-cue: #2E2E31;
+  --ink-2: #6E6E73;
+  --ink-3: #86868B;
+  --hairline: #D2D2D7;
+
+  /* Chroma, four jobs only: groups, conversation state, dwell progress, errors. */
+  --accent: #0071E3;           /* the dwell, and nothing else */
+  --listen: #C93400;           /* microphone on (Apple's mic-in-use orange); white on it Lc 80 */
+  --error: #D70015;
+  --g1-face: #E3F0FA; --g1-ink: #1E5A82;
+  --g2-face: #ECE4F8; --g2-ink: #59409A;
+  --g3-face: #E2F3EA; --g3-ink: #2B6A4C;
+  --g4-face: #FBEADD; --g4-ink: #8A4A22;
+
+  /* Motion tokens (MOTION.md). Never ease-in, never `all`. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 120ms;
+  --dur-cue: 150ms;
+  --dur-settle: 180ms;
+  --dur-enter: 200ms;
+  --dur-phase: 300ms;
+
+  /* Geometry. A card sits inside its backend quadrant, sized for the design, with half a
+     gutter (≥ 1°) to every quadrant line; the widest gap is the row boundary (the middle band). */
+  --gutter: clamp(48px, 3.9vw, 56px);
+  --edge: calc(var(--gutter) / 2);
+  --radius: 40px;
+  --pill-top: 24px;
+  --pill-h: 40px;
+  --top-y: calc(var(--pill-top) + var(--pill-h) + 24px);
+  /* Larger text gives the middle band room: each rail yields 40 px at 200%. */
+  --top-h: clamp(144px, calc(24vh - (var(--s) - 1) * 40px), 216px);
+  --bottom-h: clamp(152px, calc(27.6vh - (var(--s) - 1) * 40px), 248px);
+  --band-gap: clamp(28px, 5vh, 48px);
+
+  --s: 1;                       /* text size, 1 to 2 */
+  --font: 'Satoshi', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  /* The optional theme, after the dark reference shot, at matched contrast. */
+  --canvas: #161617;
+  --surface: #262628;
+  --surface-cue: #303033;
+  --ink: #F5F5F7;
+  --ink-cue: #E4E4E8;
+  --ink-2: #A1A1A6;
+  --ink-3: #8E8E93;
+  --hairline: #3A3A3C;
+  --accent: #2997FF;
+  --accent-on-primary: #0071E3;   /* the primary card is light in this theme: 4.4:1 there */
+  --g1-face: #1F2E3A; --g1-ink: #A9D3F2;
+  --g2-face: #2A2438; --g2-ink: #CBB8F2;
+  --g3-face: #1E3027; --g3-ink: #A6DCBF;
+  --g4-face: #352619; --g4-ink: #F2C29E;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root { height: 100%; }
+
+[data-group='1'] { --gface: var(--g1-face); --gink: var(--g1-ink); }
+[data-group='2'] { --gface: var(--g2-face); --gink: var(--g2-ink); }
+[data-group='3'] { --gface: var(--g3-face); --gink: var(--g3-ink); }
+[data-group='4'] { --gface: var(--g4-face); --gink: var(--g4-ink); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- layout */
+
+.app, .calib { position: fixed; inset: 0; background: var(--canvas); }
+
+/* A screen change is one cross-fade in place (MOTION "Phase or page change"): the incoming screen
+   fades in over 300 ms from 100 ms while an inert copy of the outgoing one fades out over 150 ms. */
+.screen {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--dur-phase) var(--ease-out) 100ms;
+  @starting-style { opacity: 0; }
+}
+.screen--out { pointer-events: none; }
+/* The copy is a still of the outgoing screen: re-inserting it must not replay its entrances
+   (labels, glyphs, captions would blank on the first frame), so only the copy itself fades. */
+.screen--out, .screen--out * { transition: none !important; }
+.screen[data-entering] :is(.content, .glyph, .settle, .line) { transition: none; }
+/* The card just chosen keeps its commit in the copy: the solid ring, and the bloom from where the
+   live one began (Web Animations do not survive a clone). */
+.screen--out .tile[data-gaze='latched'] .sweep { transform: rotate(180deg); }
+.screen--out .tile[data-commit] .bloom { animation: bloom 450ms var(--ease-out) forwards; }
+
+.rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-inline: var(--edge);
+}
+
+.rail--top { top: var(--top-y); height: var(--top-h); }
+.rail--bottom { bottom: var(--edge); height: var(--bottom-h); }
+
+.middle {
+  position: absolute;
+  left: calc(var(--edge) + 8px);
+  right: calc(var(--edge) + 8px);
+  top: calc(var(--top-y) + var(--top-h) + var(--band-gap));
+  bottom: calc(var(--edge) + var(--bottom-h) + var(--band-gap));
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  overflow: hidden;
+}
+
+.middle-scroll { flex: none; overflow: hidden; }   /* never shrinks below its whole lines */
+/* When earlier lines are scrolled away, their descenders must not peek into the first visible line. */
+.middle-scroll[data-scrolled] {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 0.16em);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 0.16em);
+  font-size: calc(52px * var(--s));
+}
+
+/* -------------------------------------------------------------- state pill */
+
+.state {
+  position: absolute;
+  top: var(--pill-top);
+  left: 0;
+  right: 0;
+  height: var(--pill-h);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* One pill at the top edge, for the partner across the table. Its colour and label arrive
+   together: the pill is keyed by state and fades in over 300 ms. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--pill-h);
+  padding: 0 20px 0 16px;
+  border-radius: 999px;
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  transition: opacity var(--dur-phase) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+
+.pill-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.state-stack { display: grid; place-items: center; }
+.state-stack > .pill-row { grid-area: 1 / 1; display: flex; gap: 8px; }
+.pill--out { opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 1; } }
+
+.pill[data-state='listening'] { background: var(--listen); color: #FFFFFF; box-shadow: none; }
+.pill[data-state='speaking'] { background: var(--ink); color: var(--canvas); box-shadow: none; }
+.pill[data-state='error'] { color: var(--error); }
+
+/* The recording dot appears over 200 ms after the pill. */
+.pill[data-state='listening'] .pill-dot {
+  transition: opacity var(--dur-enter) var(--ease-out) 100ms;
+  @starting-style { opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.tile {
+  --face: var(--surface);
+  --face-cue: var(--surface-cue);
+  --track: var(--ink-3);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(12px, calc(24px - (var(--s) - 1) * 12px), 24px);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--face);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: default;
+  container-type: inline-size;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-cue) var(--ease-state), opacity var(--dur-phase) var(--ease-state);
+}
+
+.tile--primary { --face: var(--ink); --face-cue: var(--ink-cue); --track: var(--canvas); --arc: var(--accent-on-primary, var(--accent)); color: var(--canvas); }
+
+.tile--group {
+  --face: var(--gface);
+  --face-cue: color-mix(in oklab, var(--gink) 9%, var(--gface));
+  --track: var(--gink);
+  color: var(--gink);
+}
+
+/* Quiet and wake by opacity only, over 300 ms; a quiet card is not actionable. */
+.tile[data-vis='hidden'] { opacity: 0; pointer-events: none; }
+.tile[data-vis='muted'] { opacity: 0.32; }
+/* A muted card that is blocked for a reason: the card and its name stay quiet, and the reason
+   reads at full strength in secondary ink, so the way back is visible where the eye is. */
+.tile[data-vis='muted'][data-blocked] { opacity: 1; background: color-mix(in srgb, var(--surface) 35%, var(--canvas)); }
+.tile[data-blocked] .instrument, .tile[data-blocked] .label, .tile[data-blocked] .name { opacity: 0.32; }
+.blocked {
+  max-width: 100%;
+  font-size: min(calc(20px * var(--s)), 7.5cqi);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The one static cue once the intent delay has passed: the face steps one shade. The shade is a
+   layer whose opacity changes, so the cue composites instead of repainting the card. */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--face-cue);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-cue) var(--ease-state);
+  will-change: opacity;        /* a standing layer: the cue starting or ending never re-lays out the page */
+}
+.tile[data-gaze='dwell']::before, .tile[data-gaze='preview']::before { opacity: 1; }
+
+.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 6px; }   /* ink: the accent is the dwell's alone */
+
+/* ------------------------------------------------------------ the instrument */
+
+.instrument { position: relative; display: flex; align-items: center; justify-content: center; flex: none; }
+
+.ring-box { --ring: 56; position: relative; display: grid; place-items: center; width: calc(var(--ring) * 1px); height: calc(var(--ring) * 1px); }
+.instrument--pair .ring-box { --ring: 44; margin-left: -14px; z-index: 2; }
+.id-dot { position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%; background: var(--gink); }
+
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0.3;                /* the track at rest; the svg's own opacity, so the cue composites */
+  transition: opacity var(--dur-cue) var(--ease-state);
+  will-change: opacity;        /* a standing layer, as for the cue */
+}
+.tile[data-gaze] .ring { opacity: 1; }
+.ring circle { fill: none; }
+/* Stroke widths are in the ring's 48-unit space, scaled so they render at exact pixels
+   (pathLength-based dashing needs user-space strokes, not non-scaling ones). */
+.ring { --k: calc(48 / var(--ring)); }
+
+/* The track is present on every card at rest, 1.5 px at 30%: an instrument, not a box. */
+.ring .track { stroke: var(--track); stroke-width: calc(1.5 * var(--k)); }
+
+/* The dwell: an accent arc, 3 px, clockwise from 12 o'clock. Two clipped half-rings rotate in
+   turn (Web Animations on transform only), so the fill composites without paint. */
+.arc { position: absolute; inset: 0; pointer-events: none; }
+.half { position: absolute; top: 0; bottom: 0; width: 50%; overflow: hidden; }
+.half--r { left: 50%; }
+.half--l { left: 0; }
+.sweep { position: absolute; top: 0; width: 200%; height: 100%; transform: rotate(0deg); will-change: transform; }
+.half--r .sweep { left: -100%; }
+.half--l .sweep { left: 0; }
+.sweep i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--arc, var(--accent)); }
+.half--r .sweep i { clip-path: inset(0 50% 0 0); }   /* the left semicircle sweeps into the right half */
+.half--l .sweep i { clip-path: inset(0 0 0 50%); }   /* the right semicircle sweeps into the left half */
+
+
+/* Commit and re-arm: the 3 px arc stays complete (solid accent) while the gaze stays; it fades to
+   the track over 150 ms once the gaze has left and the engine has re-armed (gaze.ts release). */
+
+/* The bloom: a copy of the ring that scales out and fades (transform and opacity only). */
+.bloom {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 3px var(--arc, var(--accent));
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.icon { position: relative; width: calc(26px * min(var(--s), 1.5)); height: calc(26px * min(var(--s), 1.5)); }
+
+/* ------------------------------------------------------------ card content */
+
+/* A new label cross-fades in place: incoming 300 ms starting at 100 ms; the candidate word,
+   which changes with every group, swaps in 150 ms. */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  transition: opacity var(--dur-phase) var(--ease-out) 100ms;
+  @starting-style { opacity: 0; }
+}
+
+.content[data-swap='quick'] { transition: opacity var(--dur-cue) var(--ease-out) 60ms; }
+.content--out[data-swap='quick'] { transition-duration: 80ms; transition-delay: 0s; }   /* the two words never overlap */
+
+/* The outgoing label shares the incoming one's grid cell and fades out over 150 ms (exit shorter
+   than enter), so a relabel is a true cross-fade in place. */
+.content-stack { position: relative; display: grid; place-items: center; min-width: 0; max-width: 100%; }   /* positioned: paints above the cue layer */
+/* Every card on the top rail reserves the candidate's label height, so rings and labels line up
+   across the row whichever label a card shows (MOTION: baselines aligned across a row). */
+.rail--top .content-stack {
+  min-height: max(
+    calc(52px * 1.15 * min(var(--s), 1.15)),
+    /* a label plus one line of blocked reason, so End going quiet with its reason moves nothing */
+    calc(1.1 * min(calc(40px * var(--s)), 14cqi) + 8px + 1.2 * min(calc(20px * var(--s)), 7.5cqi))
+  );
+}
+.content-stack > .content { grid-area: 1 / 1; }
+.content--out {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-cue) var(--ease-out);
+  @starting-style { opacity: 1; }
+}
+
+.label {
+  font-size: min(calc(40px * var(--s)), 14cqi);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+.label--primary {
+  font-size: min(calc(52px * min(var(--s), 1.15)), calc(165cqi / var(--len, 6)));
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+/* Letter groups print every letter, one row, tracked open; at 200% the row wraps to two lines
+   of four and never drops below 24 px. */
+.letters {
+  font-size: max(24px, min(calc(36px * var(--s)), 13.6cqi));
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.14em;
+  margin-right: -0.14em;       /* the tracking after the last letter is not part of the row */
+  text-wrap: balance;
+}
+
+.pips { display: flex; gap: 6px; margin-top: 2px; }
+.pips i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.72; }   /* 3:1 on every face */
+
+.name { font-size: min(calc(20px * var(--s)), 9cqi); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
+/* A rail that holds settings reserves a setting's two lines on every card, so Back's ring lines up
+   with the settings' rings (council round 5). */
+.rail:has(.tile--setting) .content-stack {
+  min-height: calc(1.2 * min(calc(20px * var(--s)), 9cqi) + 8px + 1.1 * min(calc(36px * var(--s)), 14cqi));
+}
+.value { font-size: min(calc(36px * var(--s)), 14cqi); font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; }
+
+.tile--phrase .label { font-size: min(calc(36px * var(--s)), 12cqi); }
+
+/* ------------------------------------------------------------ middle band */
+
+.partner {
+  flex: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  max-width: 44ch;
+  font-size: calc(26px * min(var(--s), 1.4));
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.rule { flex: none; height: 1px; max-width: 960px; margin: calc(24px / var(--s)) 0; background: var(--hairline); }
+@media (max-height: 800px) { .rule { margin: 12px 0; } }
+
+.message, .title {
+  margin: 0;
+  font-size: calc(52px * var(--s));
+  font-weight: 700;
+  line-height: 1.18;           /* room for Satoshi's ascenders when the band shows whole lines */
+  letter-spacing: -0.025em;
+  text-wrap: pretty;
+}
+
+.transcript {
+  margin: 0;
+  max-width: 28ch;
+  font-size: calc(44px * var(--s));
+  font-weight: 500;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  text-wrap: pretty;
+}
+
+.ready-result { margin-top: 16px; }
+.caution { margin: 16px 0 0; font-size: calc(22px * var(--s)); font-weight: 500; color: var(--ink-2); }
+
+/* The word in progress: typed glyphs in group ink, then the predicted rest in tertiary ink.
+   A new or changed glyph fades in where it stands over 150 ms; nothing slides. */
+.glyph {
+  transition: opacity var(--dur-cue) var(--ease-out);
+  @starting-style { opacity: 0; }
+}
+.glyph--typed { color: var(--gink); }
+.message { position: relative; }
+.glyph-out {
+  position: absolute;
+  color: var(--gink);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms var(--ease-out);
+  @starting-style { opacity: 1; }
+}
+.glyph-out.glyph--dot { margin: 0; }
+.glyph--ghost { color: var(--ink-3); }
+.glyph--dot {
+  display: inline-block;
+  width: 0.34em;
+  height: 0.34em;
+  margin: 0 0.07em;
+  border-radius: 50%;
+  background: var(--gink);
+  vertical-align: 0.1em;
+}
+
+/* An accepted word settles from group ink to plain ink over 180 ms, colour only. */
+.settle {
+  color: inherit;              /* settles into whatever the word is: ink, or waiting-to-be-spoken */
+  transition: color var(--dur-settle) var(--ease-state);
+  @starting-style { color: var(--gink); }
+}
+.kept[data-group] { color: var(--gink); }
+
+/* Speaking: the current word carries the one pill highlight; words to come wait in secondary ink. */
+.word[data-spoken='next'] { color: var(--ink-2); }
+.word[data-spoken='now'] {
+  margin: 0 -0.16em;
+  padding: 0 0.16em;
+  border-radius: 0.4em;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.86em;
+  margin-left: 0.06em;
+  background: var(--ink);
+  vertical-align: -0.08em;
+}
+
+/* ------------------------------------------------------------ calibration */
+
+.face-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38vmin;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
+  transition: border-color var(--dur-enter) var(--ease-out), background-color var(--dur-enter) var(--ease-out);
+}
+.face-ring[data-pass] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Targets: 28 px, 1.5 px outline; the same ring as the app's dwell indicator. */
+.target {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  translate: -50% -50%;
+  transition: opacity var(--dur-enter) var(--ease-out);
+  @starting-style { opacity: 0; }
+}
+.target .ring-box { --ring: 28; }
+.target .ring .track { stroke: var(--ink); }
+.target[data-state='active'] .ring, .target[data-state='bloom'] .ring { opacity: 1; }
+.target[data-state='active'] .half--r .sweep { animation: sweep-first var(--settle) linear forwards; }
+.target[data-state='active'] .half--l .sweep { animation: sweep-second var(--settle) linear forwards; }
+.target[data-state='active'][data-frozen] .sweep { animation-delay: calc(var(--settle) * -0.6); animation-play-state: paused; }
+.target[data-state='bloom'] .ring .track { stroke: var(--accent); stroke-width: calc(3 * var(--k)); }
+.target[data-state='bloom'] .bloom { animation: bloom 450ms var(--ease-out) forwards; }
+.target-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+  transition: opacity var(--dur-cue) var(--ease-state);
+}
+.target[data-state='active'] .target-dot { opacity: 1; }
+
+.guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  margin: -6px;
+  border-radius: 50%;
+  background: var(--ink);
+  translate: calc(var(--x) * 100vw) calc(var(--y) * 100vh);
+  transition: translate var(--move) var(--ease-move), opacity var(--dur-cue) var(--ease-state);
+}
+.guide[data-hidden] { opacity: 0; }
+
+/* Captions: one white pill per line, typing at 32 ms per character. */
+.caption {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.line {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  font-size: calc(20px * var(--s));
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+  white-space: nowrap;
+  transition: opacity var(--dur-enter) var(--ease-out), color var(--dur-cue) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+.line[data-settled] { color: var(--ink-2); }
+.line mark { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 4px; padding: 0 3px; }
+.line[data-settled] mark { color: inherit; background: transparent; }
+/* The pill takes its final size before the first letter types (MOTION "Captions"). */
+.typed { display: inline-grid; }
+.typed > * { grid-area: 1 / 1; }
+.typed-full { visibility: hidden; }
+.type-caret { display: inline-block; width: 1px; height: 1em; margin-left: 1px; background: var(--ink); vertical-align: -0.15em; }
+
+@keyframes sweep-first { 0% { transform: rotate(0deg); } 50%, 100% { transform: rotate(180deg); } }
+@keyframes sweep-second { 0%, 50% { transform: rotate(0deg); } 100% { transform: rotate(180deg); } }
+@keyframes bloom { from { transform: scale(1); opacity: 0.35; } to { transform: scale(2.4); opacity: 0; } }
+@keyframes ring-steps { from { opacity: 0.3; } to { opacity: 1; } }
+
+/* ------------------------------------------------- reduced motion, keyed input */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Every move becomes an opacity change; the dwell steps in opacity (see gaze.ts). */
+  .tile[data-gaze] .sweep { transform: rotate(180deg); }
+  .guide { transition: opacity var(--dur-cue) var(--ease-state); }
+  .target[data-state='active'] .sweep { animation: none; transform: rotate(180deg); }
+  .target[data-state='active'] .arc { animation: ring-steps var(--settle) steps(4, end) forwards; }
+  .target[data-state='bloom'] .bloom { animation: none; }
+  .screen--out .tile[data-commit] .bloom { animation: none; }
+}
+
+/* Large text (150% and up): the instrument and gaps give their room to the words, so content
+   always fits its card inside the quadrant. */
+:root[data-scale='large'] .tile .ring-box { --ring: 40; }
+:root[data-scale='large'] .tile .instrument--pair .ring-box { --ring: 34; margin-left: -10px; }
+:root[data-scale='large'] .tile .id-dot { width: 30px; height: 30px; }
+/* Letter rows break into two lines (G–N as GHIJ / KLMN) and grow as far as the card's height
+   allows at each viewport, never below 24 px. */
+:root[data-scale='large'] .letters-line { display: block; }
+:root[data-scale='large'] .letters {
+  font-size: clamp(24px, min(calc((27.6vh - 116px) / 2.3), 26cqi), calc(36px * var(--s)));
+  line-height: 1.12;
+}
+:root[data-scale='large'] .tile { gap: 8px; }
+/* At large text the partner's turn keeps one line (its end), so a whole message line always fits. */
+:root[data-scale='large'] .partner { -webkit-line-clamp: 1; }
+:root[data-scale='large'] .partner.ready-result { -webkit-line-clamp: 3; }   /* calibration's result has the room, and its caution must show */
+:root[data-scale='large'] .tile .icon { width: 24px; height: 24px; }
+:root[data-scale='large'] .content { gap: 4px; }
+
+/* Keyboard-triggered actions get no motion at all. */
+:root[data-input='keys'] .tile,
+:root[data-input='keys'] .tile::before,
+:root[data-input='keys'] .ring,
+:root[data-input='keys'] .content,
+:root[data-input='keys'] .glyph,
+:root[data-input='keys'] .settle,
+:root[data-input='keys'] .pill,
+:root[data-input='keys'] .pill--out,
+:root[data-input='keys'] .pill-dot,
+:root[data-input='keys'] .line,
+:root[data-input='keys'] .screen { transition-duration: 0s; transition-delay: 0s; }
+
+/* Forced colours drop box-shadows: give every shadow-drawn outline a real border there. */
+@media (forced-colors: active) {
+  .tile { border: 1px solid CanvasText; }
+  .pill, .line { border: 1px solid CanvasText; }
+  .face-ring { border-color: CanvasText; }
+  .bloom { border: 3px solid Highlight; }
+}

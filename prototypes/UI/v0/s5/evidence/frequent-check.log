@@ -1,0 +1,4 @@
+candidate "iAccept" → "meAccept": visible from the next frame (0.43), fully in 100 ms
+page change idle → menu, Q5: new face starts at 131 ms, full at 381 ms
+reduced motion ring opacity during the dwell: 0.30 → 0.33 → 0.38 → 0.41 → 0.43 → 0.44 → 0.48 → 0.56 → 0.59 → 0.62 → 0.63 → 0.67 → 0.75 → 0.79 → 0.81 → 0.83 → 0.86 → 0.92 → 0.95 → 0.97 (never falls)
+frequent changes fast, page changes choreographed, reduced-motion progress monotonic

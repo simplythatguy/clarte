@@ -1,0 +1,41 @@
+ok   1440x900 idle: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-idle.png
+ok   1440x900 listening: 2 actions [primary, delete] → evidence/layout/1440x900-listening.png
+ok   1440x900 suggested: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-suggested.png
+ok   1440x900 composing-pending: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-composing-pending.png
+ok   1440x900 composing-reopened: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-composing-reopened.png
+ok   1440x900 composing-nomatch: 5 actions [delete, G1, G2, G3, G4] → evidence/layout/1440x900-composing-nomatch.png
+ok   1440x900 composing-ready: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-composing-ready.png
+ok   1440x900 speaking: 1 actions [primary] → evidence/layout/1440x900-speaking.png
+ok   1440x900 spoken: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-spoken.png
+ok   1440x900 menu: 6 actions [back, one-moment, phrases, settings, recalibrate, demo] → evidence/layout/1440x900-menu.png
+ok   1440x900 menu-phrases: 5 actions [back, phrase-0, phrase-1, phrase-2, phrase-3] → evidence/layout/1440x900-menu-phrases.png
+ok   1440x900 menu-settings: 6 actions [back, more, set-letterDwell, set-controlDwell, set-textScale, set-theme] → evidence/layout/1440x900-menu-settings.png
+ok   1440x900 menu-settings-2: 6 actions [back, more, set-sound, set-mode, set-wordColours, set-suggestions] → evidence/layout/1440x900-menu-settings-2.png
+ok   1440x900 menu-demo: 4 actions [back, set-noise, set-repeat, set-partner] → evidence/layout/1440x900-menu-demo.png
+ok   1440x900 worst-case: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1440x900-worst-case.png
+ok   1440x900 worst-nomatch: 5 actions [delete, G1, G2, G3, G4] → evidence/layout/1440x900-worst-nomatch.png
+ok   1440x900 calibrate-position: 0 actions [] → evidence/layout/1440x900-calibrate-position.png
+ok   1440x900 calibrate-points: 0 actions [] → evidence/layout/1440x900-calibrate-points.png
+ok   1440x900 calibrate-validate: 0 actions [] → evidence/layout/1440x900-calibrate-validate.png
+ok   1440x900 calibrate-ready: 1 actions [start] → evidence/layout/1440x900-calibrate-ready.png
+ok   1280x720 idle: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-idle.png
+ok   1280x720 listening: 2 actions [primary, delete] → evidence/layout/1280x720-listening.png
+ok   1280x720 suggested: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-suggested.png
+ok   1280x720 composing-pending: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-composing-pending.png
+ok   1280x720 composing-reopened: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-composing-reopened.png
+ok   1280x720 composing-nomatch: 5 actions [delete, G1, G2, G3, G4] → evidence/layout/1280x720-composing-nomatch.png
+ok   1280x720 composing-ready: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-composing-ready.png
+ok   1280x720 speaking: 1 actions [primary] → evidence/layout/1280x720-speaking.png
+ok   1280x720 spoken: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-spoken.png
+ok   1280x720 menu: 6 actions [back, one-moment, phrases, settings, recalibrate, demo] → evidence/layout/1280x720-menu.png
+ok   1280x720 menu-phrases: 5 actions [back, phrase-0, phrase-1, phrase-2, phrase-3] → evidence/layout/1280x720-menu-phrases.png
+ok   1280x720 menu-settings: 6 actions [back, more, set-letterDwell, set-controlDwell, set-textScale, set-theme] → evidence/layout/1280x720-menu-settings.png
+ok   1280x720 menu-settings-2: 6 actions [back, more, set-sound, set-mode, set-wordColours, set-suggestions] → evidence/layout/1280x720-menu-settings-2.png
+ok   1280x720 menu-demo: 4 actions [back, set-noise, set-repeat, set-partner] → evidence/layout/1280x720-menu-demo.png
+ok   1280x720 worst-case: 6 actions [primary, delete, G1, G2, G3, G4] → evidence/layout/1280x720-worst-case.png
+ok   1280x720 worst-nomatch: 5 actions [delete, G1, G2, G3, G4] → evidence/layout/1280x720-worst-nomatch.png
+ok   1280x720 calibrate-position: 0 actions [] → evidence/layout/1280x720-calibrate-position.png
+ok   1280x720 calibrate-points: 0 actions [] → evidence/layout/1280x720-calibrate-points.png
+ok   1280x720 calibrate-validate: 0 actions [] → evidence/layout/1280x720-calibrate-validate.png
+ok   1280x720 calibrate-ready: 1 actions [start] → evidence/layout/1280x720-calibrate-ready.png
+layout ok in every phase

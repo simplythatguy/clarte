@@ -1,0 +1,38 @@
+calibrate-position   0.824
+calibrate-points     0.833
+calibrate-validate   0.833
+calibrate-ready      0.834
+listen               0.825
+compose-empty        0.823
+compose-pending      0.819
+compose-message      0.818
+speak                0.851
+speaking             0.837
+spoken               0.854
+spell                0.824
+spell-letters        0.867
+menu-menu            0.864
+menu-message         0.864
+menu-selection       0.869
+menu-display         0.867
+range 0.818–0.869: largest difference 5.9% of the brightest screen
+dark theme:
+calibrate-position   0.025
+calibrate-points     0.024
+calibrate-validate   0.024
+calibrate-ready      0.017
+listen               0.021
+compose-empty        0.032
+compose-pending      0.034
+compose-message      0.035
+speak                0.025
+speaking             0.022
+spoken               0.024
+spell                0.032
+spell-letters        0.029
+menu-menu            0.027
+menu-message         0.026
+menu-selection       0.024
+menu-display         0.024
+dark range 0.017–0.035: largest difference 0.018 absolute
+dark compose-pending mean 0.034 → evidence/dark-compose-pending.png

@@ -1,0 +1,50 @@
+{
+  "note": "Seconds into motion.webm, aligned to the sync mark (the frame where the black screen ends).",
+  "clockOffsetS": -0.12,
+  "events": [
+    {
+      "name": "sync",
+      "at": 1.69
+    },
+    {
+      "name": "idle, nothing happening",
+      "at": 2.49
+    },
+    {
+      "name": "gaze arrives on G-N (commit expected at +0.60 s)",
+      "at": 3.5
+    },
+    {
+      "name": "gaze leaves G-N (ring releases)",
+      "at": 4.6
+    },
+    {
+      "name": "gaze arrives on A-F, leaves at +0.25 s (drain expected)",
+      "at": 5.62
+    },
+    {
+      "name": "keyboard 6 selects T-Z (no motion expected)",
+      "at": 6.9
+    },
+    {
+      "name": "gaze arrives on Q4 Delete (control: 250 ms intent, commit at +0.90 s)",
+      "at": 8
+    },
+    {
+      "name": "gaze arrives on Q3 Listen (phase change at +0.90 s)",
+      "at": 10.92
+    },
+    {
+      "name": "gaze arrives on Recalibrate (calibration entry at +0.90 s)",
+      "at": 15.66
+    },
+    {
+      "name": "calibration points start",
+      "at": 18.07
+    },
+    {
+      "name": "end",
+      "at": 25.67
+    }
+  ]
+}

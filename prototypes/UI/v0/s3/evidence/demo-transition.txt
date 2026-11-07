@@ -1,0 +1,33 @@
+transition samples (ms after the change: layer, stage, opacity):
+    0 ms  out:compose:1.00 in:listen:0.00
+   17 ms  out:compose:0.96 in:listen:0.04
+   33 ms  out:compose:0.80 in:listen:0.20
+   50 ms  out:compose:0.59 in:listen:0.41
+   67 ms  out:compose:0.45 in:listen:0.55
+   83 ms  out:compose:0.35 in:listen:0.65
+  100 ms  out:compose:0.27 in:listen:0.73
+  117 ms  out:compose:0.21 in:listen:0.79
+  133 ms  out:compose:0.16 in:listen:0.84
+  150 ms  out:compose:0.12 in:listen:0.88
+  167 ms  out:compose:0.09 in:listen:0.91
+  183 ms  out:compose:0.07 in:listen:0.93
+  200 ms  out:compose:0.05 in:listen:0.95
+  217 ms  out:compose:0.03 in:listen:0.97
+  233 ms  out:compose:0.02 in:listen:0.98
+  250 ms  out:compose:0.01 in:listen:0.99
+  267 ms  out:compose:0.00 in:listen:1.00
+  283 ms  out:compose:0.00 in:listen:1.00
+  300 ms  out:compose:0.00 in:listen:1.00
+  317 ms  in:listen:1.00
+  333 ms  in:listen:1.00
+  350 ms  in:listen:1.00
+  367 ms  in:listen:1.00
+  383 ms  in:listen:1.00
+  400 ms  in:listen:1.00
+  417 ms  in:listen:1.00
+  433 ms  in:listen:1.00
+  450 ms  in:listen:1.00
+stages seen listen; incoming tile boxes constant through the fade: true
+opacity only (no transform, translate or scale on layers, tiles or text): true
+first transition starts ≈ 3.01 s into the video
+video → evidence/demo-loop.webm

@@ -1,0 +1,94 @@
+{
+  "fonts": [
+    "Atkinson Hyperlegible Next"
+  ],
+  "fontSizes": [
+    21,
+    22,
+    26,
+    28,
+    29,
+    30,
+    32,
+    34,
+    40,
+    44
+  ],
+  "typeRules": [
+    {
+      "selector": ".token",
+      "sizes": [
+        28
+      ]
+    },
+    {
+      "selector": "h1",
+      "sizes": [
+        44
+      ]
+    },
+    {
+      "selector": ".group-label",
+      "sizes": [
+        32
+      ]
+    },
+    {
+      "selector": ".tile-label",
+      "sizes": [
+        26
+      ]
+    },
+    {
+      "selector": ".now",
+      "sizes": [
+        40,
+        44
+      ]
+    },
+    {
+      "selector": ".turn",
+      "sizes": [
+        26
+      ]
+    }
+  ],
+  "minControlSize": 44,
+  "controlSizeRules": [],
+  "minControlGap": 50,
+  "minControlInset": 8,
+  "controlContainers": [
+    "[data-ui-container]"
+  ],
+  "contentInsetRules": [],
+  "iconSizeRules": [],
+  "minLayoutGap": 8,
+  "bannedCopy": [
+    "unlock your potential",
+    "seamlessly",
+    "game-changing",
+    "click here"
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "colorSchemes": [
+    "light"
+  ],
+  "exceptions": [
+    {
+      "selector": ".history .turn",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "Older turns intentionally scroll off the top of the rest zone behind a fade; the newest turns stay whole."
+    }
+  ]
+}

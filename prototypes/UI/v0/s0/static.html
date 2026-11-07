@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clarte Light</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Apple.com neutrals */
+    --canvas: #F5F5F7;
+    --surface: #FFFFFF;
+    --ink: #1D1D1F;
+    --ink-2: #6E6E73;
+    --ink-3: #86868B;
+    --hairline: #D2D2D7;
+    --accent: #0071E3;          /* dwell progress only */
+    /* Reference pastels, one per letter group (tell groups apart) */
+    --g1: #E3F0FA; --g1-ink: #1E5A82;
+    --g2: #ECE4F8; --g2-ink: #59409A;
+    --g3: #E2F3EA; --g3-ink: #2B6A4C;
+    --g4: #FBEADD; --g4-ink: #8A4A22;
+    --radius-tile: 40px;
+    --radius-chip: 999px;
+    --font: "Satoshi", "SF Pro Display", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--canvas); color: var(--ink); font-family: var(--font);
+    -webkit-font-smoothing: antialiased; overflow: hidden;
+  }
+  .screen { position: relative; width: 100vw; height: 100vh; }
+
+  /* Corner group tiles: same geometry as style 2 */
+  .tile {
+    position: absolute; width: calc(25vw - 56px); height: calc(50vh - 78px);
+    border-radius: var(--radius-tile); padding: 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .q1 { left: 28px; top: 38px; }
+  .q4 { right: 28px; top: 38px; }
+  .q5 { left: 28px; bottom: 38px; }
+  .q8 { right: 28px; bottom: 38px; }
+  .q6 { left: calc(25vw + 28px); bottom: 38px; }
+  .q7 { right: calc(25vw + 28px); bottom: 38px; }
+
+  .orbs { display: flex; align-items: center; }
+  .orbs .id { width: 44px; height: 44px; border-radius: 50%; background: currentColor; position: relative; z-index: 1; }
+  .orbs svg { width: 48px; height: 48px; margin-left: -18px; }
+  .orbs circle { fill: none; stroke-width: 4; }
+  .orbs .track { stroke: currentColor; opacity: .3; }
+  /* the second orb is the dwell ring: it fills clockwise in accent blue */
+  .orbs .fill { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 132; stroke-dashoffset: 132; }
+  .dwelling .orbs .fill { stroke-dashoffset: 52; }
+  .group .range { font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .group .letters { font-size: 22px; font-weight: 500; letter-spacing: 0.18em; margin-top: 14px; }
+  .g1 { background: var(--g1); color: var(--g1-ink); }
+  .g2 { background: var(--g2); color: var(--g2-ink); }
+  .g3 { background: var(--g3); color: var(--g3-ink); }
+  .g4 { background: var(--g4); color: var(--g4-ink); }
+
+  /* Controls */
+  .control { color: var(--ink); }
+  .control .label { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+  .control .hint { font-size: 20px; font-weight: 500; color: var(--ink-2); }
+  .primary { background: var(--ink); color: #fff; }
+  .primary .hint { color: rgba(255,255,255,.62); }
+  .secondary { background: var(--surface); }
+  .icon { width: 44px; height: 44px; }
+
+  /* Rest zone: Q2 + Q3 */
+  .rest {
+    position: absolute; left: 25vw; width: 50vw; top: 0; height: 50vh;
+    padding: 56px 44px 0; display: flex; flex-direction: column;
+  }
+  .status { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; color: var(--ink-2); }
+  .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+  .partner { margin-top: 28px; font-size: 26px; font-weight: 500; line-height: 1.35; color: var(--ink-2); max-width: 40ch; }
+  .rule { height: 1px; background: var(--hairline); margin: 28px 0; }
+  .message { font-size: 52px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .tok { display: inline-block; width: 30px; height: 30px; border-radius: 50%; }
+  .tok.g1 { background: var(--g1-ink); } .tok.g2 { background: var(--g2-ink); }
+  .tok.g3 { background: var(--g3-ink); } .tok.g4 { background: var(--g4-ink); }
+  .ghost { color: var(--ink-3); }
+
+  /* Developer overlay: press G */
+  .grid { position: absolute; inset: 0; display: none; grid-template: repeat(2, 1fr) / repeat(4, 1fr); pointer-events: none; }
+  .grid div { border: 1px dashed rgba(0,113,227,.45); color: rgba(0,113,227,.8); font: 600 14px/1 var(--font); padding: 10px; }
+  .show-grid .grid { display: grid; }
+</style>
+</head>
+<body>
+<main class="screen" id="screen">
+
+  <section class="tile group g1 q1" data-action="G1">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="range">A–F</div><div class="letters">ABCDEF</div></div>
+  </section>
+
+  <section class="tile group g2 q4 dwelling" data-action="G2">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="range">G–N</div><div class="letters">GHIJKLMN</div></div>
+  </section>
+
+  <section class="tile group g3 q5" data-action="G3">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="range">O–S</div><div class="letters">OPQRS</div></div>
+  </section>
+
+  <section class="tile group g4 q8" data-action="G4">
+    <div class="orbs"><span class="id"></span><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="track" cx="24" cy="24" r="21"/><circle class="fill" cx="24" cy="24" r="21"/></svg></div>
+    <div><div class="range">T–Z</div><div class="letters">TUVWXYZ</div></div>
+  </section>
+
+  <div class="rest" aria-live="polite">
+    <span class="status"><i></i>Composing</span>
+    <p class="partner">Do you want to go outside after lunch, or stay in?</p>
+    <div class="rule"></div>
+    <p class="message">Outside
+      <span class="tok g1"></span><span class="tok g1"></span><span class="tok g4"></span>
+      <span class="ghost">after</span>
+    </p>
+  </div>
+
+  <section class="tile control primary q6" data-action="primary">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>
+    <div><div class="label">after</div><div class="hint">Accept</div></div>
+  </section>
+
+  <section class="tile control secondary q7" data-action="delete">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11v12H9l-6-6z"/><path d="M13 10l4 4M17 10l-4 4"/></svg>
+    <div><div class="label">Delete</div><div class="hint">Last group</div></div>
+  </section>
+
+  <div class="grid" aria-hidden="true">
+    <div>Q1</div><div>Q2 rest</div><div>Q3 rest</div><div>Q4</div>
+    <div>Q5</div><div>Q6</div><div>Q7</div><div>Q8</div>
+  </div>
+</main>
+<script>
+  addEventListener('keydown', e => { if (e.key.toLowerCase() === 'g') document.getElementById('screen').classList.toggle('show-grid'); });
+  if (location.hash === '#grid') document.getElementById('screen').classList.add('show-grid');
+</script>
+</body>
+</html>
