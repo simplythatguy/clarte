@@ -14,9 +14,14 @@ import { lifecycle, type Lifecycle, type LifecycleEvent } from './core/lifecycle
 import { cameraError, createCameraSession, type GazeFrame } from './core/webeyetrack';
 import { ValidationRun, type CheckCondition, type PauseReason, type ValidationState } from './core/validation';
 import { BlinkSelection } from './core/blink';
+import { TargetSnapper } from './core/target-snap';
+import { SelectionLearning } from './core/selection-learning';
+import type { Point } from './core/tracking';
 
 const lostFrame: GazeFrame = { point: null, face: false, facePresent: false, eyeState: 'unknown', at: -Infinity, pose: null };
-const defaultSettings: SettingsValue = { selection: 'blink', dwellMs: 2400, assistance: true, pointer: false, pace: 'quick' };
+const defaultSettings: SettingsValue = { selection: 'blink', dwellMs: 2400, assistance: true, pointer: false, pace: 'quick', learning: true };
+/** Uncorrected estimates kept per target so a confirmed selection can be learned from. */
+const TRAIL_MS = 6000;
 const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
 const checkMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'smooth';
 
@@ -50,6 +55,9 @@ export function App() {
   const [frame, setFrame] = useState<GazeFrame>(lostFrame);
   const frameRef = useRef(frame);
   const [resolver] = useState(() => new GazeResolver());
+  const [snapper] = useState(() => new TargetSnapper());
+  const [learning] = useState(() => new SelectionLearning());
+  const trail = useRef<{ at: number; point: Point; target: string }[]>([]);
   const layoutKey = useRef('');
   const [clock, setClock] = useState(performance.now());
   const simulationPoint = useRef<{ x: number; y: number } | null>(null);
@@ -105,11 +113,27 @@ export function App() {
     const target = NAVIGATION_TARGETS.find(item => item.id === id);
     if (!target) return;
     setSelected({ id, sequence: ++selectionSequence.current });
+    if (fromDwell && current.kind === 'camera') learnFrom(id);
     setAnnouncement(`${target.label} selected.`);
     if (!fromDwell) {
       if (settingsRef.current.selection === 'blink') { blink.activate(id); setBlinkPreview(null); }
       else updateDwell({ type: 'activate', target: id });
     }
+  }
+
+  function recordTrail(point: Point | null | undefined, target: string | null, at: number) {
+    if (!point || !target || !Number.isFinite(at)) return;
+    trail.current = [...trail.current.filter(sample => at - sample.at <= TRAIL_MS), { at, point, target }];
+  }
+
+  /** A confirmed gaze selection pairs the estimates that settled on it with the target centre. */
+  function learnFrom(id: string) {
+    const latest = trail.current.at(-1)?.at ?? -Infinity;
+    const estimates = trail.current.filter(sample => sample.target === id && latest - sample.at <= TRAIL_MS).map(sample => sample.point);
+    trail.current = [];
+    if (!settingsRef.current.learning) return;
+    const rect = inputLayout().targets.find(target => target.id === id);
+    if (rect) learning.learn(estimates, rect, viewport());
   }
 
   function updateDwell(event: DwellEvent) {
@@ -124,7 +148,7 @@ export function App() {
   function cancelGaze() {
     blink.reset(); setBlinkPreview(null); simulatedClosureUntil.current = 0;
     updateDwell({ type: 'reset' });
-    resolver.reset();
+    resolver.reset(); snapper.reset(); trail.current = [];
     gazeArea.reset(); setArea(null);
     layoutKey.current = '';
   }
@@ -136,12 +160,14 @@ export function App() {
     simulationPoint.current = null;
   }
 
-  async function onFrame(next: GazeFrame) {
+  async function onFrame(observed: GazeFrame) {
     const now = performance.now();
+    const current = sessionRef.current;
+    // Learned drift correction applies only to navigation, never to calibration or the frozen free-flow check.
+    const next = current.kind === 'camera' && current.phase === 'compose' && settingsRef.current.learning ? learning.correct(observed, viewport()) : observed;
     frameRef.current = next;
     setFrame(next);
     setClock(now);
-    const current = sessionRef.current;
     if (settingsOpenRef.current || controlsRef.current || document.hidden || !pageFocused.current || (current.kind !== 'camera' && current.kind !== 'simulation')) return;
     if (freshFeatures(next, now)) setArea(gazeArea.sample(next, viewport(), now));
     else { gazeArea.reset(); setArea(null); }
@@ -160,8 +186,12 @@ export function App() {
     }
     if (blinkMode) {
       // No filtered/held target survives reopening: use this frame's unfiltered estimate.
+      // Camera estimates snap to the nearest target; the simulated pointer is exact.
       const point = current.kind === 'camera' ? next.rawPoint : next.point;
-      const target = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? targetAt(point) : null;
+      if (!next.facePresent) snapper.reset();
+      const target = current.kind === 'camera' ? snapper.resolve(point, inputLayout())
+        : point && Number.isFinite(point.x) && Number.isFinite(point.y) ? targetAt(point) : null;
+      if (current.kind === 'camera' && next.eyeState === 'open') recordTrail(observed.rawPoint, target, next.at);
       const result = blink.sample(next, target, now);
       setBlinkPreview(blink.state.kind === 'preview' ? blink.state.target : null);
       if (result.previewed) setAnnouncement(`${NAVIGATION_TARGETS.find(p => p.id === result.previewed)?.label ?? ''} previewed.`);
@@ -186,10 +216,13 @@ export function App() {
     }
     if (settingsRef.current.assistance) {
       const resolved = resolver.sample(next, layout, now);
+      if (resolved.kind === 'target' && current.kind === 'camera') recordTrail(observed.rawPoint ?? observed.point, resolved.target, next.at);
       if (resolved.kind === 'target' || resolved.kind === 'neutral') updateDwell({ type: 'sample', target: resolved.target, at: next.at, now });
       else if (resolved.kind !== 'duplicate' && (resolved.kind !== 'hold' || dwellRef.current.kind === 'rearming')) updateDwell({ type: 'lost' });
     } else {
-      updateDwell({ type: 'sample', target: targetAt(next.point), at: next.at, now });
+      const target = targetAt(next.point);
+      if (current.kind === 'camera') recordTrail(observed.rawPoint ?? observed.point, target, next.at);
+      updateDwell({ type: 'sample', target, at: next.at, now });
     }
   }
 
@@ -216,6 +249,7 @@ export function App() {
 
   function resetLabels() {
     inputViewport.current = { ...viewport(), pixelRatio: window.devicePixelRatio || 1 };
+    learning.reset();
     savedStore.invalidate(); chooseSaved(false); setRestoring(false); restoringRef.current = false;
     setSavedStatus(previous => previous.startsWith('Saving calibration') ? 'Calibration was not saved before the session ended.' : previous);
     clearValidation();

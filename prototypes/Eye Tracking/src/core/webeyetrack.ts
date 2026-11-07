@@ -35,6 +35,9 @@ export class DecodedFrameGate {
   }
 }
 
+/** 720p gives the eye-patch crop about twice the pixels of 640x480; the camera may still pick less. */
+export const CAMERA = { width: 1280, height: 720 };
+
 export class LocalWebEyeTrack implements TrackerRuntime {
   private client: WorkerClient | null = null;
   private video: HTMLVideoElement | null = null;
@@ -92,7 +95,7 @@ export class LocalWebEyeTrack implements TrackerRuntime {
     let done = () => {};
     this.idle = new Promise<void>(resolve => { done = resolve; });
     try {
-      const width = Math.min(640, video.videoWidth);
+      const width = Math.min(CAMERA.width, video.videoWidth);
       const height = Math.round(video.videoHeight * width / video.videoWidth);
       if (!width || !height) throw new Error('Camera frame has no dimensions');
       canvas.width = width; canvas.height = height;
@@ -220,7 +223,7 @@ export function createCameraSession(): CameraSession {
     create: () => new LocalWebEyeTrack(),
     acquire: () => {
       if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) throw new DOMException('Camera API unavailable', 'SecurityError');
-      return navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      return navigator.mediaDevices.getUserMedia({ video: { width: { ideal: CAMERA.width }, height: { ideal: CAMERA.height }, facingMode: 'user' }, audio: false });
     },
   });
 }

@@ -105,10 +105,10 @@ try {
       if(label==='narrow'){await page.locator('body').click({position:{x:10,y:70}});await page.getByRole('heading',{name:'Paused',exact:true}).waitFor();await page.waitForTimeout(300);await page.getByRole('button',{name:'Continue',exact:true}).click();}
       console.log(`PASS ${label} head stage/training: 42 labels, three-second stages; frozen free flow running`);
       await page.locator('.navigation-grid').waitFor({timeout:65000});ensure((await audit()).labels===42&&(await audit()).trains===1,'Free flow trained model');
-      ensure((await visibleText()).trim()==='','Navigation has visible text');ensure(await page.locator('[data-dwell]').count()===9,'Navigation target count');ensure(await page.locator('h1').count()===0,'Navigation heading visible');
+      ensure((await visibleText()).trim()==='','Navigation has visible text');ensure(await page.locator('[data-dwell]').count()===8,'Navigation target count');ensure(await page.locator('h1').count()===0,'Navigation heading visible');
       ensure(await page.locator('[data-dwell]').evaluateAll(nodes=>nodes.every(n=>n.tagName==='BUTTON'&&!n.textContent.trim()&&n.getAttribute('aria-label'))),'Blank targets lack names or have content');
       ensure(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth),'Viewport overflows');
-      const before=await geometry();await capture(page,`${label}-navigation-off`);const top=page.getByRole('button',{name:'Top target',exact:true});
+      const before=await geometry();await capture(page,`${label}-navigation-off`);const top=page.getByRole('button',{name:'Top row column 1 target',exact:true});
       const box=await top.boundingBox();const pointNorm=[(box.x+box.width/2)/size.width-.5,(box.y+box.height/2)/size.height-.5];await setWorker({point:pointNorm,raw:pointNorm});await page.waitForTimeout(2350);
       ensure(await top.getAttribute('aria-pressed')==='false'&&!(await top.getAttribute('class')).includes('is-previewed'),'Preblink selection changed');
       await diagnostic.click();await page.locator('.gaze-area').waitFor();await capture(page,`${label}-navigation-diagnostics-on`);await diagnostic.click();
@@ -118,8 +118,8 @@ try {
       const serial=await top.getAttribute('data-activation');await page.waitForTimeout(2300);await blink();ensure(await top.getAttribute('data-activation')===serial,'Latched blink repeated selection');
       ensure(JSON.stringify(await geometry())===JSON.stringify(before),'Selection moved target geometry');
       for(const target of await page.locator('[data-dwell]').all()){await target.click();ensure(await target.getAttribute('aria-pressed')==='true','Mouse target failed');}
-      const touchTarget=page.getByRole('button',{name:'Left target',exact:true}),touchBox=await touchTarget.boundingBox();await page.touchscreen.tap(touchBox.x+touchBox.width/2,touchBox.y+touchBox.height/2);ensure(await touchTarget.getAttribute('aria-pressed')==='true','Touch target failed');
-      await page.getByRole('button',{name:'Center target',exact:true}).focus();await page.keyboard.press('Enter');ensure(await page.getByRole('button',{name:'Center target',exact:true}).getAttribute('aria-pressed')==='true','Keyboard target failed');
+      const touchTarget=page.getByRole('button',{name:'Bottom row column 4 target',exact:true}),touchBox=await touchTarget.boundingBox();await page.touchscreen.tap(touchBox.x+touchBox.width/2,touchBox.y+touchBox.height/2);ensure(await touchTarget.getAttribute('aria-pressed')==='true','Touch target failed');
+      await page.getByRole('button',{name:'Bottom row column 2 target',exact:true}).focus();await page.keyboard.press('Enter');ensure(await page.getByRole('button',{name:'Bottom row column 2 target',exact:true}).getAttribute('aria-pressed')==='true','Keyboard target failed');
       await diagnostic.focus();await page.keyboard.press('Enter');ensure(await diagnostic.getAttribute('aria-pressed')==='true','Keyboard diagnostic toggle failed');await page.locator('.gaze-area').waitFor();
       await setWorker({face:false});await page.waitForTimeout(250);ensure(await page.locator('.gaze-area').count()===0,'Loss left diagnostic marker');
       await page.getByRole('heading',{name:'Face not detected',exact:true}).waitFor({timeout:10000});await capture(page,`${label}-face-error`);await setWorker({face:true});await page.waitForTimeout(800);ensure(await page.getByRole('heading',{name:'Face not detected',exact:true}).count()===1,'Recovery resumed automatically');
@@ -130,8 +130,8 @@ try {
       await page.getByRole('button',{name:'Start camera',exact:true}).click();await page.getByRole('button',{name:'Use saved calibration',exact:true}).waitFor();await capture(page,`${label}-saved-choice`);
       await page.getByRole('button',{name:'Use saved calibration',exact:true}).click();await page.locator('.navigation-grid').waitFor();ensure((await audit()).restores===1&&(await audit()).labels===0,'Restore did not use worker learned weights');
       await settings();await page.getByRole('button',{name:'Delete saved calibration',exact:true}).click();ensure(await page.evaluate(key=>localStorage.getItem(key),savedKey)===null,'Delete retained saved model');await page.getByRole('button',{name:'Stop',exact:true}).click();
-      results.push({viewport:label,size,labels:42,eyeReferences:9,headReferences:5,trainCalls:1,heldOutFrozen:true,blankTargets:9,touchPause:true,diagnostics:true,keyboard:true,positionsStable:true,savedRestoreAndDelete:true});
-      console.log(`PASS ${label} navigation: blank 3x3, two blinks, latch, keyboard, diagnostics, recovery, saved restore/delete`);
+      results.push({viewport:label,size,labels:42,eyeReferences:9,headReferences:5,trainCalls:1,heldOutFrozen:true,blankTargets:8,touchPause:true,diagnostics:true,keyboard:true,positionsStable:true,savedRestoreAndDelete:true});
+      console.log(`PASS ${label} navigation: blank 4x2, two blinks, latch, keyboard, diagnostics, recovery, saved restore/delete`);
     }
     // Real application camera error page, isolated from other context ownership.
     const errorPage=await context.newPage();await errorPage.addInitScript(()=>{navigator.mediaDevices.getUserMedia=()=>Promise.reject(new DOMException('Fixture denied','NotAllowedError'));});

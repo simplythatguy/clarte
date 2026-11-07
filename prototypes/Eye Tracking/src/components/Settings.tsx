@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { CalibrationPace } from '../core/calibration';
-export type SettingsValue = { selection: 'blink' | 'dwell'; dwellMs: number; assistance: boolean; pointer: boolean; pace: CalibrationPace };
+export type SettingsValue = { selection: 'blink' | 'dwell'; dwellMs: number; assistance: boolean; pointer: boolean; pace: CalibrationPace; learning: boolean };
 type Props = {
   value: SettingsValue; camera: boolean; simulation: boolean; canValidate: boolean;
   savedStatus: string; hasSaved: boolean; fullscreenError: boolean;
@@ -24,6 +24,7 @@ export function Settings(props: Props) {
         <label htmlFor="dwell">Dwell · {(value.dwellMs / 1000).toFixed(1)} s</label><input id="dwell" type="range" min="1500" max="5000" step="100" value={value.dwellMs} onChange={event => onChange({ ...value, dwellMs: Number(event.target.value) })} />
         <label htmlFor="assistance">Target assistance</label><input id="assistance" type="checkbox" checked={value.assistance} onChange={event => onChange({ ...value, assistance: event.target.checked })} />
       </>}
+      <label htmlFor="learning">Learn from selections</label><input id="learning" type="checkbox" checked={value.learning} onChange={event => onChange({ ...value, learning: event.target.checked })} />
       <label htmlFor="calibration-pace">Pace</label><select id="calibration-pace" value={value.pace} onChange={event => onChange({ ...value, pace: event.target.value === 'quick' ? 'quick' : event.target.value === 'gentle' ? 'gentle' : 'comfortable' })}><option value="quick">Quick</option><option value="comfortable">Comfortable</option><option value="gentle">Slower</option></select>
     </div>
     <div className="settings-actions">

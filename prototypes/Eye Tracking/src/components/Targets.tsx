@@ -1,10 +1,7 @@
 import type { MouseEvent } from 'react';
 import type { DwellState } from '../core/dwell';
-export const NAVIGATION_TARGETS = [
-  { id: 'top-left', label: 'Top left target' }, { id: 'top', label: 'Top target' }, { id: 'top-right', label: 'Top right target' },
-  { id: 'left', label: 'Left target' }, { id: 'center', label: 'Center target' }, { id: 'right', label: 'Right target' },
-  { id: 'bottom-left', label: 'Bottom left target' }, { id: 'bottom', label: 'Bottom target' }, { id: 'bottom-right', label: 'Bottom right target' },
-];
+/** Four columns by two rows, in reading order. */
+export const NAVIGATION_TARGETS = (['top', 'bottom'] as const).flatMap(row => [1, 2, 3, 4].map(column => ({ id: `${row}-${column}`, label: `${row === 'top' ? 'Top' : 'Bottom'} row column ${column} target` })));
 export function DwellTarget({ id, label, state, preview = false, selected, activation, onClick }: {
   id: string; label: string; state: DwellState; preview?: boolean; selected: boolean; activation: number;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
