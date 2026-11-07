@@ -325,9 +325,12 @@ def provision_voice(env):
     ensure_npm_ci(VOICE, env)
 
 
+UI_STYLES = 6  # s1..s6; serve.mjs starts each on the port PORT + n
+
+
 def provision_ui(env):
     provision_engine(env)
-    for n in range(1, 6):
+    for n in range(1, UI_STYLES + 1):
         ensure_npm_ci(UI / f"s{n}", env)
 
 
@@ -480,8 +483,8 @@ def start_autocomplete(env, log_dir, procs):
 
 
 def start_ui(env, log_dir, procs):
-    base = pick_port(5100, count=6)  # switcher, then s1-s5 on the five ports after it
-    ports = list(range(base, base + 6))
+    base = pick_port(5100, count=UI_STYLES + 1)  # switcher, then one port per style after it
+    ports = list(range(base, base + UI_STYLES + 1))
     engine_port = start_engine(env, log_dir, procs)
     if engine_port != 8765:
         log("S0 talks to whatever is on 8765; the engine started here is on another port")

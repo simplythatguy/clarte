@@ -14,7 +14,7 @@ cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_
 ```
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
-URLs; Ctrl+C stops everything it started. The apps are `ui` (the S0–S5 switcher with the
+URLs; Ctrl+C stops everything it started. The apps are `ui` (the S0–S6 switcher with the
 prediction engine), `predict`, `autocomplete`, `voice` and `eyes`; `clarte` alone lists them,
 and `clarte check` starts and smoke-tests every app without a browser (this is what CI runs).
 

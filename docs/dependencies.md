@@ -14,6 +14,7 @@ These skills are development tools for building Clarte, an application for givin
 | better-ui | surfaces.md, animations.md, enter-exit.md, icon-transitions.md, performance.md, icons.md | Existing UI/project conventions; browser for live verification | Entire skill folder including all recipes and agents/openai.yaml; upstream MIT license retained |
 | untangle-codebase | None named | Repository access; suitable checks; subagents for its final structural review | Original skill preserved; it asks separately about optional comment/test cleanup |
 | sol-loop | None named | Git, gh for PR context, an actual GPT Sol reviewer through T3/native supported delegation | Original skill preserved; no full-send, council, or babysit-pr needed |
+| teach | MISSION-FORMAT.md, RESOURCES-FORMAT.md, LEARNING-RECORD-FORMAT.md, GLOSSARY-FORMAT.md; agents metadata | Invoke explicitly in the intended teaching workspace | Complete upstream skill copied unchanged with MIT license; no teaching workspace initialized |
 | pr | None hard-required | Project language from GLOSSARY.md if present; real change/evidence | Original skill, agents metadata, and CREDITS.md included |
 | setup-matt-pocock-skills | Its tracker, label, and domain templates | Write access to the target repo; gh/glab only for a chosen hosted tracker | Included with all templates and agents metadata; not executed here |
 | lintapple-ui | None | Node >=22, Lint Apple/browser runner, running web app and matching policy | Original integration guidance with upstream README; npm version 0.1.24 verified during preparation |
@@ -97,5 +98,7 @@ All repositories were read from shallow Git clones pinned in the lockfile. No up
 ## Maintaining development skills
 
 `sources.lock.json` is the source of the skill inventory. Copied `skills/<name>/SKILL.md` records identify upstream skills; `authored_skills` lists Clarte-authored skill directories. Add or rename entries there alongside the actual files; the validator does not keep a second catalog in Python.
+
+Clarte's adaptations are kept apart from the exact copies. Each upstream skill has one `skills/<name>/CLARTE.md` overlay, listed under `clarte_overlays` and built on the shared contract in [Skills for Clarte](skills-for-clarte.md). When a skill is refreshed from upstream, re-read its overlay against the new text and update it in the same change.
 
 Run `python3 scripts/validate.py` after a tooling change. It checks copied-file hashes, the declared inventory, entrypoint metadata, licenses, sections, and local links in repository docs and each skill's top-level Markdown. Archived reference documents retain their upstream link context and are covered by file hashes. The gstack source marks `runtime_relative_links` because its unmodified files reference its external installation; those links require the full runtime rather than the Clarte checkout.

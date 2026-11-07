@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Serves the S0–S5 preview on http://localhost:5100 (PORT overrides it). Starts any of the five
-// style dev servers (s1–s5 on the five ports after it, 5101–5105 by default) and the local
+// Serves the S0–S6 preview on http://localhost:5100 (PORT overrides it). Starts any of the six
+// style dev servers (s1–s6 on the six ports after it, 5101–5106 by default) and the local
 // prediction engine for S0 (port 8765) that are not already running. Ctrl+C stops what this
 // script started.
 import { createServer } from 'node:http';
@@ -16,14 +16,16 @@ const PORT = Number(process.env.PORT ?? 5100);
 const WINDOWS = process.platform === 'win32';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webm': 'video/webm', '.json': 'application/json' };
 
-const listening = (port) => new Promise((resolve) => {
-  const s = createConnection({ port, host: '127.0.0.1' });
+// Vite listens on "localhost", which macOS resolves to ::1 only, so check both loopbacks.
+const listeningOn = (port, host) => new Promise((resolve) => {
+  const s = createConnection({ port, host });
   s.once('connect', () => { s.end(); resolve(true); });
   s.once('error', () => resolve(false));
 });
+const listening = async (port) => (await listeningOn(port, '127.0.0.1')) || (await listeningOn(port, '::1'));
 
 const children = [];
-for (let n = 1; n <= 5; n++) {
+for (let n = 1; n <= 6; n++) {
   const port = PORT + n;
   if (await listening(port)) { console.log(`s${n}: already running on ${port}`); continue; }
   // npm is npm.cmd on Windows, which Node can only start through a shell.
