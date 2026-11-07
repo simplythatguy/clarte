@@ -64,22 +64,19 @@ class Predictor(Composer):
     def predict(self, history, message, groups):
         groups = "".join(ch for ch in str(groups) if ch in "1234")
         ctx = self.context(history, message)
-        ranked = self.rank(ctx, groups)[:12]
+        self._prepare(ctx)
         idx = np.flatnonzero(np.array([c.startswith(groups) for c in self.codes])) if groups else np.arange(len(self.codes))
         order = idx[np.argsort(-self.probs[idx], kind="stable")]
-        likely = self.word_array[order[:12]].tolist()
-        head, tail = order[:1], order[1:200]
-        exact = tail[self.lengths[tail] == len(groups)] if groups else tail[:0]
-        rest = tail[self.lengths[tail] != len(groups)] if groups else tail
-        choose = self.word_array[np.concatenate((head, exact, rest))[:12]].tolist()
+        likely = self.word_array[order[:2]].tolist()
+        choose = likely.copy()
         b = max(len(groups), 1) + 2
         ok = (self.lengths <= b) & (self.lengths >= max(len(groups), 1))
         if groups:
             ok &= np.array([c.startswith(groups) for c in self.codes])
-        short_idx = np.flatnonzero(ok)
-        short = self.word_array[short_idx[np.argsort(-self.probs[short_idx], kind="stable")][:8]].tolist()
+        short_idx = order[:2][ok[order[:2]]]
+        short = self.word_array[short_idx[np.argsort(-self.probs[short_idx], kind="stable")][:2]].tolist()
         return {"likely": likely, "choose": choose, "short": short,
-                "ghost": ranked[0] if ranked else "", "candidates": ranked}
+                "ghost": likely[0] if likely else "", "candidates": likely.copy()}
 
     def close(self):
         self.prior.close()

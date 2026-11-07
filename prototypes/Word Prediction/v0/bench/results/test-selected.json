@@ -1,0 +1,607 @@
+{
+  "synthetic_only": true,
+  "split": "test",
+  "claude_model": "claude-sonnet-5-5",
+  "harness_sha256": "d1c7fc61c3f762be822a7f311a2ca6ef84bef116029975adc334a02d0723229b",
+  "engine_root": ".scratch\\prediction\\windows-runtime",
+  "corpus_sha256": "a5445be560d016dd4ee75efb51809efc5b61ac0471c76e55f177fa52bb60d8b3",
+  "vocabulary_sha256": "29b99e8fcb452760057f8102cb8adfd8232951deaf123f1611bce65cb3e2cb21",
+  "blocked": {
+    "jev": "No documented API or implementation supplied",
+    "deployable": "FileNotFoundError: required local runtime/artifacts unavailable"
+  },
+  "summary": [
+    {
+      "workflow": "claude-hybrid",
+      "stage": "next",
+      "n": 12,
+      "top1": 0.6666666666666666,
+      "top2": 0.8333333333333334,
+      "top2_wilson95": [
+        0.5519636426153274,
+        0.9530358523851776
+      ],
+      "coverage": 0.9166666666666666,
+      "no_result": 0.0,
+      "errors": 0,
+      "skipped": 0,
+      "p50_ms": 2174.5483000413515,
+      "p95_ms": 2465.378899942152
+    },
+    {
+      "workflow": "claude-hybrid",
+      "stage": "prefix2",
+      "n": 12,
+      "top1": 0.9166666666666666,
+      "top2": 1.0,
+      "top2_wilson95": [
+        0.7574992425007574,
+        1.0
+      ],
+      "coverage": 0.9166666666666666,
+      "no_result": 0.0,
+      "errors": 0,
+      "skipped": 0,
+      "p50_ms": 2214.869799965527,
+      "p95_ms": 2404.1520000901073
+    },
+    {
+      "workflow": "claude-hybrid",
+      "stage": "full",
+      "n": 12,
+      "top1": 0.9166666666666666,
+      "top2": 1.0,
+      "top2_wilson95": [
+        0.7574992425007574,
+        1.0
+      ],
+      "coverage": 0.9166666666666666,
+      "no_result": 0.0,
+      "errors": 0,
+      "skipped": 0,
+      "p50_ms": 2223.572549992241,
+      "p95_ms": 2864.6283999551088
+    }
+  ],
+  "rows": [
+    {
+      "id": "t01",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "glasses",
+      "suggestions": [
+        "glasses",
+        "phone"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2360.6804000446573,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t01",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "glasses",
+      "suggestions": [
+        "glasses",
+        "glass"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1647.4480000324547,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t01",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "glasses",
+      "suggestions": [
+        "glasses"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2400.43510007672,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t02",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "music",
+      "suggestions": [
+        "tea",
+        "coffee"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2333.915999974124,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t02",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "music",
+      "suggestions": [
+        "music",
+        "juice"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2214.096499956213,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t02",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "music",
+      "suggestions": [
+        "music",
+        "musical"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2227.0317999646068,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t03",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "door",
+      "suggestions": [
+        "door",
+        "gate"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2074.0176999242976,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t03",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "door",
+      "suggestions": [
+        "door",
+        "doors"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2215.643099974841,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t03",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "door",
+      "suggestions": [
+        "door",
+        "doors"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2669.679200043902,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t04",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "blanket",
+      "suggestions": [
+        "clothes",
+        "phone"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2204.052900080569,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t04",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "blanket",
+      "suggestions": [
+        "blanket",
+        "clothes"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1706.1695999000221,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t04",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "blanket",
+      "suggestions": [
+        "blanket",
+        "blankets"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2220.113300019875,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t05",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "low",
+      "suggestions": [
+        "small",
+        "low"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2228.273299988359,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t05",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "low",
+      "suggestions": [
+        "hot",
+        "low"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1724.4817999890074,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t05",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "low",
+      "suggestions": [
+        "hot",
+        "low"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1675.9900000179186,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t06",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "xandrel",
+      "suggestions": [
+        "xandrel",
+        "your"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1678.3508999506012,
+      "covered": false,
+      "pool64_covered": false
+    },
+    {
+      "id": "t06",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "xandrel",
+      "suggestions": [
+        "xandrel",
+        "ya"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2293.0162999546155,
+      "covered": false,
+      "pool64_covered": false
+    },
+    {
+      "id": "t06",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "xandrel",
+      "suggestions": [
+        "xandrel",
+        "teleseminar"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1968.0936000077054,
+      "covered": false,
+      "pool64_covered": false
+    },
+    {
+      "id": "t07",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "not",
+      "suggestions": [
+        "not",
+        "move"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2375.23320002947,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t07",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "not",
+      "suggestions": [
+        "not",
+        "move"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2128.5097000654787,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t07",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "not",
+      "suggestions": [
+        "not",
+        "move"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2326.7305999761447,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t08",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "soon",
+      "suggestions": [
+        "now",
+        "soon"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1998.984400066547,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t08",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "soon",
+      "suggestions": [
+        "soon",
+        "so"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2404.1520000901073,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t08",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "soon",
+      "suggestions": [
+        "soon",
+        "sooner"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2056.235499912873,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t09",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "delicious",
+      "suggestions": [
+        "delicious",
+        "really"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2465.378899942152,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t09",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "delicious",
+      "suggestions": [
+        "delicious",
+        "fantastic"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2299.831800046377,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t09",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "delicious",
+      "suggestions": [
+        "delicious",
+        "deliciousness"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2302.524600061588,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t10",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "curtains",
+      "suggestions": [
+        "curtains",
+        "door"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2145.043700002134,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t10",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "curtains",
+      "suggestions": [
+        "curtains",
+        "curtain"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1671.5409000171348,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t10",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "curtains",
+      "suggestions": [
+        "curtains",
+        "dustbins"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2864.6283999551088,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t11",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "myself",
+      "suggestions": [
+        "myself",
+        "alone"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2109.8263999447227,
+      "covered": true,
+      "pool64_covered": false
+    },
+    {
+      "id": "t11",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "myself",
+      "suggestions": [
+        "myself",
+        "just"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2376.943500014022,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t11",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "myself",
+      "suggestions": [
+        "myself",
+        "itself"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1657.6522999675944,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t12",
+      "stage": "next",
+      "workflow": "claude-hybrid",
+      "target": "water",
+      "suggestions": [
+        "water",
+        "juice"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2088.9548000413924,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t12",
+      "stage": "prefix2",
+      "workflow": "claude-hybrid",
+      "target": "water",
+      "suggestions": [
+        "water",
+        "warm"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 2379.229500074871,
+      "covered": true,
+      "pool64_covered": true
+    },
+    {
+      "id": "t12",
+      "stage": "full",
+      "workflow": "claude-hybrid",
+      "target": "water",
+      "suggestions": [
+        "water",
+        "watermelon"
+      ],
+      "error": null,
+      "skipped": false,
+      "ms": 1767.892500036396,
+      "covered": true,
+      "pool64_covered": true
+    }
+  ]
+}

@@ -30,6 +30,8 @@
     "Selected Light/Deployable settings fixed; Qwen/Jev/POS/noisy and experiment options omitted.",
     "Disk score caches, replay, telemetry and unused scorer branches removed.",
     "In-memory position/transformer KV caches and float16 log-mass quantization retained.",
-    "HTTP and HTML test clients are new; predict field semantics copied from ui/server.py."
+    "HTTP and HTML test clients are new; original predict field semantics copied from ui/server.py.",
+    "Clarte two-choice adaptation: predict exposes the two highest probability words consistently in likely/choose/candidates/ghost; short is limited to two. Frozen research rank remains unchanged.",
+    "Clarte synthetic benchmark and contract tests added in bench; optional Claude experiments are separate from the local application runtime."
   ]
 }
