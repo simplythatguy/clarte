@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the distributable skill collection and exact upstream copies."""
+"""Validate the bundled development skills and exact upstream copies."""
 from pathlib import Path
 import hashlib
 import json

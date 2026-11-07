@@ -1,6 +1,6 @@
 # Source and dependency audit
 
-Audited from the commits recorded in `sources.lock.json` and the first-party pages below. This is a collection of upstream skills with a Lint Apple integration skill, not a replacement gstack runtime.
+These skills are development tools for building Clarte, an application for giving back clarity of speech to people with dysarthria and motor disabilities. Sources were audited from the commits recorded in `sources.lock.json` and the first-party pages below. The bundled files do not replace the gstack runtime.
 
 ## Dependency decisions
 
@@ -48,9 +48,9 @@ First-party sources reviewed:
 
 `pr` formats a PR body: Summary, Evidence, Merge Danger. It does not open, push, merge, or monitor a PR. Its CREDITS.md explicitly says `show-me` is **not a dependency**: the visual guidance was copied with attribution. No show-me installation is needed.
 
-Matt recommends running setup once per repo before his engineering skills. The `pr` source itself does not invoke setup or read issue-tracker configuration, so this is a recommended suite setup, not a hard transitive dependency. It is included because the user asked to check prerequisites. `code-review` is a recommended preceding workflow on the website, not a called dependency of `pr`; this collection already supplies `sol-loop` for review. Neither `ask-matt` nor the entire engineering suite is necessary to format a PR body.
+Matt recommends running setup once per repo before his engineering skills. The `pr` source itself does not invoke setup or read issue-tracker configuration, so this is a recommended suite setup, not a hard transitive dependency. It is included because the user asked to check prerequisites. `code-review` is a recommended preceding workflow on the website, not a called dependency of `pr`; the development tools already include `sol-loop` for review. Neither `ask-matt` nor the entire engineering suite is necessary to format a PR body.
 
-The setup skill conditionally uses `triage` only if it is already installed; it does not require installing triage. All five referenced template files are bundled. Setup creates project-specific docs in the **consumer repo**; Clarte does not preconfigure a user's project or fabricate its GLOSSARY.md.
+The setup skill conditionally uses `triage` only if it is already installed; it does not require installing triage. All five referenced template files are bundled. Setup creates project-specific docs in the repository where it is run; bundling the skill does not configure Clarte or create its GLOSSARY.md.
 
 Where the website and pinned source differ, use the pinned source for executable behavior. For example the website says setup does not create labels, but the current setup source explicitly creates missing labels after the relevant confirmation. This is one reason to retain exact commits rather than rely on prose alone.
 
