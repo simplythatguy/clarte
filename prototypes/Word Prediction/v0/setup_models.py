@@ -1,7 +1,7 @@
-"""Copy available research artifacts, or fetch the pinned public pieces.
+"""Refresh models/ from the research workspace, or fetch the pinned public pieces.
 
-Large files go to ~/.cache/clarte-wordpred/v0 (or WORDPRED_MODELS).
-Counts and fine-tuned weights are not public downloads; see MODEL_RECIPE.md.
+The models are committed in models/ (Git LFS), so normal use needs only git lfs pull.
+This rebuilds that folder (or WORDPRED_MODELS) after a retrain; see MODEL_RECIPE.md.
 """
 import argparse
 import hashlib

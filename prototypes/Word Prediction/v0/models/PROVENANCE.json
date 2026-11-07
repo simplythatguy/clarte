@@ -1,0 +1,78 @@
+{
+  "counts_aac63k.pkl": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/ngram/models/counts_aac63k.pkl",
+    "sha256": "9a0534eb23a7c505e79a4047389b95512668dbdd871870bbbdf8574ecea5bf4b"
+  },
+  "lm_mix_top3_4gram_abs0.0.arpa.gz": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/ngram/models/lm_mix_top3_4gram_abs0.0.arpa.gz",
+    "sha256": "50bd44403c59197a20f2f47312606efefe6369a7e0c4094d3026d04cffc8768b"
+  },
+  "vocabulary.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/vocabulary.json",
+    "sha256": "29b99e8fcb452760057f8102cb8adfd8232951deaf123f1611bce65cb3e2cb21"
+  },
+  "checkpoints/r4_ft_full135_v2/config.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/config.json",
+    "sha256": "088a47fba494cebb505944451a2d7343eb63eb60472e4d275ef1b3ebd2d017de"
+  },
+  "checkpoints/r4_ft_full135_v2/curve.jsonl": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/curve.jsonl",
+    "sha256": "26716d6d193c99ffb9700f8e6f1d1e109c60228d4d92c89d9055558e1b1d0428"
+  },
+  "checkpoints/r4_ft_full135_v2/model.safetensors": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/model.safetensors",
+    "sha256": "d2ff6483e502197a142255c4289f2f16987d3e9dbc3652f10f00258eb7b43a66"
+  },
+  "checkpoints/r4_ft_full135_v2/receipt.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/receipt.json",
+    "sha256": "811b69aa1bc71e36dbd14b69cdbf45939a8dbaff840e14e50b80792fda4f1893"
+  },
+  "checkpoints/r4_ft_full135_v2/recipe.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/recipe.json",
+    "sha256": "48b9b8459ec84b8737ef37a2e4e163b8bde306ec2f255b182e072fbd2e9d579e"
+  },
+  "checkpoints/r4_ft_full135_v2/train-manifest.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/train-manifest.json",
+    "sha256": "b4bd885ecc078a35f1aff9392236c31787a79d38f6faa335c56e4bc9ca7588c9"
+  },
+  "checkpoints/r4_ft_full135_v2/training.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/finetune/checkpoints/r4_ft_full135_v2/training.json",
+    "sha256": "c1898c30f6b0652a800290230b089c2ed1d171667f47e96b77b47f7d4010582b"
+  },
+  "base/README.md": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/README.md",
+    "sha256": "d1ba68cae64a89b6b434b11526e6e2271ee5ffd2c914ec35ed515f9d84c6085c"
+  },
+  "base/config.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/config.json",
+    "sha256": "1d556eab73b69c7f11f64c557a2f9c6f440bd4c6b89bb2584a6b498c92603843"
+  },
+  "base/generation_config.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/generation_config.json",
+    "sha256": "2056c988e990b0d13670f63f2f3b87b3b6d07edaf7a3416998ba27dab2d8a059"
+  },
+  "base/merges.txt": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/merges.txt",
+    "sha256": "0b54e8aa4e53d5383e2e4bc635a56b43f9647f7b13832d5d9ecd8f82dac4f510"
+  },
+  "base/model.safetensors": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/model.safetensors",
+    "sha256": "80521b40281d6ce74e35c9282c22539e75aa0ac8578892b2a59955ef78d55da1"
+  },
+  "base/special_tokens_map.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/special_tokens_map.json",
+    "sha256": "e786b595b9a23148bf1630df78d9037a048ea671e48bfd3549a1e3c233742bb3"
+  },
+  "base/tokenizer.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/tokenizer.json",
+    "sha256": "9ca9acddb6525a194ec8ac7a87f24fbba7232a9a15ffa1af0c1224fcd888e47c"
+  },
+  "base/tokenizer_config.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/tokenizer_config.json",
+    "sha256": "4bb9af56a342753d39374f4016a16574cab299fe088e896f425ce3c433f61424"
+  },
+  "base/vocab.json": {
+    "source": "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/methods/neural/hf-cache/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/vocab.json",
+    "sha256": "82b84012e3add4d01d12ba14442026e49b8cbbaead1f79ecf3d919784f82dc79"
+  }
+}

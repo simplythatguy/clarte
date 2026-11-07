@@ -1,11 +1,12 @@
 """Selected AAC/DailyDialog MKN + ARPA + causal history-count prior."""
+import hashlib
 import pickle
 from collections import Counter, defaultdict
 
 import numpy as np
 
 from .context import words_of
-from .paths import ARPA
+from .paths import ARPA, COUNTS_SHA256
 from .arpa import Arpa
 
 def normalized(a):
@@ -59,7 +60,11 @@ class KN:
 
 class NgramPrior:
     def __init__(self, root):
-        data = pickle.loads((root / "counts_aac63k.pkl").read_bytes())
+        raw = (root / "counts_aac63k.pkl").read_bytes()
+        if hashlib.sha256(raw).hexdigest() != COUNTS_SHA256:
+            raise ValueError(f"{root / 'counts_aac63k.pkl'} is not the trusted count model (SHA256 differs); "
+                             "it was not loaded. Copy it again from a trusted source; see MODEL_RECIPE.md.")
+        data = pickle.loads(raw)
         self.words = data["vocab"]
         self.ids = {w: i for i, w in enumerate(self.words)}
         self.bos = len(self.words)

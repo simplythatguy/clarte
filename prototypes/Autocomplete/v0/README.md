@@ -10,18 +10,20 @@ prediction. A suggestion is committed only by Accept.
 `sys.path`, resolved from its own file location. Keep both folders together.
 The runtime imports the ported `wordpred` package, never the research workspace.
 See [the engine README](../../Word%20Prediction/v0/README.md) for model setup,
-licences, benchmark results, and vocabulary limits. Models are shared in the user
-cache; there is no second model copy here.
+licences, benchmark results, and vocabulary limits. Models are shared from the engine's
+`models/` folder (Git LFS); there is no second model copy here.
 
 ```sh
 cd 'prototypes/Word Prediction/v0'   # from the repo root
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python build.py
-.venv/bin/python setup_models.py
 cd '../../Autocomplete/v0'
 '../../Word Prediction/v0/.venv/bin/python' server.py --port 8766
 ```
+
+On Windows, set up the engine as its README's Windows section describes, then run
+`& '..\..\Word Prediction\v0\.venv\Scripts\python' server.py --port 8766` from this folder.
 
 Open `http://127.0.0.1:8766/`. The page is plain HTML with only layout CSS:
 Partner said, editable committed Message, group buttons, one completion and its

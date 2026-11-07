@@ -1,8 +1,8 @@
 # Model artifacts and exact upstream recipe
 
-Models are deliberately absent from the source tree. Setup copies them to
-`~/.cache/clarte-wordpred/v0` (or `WORDPRED_MODELS`), with source/SHA256 receipts.
-It does not retrain, read test examples, or substitute the unfine-tuned base for
+The selected models are committed in `models/` with Git LFS; `models/SHA256SUMS`
+lists their hashes. This recipe is for rebuilding them. `setup_models.py` copies a
+rebuild from the research workspace into `models/` (or `WORDPRED_MODELS`). It does not retrain, read test examples, or substitute the unfine-tuned base for
 the selected checkpoint. Pickle counts must come from the trusted research
 source or your own rebuild, since loading a pickle executes Python code.
 
@@ -106,7 +106,8 @@ both at construction and before lazy loading. The historical baseline hash above
 identifies the frozen source; the runtime trusts the supplied completed receipt
 so a deliberate independent rebuild can be used.
 
-After rebuilding, run this port's `setup_models.py --source "$W"` again. The
+After rebuilding, run this port's `setup_models.py --source "$W"` again, then
+update `COUNTS_SHA256` in `wordpred/paths.py` and `models/SHA256SUMS`. The
 loader uses CPU float32, two compute threads/one interop thread, last six dialogue
 turns, 128-token prefix, eight multi-token roots, sixteen continuations, both case
 variants, b=1 boundary approximation and float16 log-mass quantization, unchanged

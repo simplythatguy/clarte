@@ -1,0 +1,22 @@
+{
+  "vocab": 66501,
+  "contractions": 4211,
+  "domains": [
+    {
+      "sentences": 5019,
+      "tokens": 25112
+    },
+    {
+      "sentences": 87170,
+      "tokens": 985351
+    }
+  ],
+  "sha256": "9a0534eb23a7c505e79a4047389b95512668dbdd871870bbbdf8574ecea5bf4b",
+  "sources": {
+    "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/data/wordfreq-vocabulary-20000.json": "0cfbaf9531827a9145613b7356ef1b432e427e37d6c01b9fa7b1b285967af5fd",
+    "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/brainstorm/grouping-sol/data/wordfreq-large_en.msgpack.gz": "dffae8066b78dce0a6667cf5f58e567054f902674667090a7ac8a8a44628b05c",
+    "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/data/raw/aac/unz/aac_comm/sent_train_aac.txt": "ddc0ad61652cec5f4a8b76f1dd63f92fa9d5c1197e0a65f7a13d71873aed91bd",
+    "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/data/raw/dailydialog/train.parquet": "35545221cd70751c39146e41c301386f3dd06b576508e639ca981812d8889442",
+    "/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/data/raw/aac/unz/aac_comm/vocab_aac_twitter.txt": "3069d2d063411e70f45fc06c0df13f85c6ff8e0a89031b2aaebe8d98b5d63617"
+  }
+}

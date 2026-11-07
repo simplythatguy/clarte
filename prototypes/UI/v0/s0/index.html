@@ -162,8 +162,9 @@
 
   Engine: POST http://127.0.0.1:8765/api/predict with {history, message, groups}; the Accept card
   shows likely[0]. Start it with
-    cd ~/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction
-    methods/neural/.venv/bin/python ui/server.py
+    node prototypes/UI/v0/s_all/serve.mjs
+  or alone, after the setup in prototypes/Word Prediction/v0/README.md,
+    cd 'prototypes/Word Prediction/v0' && .venv/bin/python server.py --port 8765
 
   Input: look (hover) at a tile to dwell, or click it; keys 1 2 3 4 select a group, Enter or Space
   accepts, Backspace deletes, S sends the reply (speaks it and adds it to the history), P adds the

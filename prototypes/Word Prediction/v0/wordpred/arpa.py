@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ctypes as ct
+import sys
 from .paths import library
 
 import numpy as np
@@ -22,7 +23,8 @@ class Arpa:
         lib.arpa_order.restype = ct.c_int
         lib.arpa_close.argtypes = [ct.c_void_p]
         lib.arpa_fill.argtypes = [ct.c_void_p, ct.POINTER(ct.c_uint32), ct.c_int, ct.POINTER(ct.c_double)]
-        self.model = lib.arpa_open(str(path).encode())
+        # zlib's gzopen takes a narrow path, which Windows reads in the ANSI code page.
+        self.model = lib.arpa_open(str(path).encode("mbcs" if sys.platform == "win32" else "utf-8"))
         if not self.model:
             raise ValueError(lib.arpa_error().decode())
         self.order = lib.arpa_order(self.model)
