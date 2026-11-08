@@ -8,7 +8,9 @@
  *    the time left;
  *  - commit: a solid circle of the card's own vivid colour grows from the centre until it covers
  *    the card (260 ms) and holds a beat (120 ms); then the filled card, its line and its words fade
- *    out together, as one piece, to the card as it was (280 ms). Inside the circle
+ *    out together, as one piece, to the card as it was (280 ms). When the selection turns the card
+ *    into one that already has the fill's colour (Menu becoming Back), there is no exit: the fill
+ *    hands over to the new card. Inside the circle
  *    the card's words and icon turn to the colour that reads on it (white, or ink on a white fill),
  *    exactly as far as the circle has reached: a copy of the content in that colour, clipped to the
  *    same circle. The card is back at rest about half a second after the selection, even while gaze
@@ -92,14 +94,17 @@ function traceController(svg: SVGSVGElement, layer: HTMLElement) {
   const card = layer.parentElement!;
   let anims: Animation[] = [];
   let frame = 0;
+  let timer = 0;
   let floodEnds: Promise<void> | null = null;
-  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; cancelAnimationFrame(frame); floodEnds = null; };
+  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; cancelAnimationFrame(frame); clearTimeout(timer); floodEnds = null; };
   const offset = () => parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
   const reset = () => {
     line.style.strokeDashoffset = '1';
     line.style.opacity = '0';
     svg.style.opacity = '1';
     layer.style.opacity = '0';
+    layer.style.removeProperty('--trace');
+    layer.style.removeProperty('--on-trace');
     layer.replaceChildren();
   };
   const play = (el: Element, frames: Keyframe[], ms: number, easing: string, delay = 0) => {
@@ -145,11 +150,23 @@ function traceController(svg: SVGSVGElement, layer: HTMLElement) {
       layer.style.opacity = '1';
       layer.style.clipPath = reach;
       if (!reduce) play(layer, [{ clipPath: 'circle(0px at 50% 50%)' }, { clipPath: reach }], FLOOD_MS, EASE_STATE);
-      // Filled, the card and its line are one piece: they fade out together, nothing runs backwards.
+      // The fill keeps the colours it started with, even if the selection turns the card into another
+      // (Menu becoming Back would otherwise flip its fill from ink to white mid-way).
+      const look = getComputedStyle(card);
+      const fill = getComputedStyle(layer).backgroundColor;
+      layer.style.setProperty('--trace', fill);
+      layer.style.setProperty('--on-trace', look.getPropertyValue('--on-trace'));
       const [ms, at] = reduce ? [200, 0] : [FADE_MS, FADE_AT];
-      const fade = play(layer, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT, at);
-      play(svg, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT, at);
-      floodEnds = fade.finished.then(() => { stop(); reset(); }, () => {});
+      let settle: () => void = () => {};
+      floodEnds = new Promise<void>((resolve) => { settle = resolve; }).then(() => { stop(); reset(); });
+      timer = window.setTimeout(() => {
+        // If the card the selection leads to is already the fill's colour, the fill is simply where
+        // the card has arrived: hand over with no exit. Otherwise the filled card, its line and its
+        // words fade out together, as one piece; nothing runs backwards.
+        if (getComputedStyle(card).backgroundColor === fill) { settle(); return; }
+        play(layer, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT);
+        play(svg, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT).finished.then(settle, () => {});
+      }, at);
     },
     clear() { stop(); reset(); },
   };
