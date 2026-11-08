@@ -45,6 +45,9 @@ Other URL options: `?reset` forgets everything the app saved on this browser (fi
 Run these in `main/app` while `./clarte ui` runs:
 
 - `node scripts/selftest.ts` checks the gaze engine, the quadrant rules and the composer.
+- `npm test` runs those checks plus the always-open Options regression tests.
+- `npm run test:ui -- http://localhost:5200` checks the Options flow, late prediction updates, and all debug layouts at both supported sizes and 200% text against a running Vite dev server. Set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead of Playwright's Chromium.
+- `npm run test:ui:pinned -- http://localhost:5200` checks the pinned first prediction, same-position double click, stationary explicit confirmation, held-input safety, and bottom-row paging boundaries.
 - `npm run check` puts every debug phase through the backend-quadrant layout check at four window sizes.
 - `node scripts/e2e-first-run.mjs` drives the first run and a second launch in Chromium on a fake camera. It needs Gaze Lab's face fixture (`npm run fixture` in `prototypes/Gaze Lab`). A photo cannot move its eyes, so this check proves the plumbing, not gaze accuracy.
 - `npx tsc --noEmit -p tsconfig.json` typechecks the app.
@@ -53,8 +56,13 @@ Run these in `main/app` while `./clarte ui` runs:
 
 - `src/App.tsx` routes every selection and holds the launch flow, including the Get started countdown and whether the voice pages are done.
 - `src/model.ts` holds the state, the reducer and what Q1 and Q4 offer.
-- `src/words.ts` decides which word the word card shows and when Options opens (PR #24's rules).
+- `src/words.ts` orders the inline prediction and Options choices. During grouped typing Q4 always opens Options, including when just one word is predicted. Choosing a word there accepts it; opening Options never accepts or speaks. The chooser snapshots its list until Back or acceptance, so a late response cannot change the selected word.
+
 - `src/prediction/` holds the engine client and the local decoder. Rebuild its tables from `engine/models` with `scripts/build-*.mjs`.
 - `src/eyes/` holds the tracker, the calibration run and the saved calibration. `src/GuideOrb.tsx` draws the orb and drives the run. `src/eyes/core/` and `public/vendor/webeyetrack/` are byte-identical copies from Gaze Lab, listed with their hashes in `src/eyes/SOURCE.json`.
 - `src/core/` holds the gaze engine, the quadrant rules and the composer, from UI v0's shared folder.
 - `DESIGN.md` records the conversation screen's design decisions.
+
+The demo keeps the current fetched candidate bounds: up to 20 exact-length alternatives, plus the fetched prediction page and its current best completion. Confidence no longer hides the chooser, and longer completions remain selectable. Full-vocabulary API paging and a literal spelling screen are separate follow-ups; this change does not claim that every possible word is reachable.
+
+On the pinned-first comparison branch, the first displayed prediction stays in Q4 after Options opens. Other choices use the bottom row; more than four alternatives page two at a time with arrows. Two deliberate clicks in Q4 open and accept without moving the pointer. Space or Enter can confirm the pinned word while gaze stays in Q4. Continuous dwell and key repeat do not count as a second selection. Dwell-only use still requires the existing leave-and-return gesture. PR #33 preserves the earlier chooser for comparison.

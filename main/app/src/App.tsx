@@ -1,11 +1,11 @@
 /**
  * Clarté: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
  * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
- * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
+ * an Options screen for every predicted word; the first run (Onboarding.tsx: Welcome, eye calibration,
  * making the person's voice in VoiceSetup.tsx); words from the prediction engine (useWords.ts); and looks from the webcam eye
  * tracker (eyes/session.ts); with keyboard and mouse (`?input=mouse`, or chosen) clicks and keys select.
  *
- * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
+ * Q4 is the contextual primary slot, Q1 the contextual delete slot, Q2–Q3 a rest zone holding
  * the conversation thread, Q5–Q8 the letter groups. Every activation (a confirmed look, digit key, click,
  * Enter on a focused tile) arrives as one engine `select` event and is routed by action id.
  */
@@ -145,7 +145,6 @@ function primaryFace(fn: PrimaryFn): CardFace {
     case 'listen': return { icon: <Mic />, label: 'Listen' };
     case 'stop-listening': return { icon: <StopSquare />, label: 'Stop' };
     case 'suggestion': return { icon: <Sparkle />, label: <span className="card-label is-quote" style={longest(fn.text)}>“{fn.text}”</span>, hint: 'Suggested' };
-    case 'candidate': return { icon: <Check />, label: <span className="card-label is-word" style={{ ['--len' as string]: fn.word.length }}>{fn.word}</span>, hint: 'Accept' };
     case 'no-match': return { icon: <Check />, label: 'No word' };
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
@@ -154,8 +153,8 @@ function primaryFace(fn: PrimaryFn): CardFace {
     // like a live leaderboard as typing changes them (OptionsFace.tsx).
     case 'options': return {
       icon: <Options />,
-      name: `Options: ${fn.top.join(', ')}${fn.more ? ', and more' : ''}`,
-      label: <OptionsFace top={fn.top} more={fn.more} />,
+      name: `Options: ${fn.words.slice(0, 3).join(', ')}${fn.words.length > 3 ? ', and more' : ''}`,
+      label: <OptionsFace top={fn.words.slice(0, 3)} more={fn.words.length > 3} />,
     };
   }
 }
@@ -282,7 +281,7 @@ export function App() {
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
   const primary = useSettled('primary', primaryKey(slots.primary), slots.primary, looked, syncs);
   // The typed letters spell the word the card shows, which holds still while gaze rests on it.
-  const typedWord = primary.value.kind === 'candidate' ? primary.value.word : shown;
+  const typedWord = primary.value.kind === 'options' ? primary.value.words[0] ?? shown : shown;
 
   // No word fits the groups typed so far: a soft "not yet", a second late, and only if it lasts.
   const noMatch = slots.primary.kind === 'no-match';
@@ -329,20 +328,27 @@ export function App() {
     // Enter or Space on a focused tile activates that tile; elsewhere they confirm a preview.
     const onKeyCapture = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      // A held key is not a second deliberate confirmation after the screen changes.
+      if (e.repeat) { e.preventDefault(); e.stopPropagation(); return; }
       // Confirming a preview by key is a keyboard action: no bloom, no transitions.
       if (engine.snapshot.state === 'previewed') { noteKeyActivation(true); suppressMotionBriefly(); }
-      const el = e.target as HTMLElement | null;
       const tile = el?.closest?.('[data-action]');
       const action = tile?.getAttribute('data-action');
+      const pinned = stateRef.current.screen.kind === 'options'
+        && engine.snapshot.quadrant === 'Q4' && engine.snapshot.looked === 'pick-0';
       // A keyboard-focused tile takes the key; a preview waiting for confirmation always wins,
       // and a tile that merely kept focus after a click does not steal the confirm.
-      if (action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed') {
+      const confirmed = action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed'
+        ? action : pinned ? 'pick-0' : null;
+      if (confirmed) {
         e.preventDefault();
         e.stopPropagation();
-        userActivation.current = action;
+        userActivation.current = confirmed;
         noteKeyActivation(true);
         suppressMotionBriefly();
-        engine.activate(action, e.timeStamp);
+        engine.activate(confirmed, e.timeStamp);
       }
     };
     window.addEventListener('keydown', onKeyCapture, true);
@@ -404,12 +410,7 @@ export function App() {
       case 'listen': token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
       case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
-      case 'candidate':
-        commit(fn.word, historyOf(s), s.composition.words.map((w) => w.text));
-        dispatch({ type: 'accept', word: fn.word, rank: fn.rank });
-        play('word');
-        return;
-      case 'options': dispatch({ type: 'screen', screen: { kind: 'options', at: 0 } }); play('control'); return;
+      case 'options': dispatch({ type: 'open-options', words: fn.words }); play('control'); return;
       case 'no-match': return;
       case 'speak': startSpeaking(sentence(messageText(s.composition)), null, false); return;
       case 'stop-speaking':
@@ -619,14 +620,16 @@ export function App() {
     if (s.screen.kind === 'options') {
       if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
       if (action === 'page-prev' || action === 'page-next') {
-        dispatch({ type: 'screen', screen: { kind: 'options', at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
+        dispatch({ type: 'screen', screen: { ...s.screen, at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
         play('control');
         return;
       }
-      const word = action.startsWith('pick-') ? wordsNow(s).options[Number(action.slice(5))] : undefined;
+      const word = action.startsWith('pick-') ? s.screen.words[Number(action.slice(5))] : undefined;
       if (word) {
         // Its rank in the word card's ranking, so Delete reopens the word at the one after it.
-        const rank = Math.max(0, peek(requestOf(s)).words.findIndex((w) => w.word === word));
+        const prediction = peek(requestOf(s));
+        const index = prediction.words.findIndex((w) => w.word === word);
+        const rank = index < 0 ? 0 : prediction.offset + index;
         commit(word, historyOf(s), s.composition.words.map((w) => w.text));
         dispatch({ type: 'accept-word', word, rank });
         play('word');
@@ -672,7 +675,7 @@ export function App() {
       // The change this selection causes shows at once (Listen → Stop, Speak → Stop), except
       // after accepting a word or a suggestion: then Speak appears only once gaze has left
       // (MOTION.md "Word accepted").
-      if (intended.primary.kind !== 'candidate' && intended.primary.kind !== 'suggestion') resync();
+      if (intended.primary.kind !== 'suggestion') resync();
     } else if (action === 'delete') {
       if (shownSecond.key !== secondKey(intended.second)) { markIgnored(action); resync(); return; }
       runSecond(intended.second);
@@ -766,13 +769,15 @@ export function App() {
       title = TITLES[screen.page];
       trail = trailOf(screen.page);
     } else {
-      // Options (owner, 2026-11-08): the most likely word in Q5, then Q6, Q7, Q8, and a fifth in Q4.
-      const views = words.options.map((word, i): SlotView => ({
+      // Keep the first prediction where Options was opened; page only the alternatives below.
+      const views = screen.words.map((word, i): SlotView => ({
         action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
         body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
       }));
-      const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8', 'q4']);
+      const [first, ...alternatives] = views;
+      const paged = pageList(alternatives, screen.at, ['q5', 'q6', 'q7', 'q8']);
       slotViews = { q1: backCard('Home'), ...paged.slots };
+      if (first) slotViews.q4 = { ...first, tone: 'ink' };
       strip = paged.strip;
       title = 'Options';
     }
