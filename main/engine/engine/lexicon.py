@@ -8,10 +8,11 @@ import numpy as np
 from wordpred.context import code_of
 
 DATA = Path(__file__).resolve().parents[1] / "data" / "lexicon.tsv.gz"
+NAMES = Path(__file__).resolve().parents[1] / "data" / "names.tsv.gz"
 
 
 class Lexicon:
-    def __init__(self, path=DATA):
+    def __init__(self, path=DATA, names_path=NAMES):
         words, freq, tier, names, dictionary, added = [], [], [], set(), set(), []
         with gzip.open(path, "rt", encoding="utf-8") as f:
             for line in f:
@@ -26,11 +27,34 @@ class Lexicon:
                 if "d" in src:
                     dictionary.add(w)
                 added.append("k" in src)
+        # Round 5: the names (build_names.py). A name the lexicon lacks joins as tier 2 (sources N), so it is
+        # reachable by its code anywhere and offered first only where a name is likely (predictor.prior).
+        known = {w: i for i, w in enumerate(words)}
+        name_prior, written = {}, {}
+        if Path(names_path).is_file():
+            with gzip.open(names_path, "rt", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("#"):
+                        continue
+                    name, prior, _kinds, _src, form = line.rstrip("\n").split("\t")
+                    name_prior[name] = float(prior)
+                    written[name] = form
+                    if name not in known:
+                        known[name] = len(words)
+                        words.append(name)
+                        freq.append(float(prior))
+                        tier.append(2)
+                        added.append(False)
         self.words = words
         self.names = names              # /usr/share/dict/propernames (1,302 first names)
         self.dictionary = dictionary    # words Webster's web2 lists: a sentence-initial capitalised word outside it reads as a name
         self.index = {w: i for i, w in enumerate(words)}
         self.added = np.array(added, dtype=bool)   # round 4: rows add_wiktionary.py added (sources k)
+        self.name_prior = np.zeros(len(words), dtype=np.float64)
+        for name, prior in name_prior.items():
+            self.name_prior[self.index[name]] = prior
+        self.is_name = self.name_prior > 0
+        self.name_written = written
         self.freq = np.array(freq, dtype=np.float64)
         # 1 common word, 2 abbreviation/slang/name/rare short token or a Wiktionary word (round 4,
         # add_wiktionary.py), 3 single letter other than a and i (build_lexicon.py). The engine shows a word of tier 2 or 3 after every tier-1 word unless the

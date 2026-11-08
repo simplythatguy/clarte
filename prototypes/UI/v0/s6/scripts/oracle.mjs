@@ -14,6 +14,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { silentBrowser } from './silent.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -109,7 +110,7 @@ async function spellCost(page, word) {
   return page.evaluate(async (w) => window.clarteDebug.spellLooks(w), letters(word));
 }
 
-const browser = await chromium.launch();
+const browser = await silentBrowser(chromium);
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await page.goto(`${APP}/?onboarding=off&engine=${encodeURIComponent(ENGINE)}`, { waitUntil: 'load' });
 await page.waitForFunction(() => Boolean(window.clarteDebug?.state));

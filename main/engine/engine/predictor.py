@@ -42,6 +42,19 @@ DEFAULTS = dict(
     branch_p0_min=0.2,     # never when the best word is this unlikely (a probable slip: Q4 stays Delete)
                            # round 3 (both complete, 0.3, 0.2) on the round-2 dev records: 2.947 selections/word vs 2.969 with
                            # Q4 always Delete, Delete hidden on 1.3% of typed states; round 2's (2, 0.2, any) gave 2.774 / 25.3%
+    # round 5: names where a name is likely (data/names.tsv.gz); the rescorer measures how likely (name_mass)
+    name_weight=1.0,       # share of the prior moved to the names distribution = name_weight x the name mass ...
+    name_max=0.6,          # ... at most this much
+    name_promote=0.15,     # from this mass names rank with the common words (tier 1) and show their written form
+    name_cands=6,          # typed groups: this many of the commonest names of exactly the typed length are always rescored ...
+    name_margin=2.0,       # ... and a candidate name of the typed length that the transformer scores within this many nats
+                           #     of the best ordinary word of that length takes that word's prior and ranks with the common
+                           #     words ("I'm" + the code of omer: Omar before she's and ones)
+    name_min_len=4,        # ... from this many typed groups on: a short code fits hundreds of short names ("my name is" + the
+                           #     code of ver: Yao, Tao before very); never on a message's first word, where the transformer
+                           #     likes a name as an opener (dev: "need" became Jeff, "back" Adam)
+    prompt_caps=0,         # 1: the rescorer reads the message's i, i'm, i'll as I, I'm, I'll (round 5 dev: short words lost
+                           #     first place, can -> can't, a -> an, my -> myself; off)
 )
 PROFANITY = set("fuck fucking fucked fucker motherfucker shit shitty bullshit cunt bitch asshole arsehole dick cock pussy wanker "
                 "bastard nigger nigga faggot retard slut whore twat".split())
@@ -64,6 +77,13 @@ class GhostComposer(Composer):
     def distribution(self, ctx):
         return self.engine.prior(ctx)[0]
 
+EVERYDAY = 3.16e-6         # wordfreq frequency of an everyday word (Zipf 3.5)
+
+
+def everyday(lex):
+    """Common tier-1 words that are not also common names: the words a name never displaces (will, may, the)."""
+    return {w for w, f, t, n in zip(lex.words, lex.freq, lex.tier, lex.name_prior) if t == 1 and f >= EVERYDAY and n <= 1e-7}
+
 
 class Engine:
     def __init__(self, model="deployable", rescorer="auto", params=None, threads=4):
@@ -79,6 +99,13 @@ class Engine:
         # The 1e-9 floor is for words wordfreq barely saw; a Wiktionary word keeps its own smaller prior
         # (add_wiktionary.py), so 750,000 of them do not take the rare words' share.
         self.core = np.flatnonzero(~self.lex.added).astype(np.int32)
+        self.name_q = self.lex.name_prior / self.lex.name_prior.sum() if self.lex.name_prior.sum() > 0 else self.lex.name_prior
+        # Everyday words (tier 1, Zipf 3.5 or more): a capitalised one at the next position is not a name (Yes, The),
+        # unless the names give it more than the bare given-name prior (John, Mary, Rose count; The, Will do not).
+        self.common = everyday(self.lex)
+        self.common_ix = np.array(sorted(self.lex.index[w] for w in self.common), dtype=np.int64)
+        self.lifted = {}           # (context, groups) -> names the transformer lifted to the common words (ranked)
+        self.name_slot = 0.0
         floored = ~self.is_base & ~self.lex.added
         extra[floored] = np.maximum(extra[floored], 1e-9)
         self.extra_prior = extra / extra.sum()
@@ -102,6 +129,7 @@ class Engine:
         self.session, self.session_last, self.session_display, self.commit_clock = Counter(), {}, {}, 0
         self._prior_key, self._prior = None, None
         self._ranked.clear()
+        self.lifted.clear()
         if self.ghost:
             self.ghost.key = None
         self.v0.start_conversation(conv_id)
@@ -109,9 +137,12 @@ class Engine:
             self.rescorer.reset()
 
     def learnable(self, word):
-        """Commit teaches the engine words the lexicon does not know (new names), never lexicon words
+        """Commit teaches the engine words the lexicon does not know and names that are not everyday words
+        (round 5: someone's own name, Omer, outlives the conversation that said it), never other lexicon words
         (history already covers their recency), profanity or junk tokens."""
-        return (word not in self.lex.index and len(word) > 1 and WORDLIKE.match(word) is not None
+        i = self.lex.index.get(word)
+        known = i is not None and not (self.lex.is_name[i] and self.lex.freq[i] < EVERYDAY)
+        return (not known and len(word) > 1 and WORDLIKE.match(word) is not None
                 and not any(root in word for root in PROFANITY_ROOTS))
 
     def commit(self, word, history=(), message=()):
@@ -125,6 +156,7 @@ class Engine:
                 self.session_display[word] = raw[0] + raw[1:].lower()
         self._prior_key, self._prior = None, None
         self._ranked.clear()
+        self.lifted.clear()
         if self.ghost:
             self.ghost.key = None
 
@@ -171,7 +203,19 @@ class Engine:
                     dyn[w] = theta * wt / total
                 else:
                     p[i] += theta * wt / total
+        # Round 5: where a name is likely (the rescorer's view of the next word), part of the prior moves to the
+        # names, and from name_promote on they rank with the common words. "my name is" -> Okafor, Amal;
+        # "my name is very long" still finds "very": the typed groups decide.
+        self.name_slot = 0.0
+        if self.rescorer is not None and hasattr(self.rescorer, "name_mass") and P["name_weight"] > 0:
+            self.name_slot = self.rescorer.name_mass(self.prompt(ctx), self.common)
+            lam = min(P["name_max"], P["name_weight"] * self.name_slot)
+            if lam > 0:
+                p = (1 - lam) * p + lam * self.name_q
+                dyn = {w: (1 - lam) * v for w, v in dyn.items()}
         promoted = np.zeros(len(self.lex), dtype=bool)
+        if self.name_slot >= P["name_promote"]:
+            promoted |= self.lex.is_name
         for w in weights:
             i = self.lex.index.get(w)
             if i is not None and self.lex.tier[i] > 1:
@@ -180,6 +224,12 @@ class Engine:
         display.update(self.session_display)
         self._prior_key, self._prior = key, (p, dyn, promoted, display)
         return self._prior
+
+    def prompt(self, ctx):
+        message = ctx.message
+        if self.params["prompt_caps"]:
+            message = ["I" + w[1:] if w == "i" or w.startswith("i'") else w for w in message]
+        return self.rescorer.prompt(ctx.history, message)
 
     def unigram(self, w):
         i = self.lex.index.get(w)
@@ -225,13 +275,44 @@ class Engine:
         else:
             order = np.argsort(-probs, kind="stable")
         idx, probs = idx[order], probs[order]
-        words = [self.lex.words[i] for i in idx[:P["top_k"]]] + dyn_words
-        cand_p = np.concatenate([probs[:P["top_k"]], np.array([dyn[w] for w in dyn_words])])
+        K = min(K, len(idx))
+        injected = np.zeros(0, dtype=np.int64)
+        name_pos = len(groups) >= P["name_min_len"] and P["name_cands"] > 0 and bool(ctx.message)
+        if name_pos and self.rescorer is not None and len(idx) > K:
+            # A name the n-gram prior has never seen after these words ("I'm" + omer) never reaches the top_k, so
+            # the transformer never gets to say that "I'm Omer" makes sense where "I'm ones" does not.
+            rest = np.arange(K, len(idx))
+            rest = rest[self.lex.is_name[idx[rest]] & (self.lex.lengths[idx[rest]] == len(groups))]
+            injected = rest[np.argsort(-self.lex.name_prior[idx[rest]], kind="stable")[:P["name_cands"]]]
+            if len(injected):
+                keep = np.ones(len(idx), dtype=bool)
+                keep[injected] = False
+                front = np.concatenate([np.arange(K), injected])
+                order2 = np.concatenate([front, np.flatnonzero(keep)[K:]])
+                idx, probs = idx[order2], probs[order2]
+                K += len(injected)
+        words = [self.lex.words[i] for i in idx[:K]] + dyn_words
+        cand_p = np.concatenate([probs[:K], np.array([dyn[w] for w in dyn_words])])
         t1 = time.perf_counter()
         neural = None
+        lifted = np.zeros(len(idx), dtype=bool)
         if self.rescorer is not None and len(words) > 1 and P["neural_weight"] > 0:
-            prompt = self.rescorer.prompt(ctx.history, ctx.message)
+            prompt = self.prompt(ctx)
             neural = self.rescorer.score(prompt, words)
+            if name_pos:
+                # The n-gram prior says little about a name in a context it has not seen. A candidate name of the
+                # typed length that the transformer scores within name_margin of the best ordinary word of that
+                # length takes that word's prior and ranks with the common words: "I'm Omar" beats "I'm ones",
+                # and "i need a" + the code of stop keeps stop.
+                exact = self.lex.lengths[idx[:K]] == len(groups)
+                name = self.lex.is_name[idx[:K]] & ~np.isin(idx[:K], self.common_ix)
+                plain = exact & ~name
+                if plain.any():
+                    lifted[:K] = exact & name & (neural[:K] >= neural[:K][plain].max() - P["name_margin"])
+                    if lifted.any():
+                        cand_p[:K][lifted[:K]] = np.maximum(cand_p[:K][lifted[:K]], cand_p[:K][plain].max())
+                else:
+                    lifted[:K] = exact & name
             if dyn_words:
                 # A word learned from commit that the prompt never mentions: the transformer cannot know it,
                 # so it gets the mean neural score instead of an unknown-name penalty (jev after one commit).
@@ -246,8 +327,15 @@ class Engine:
             new = np.exp(mix)
             new *= cand_p.sum() / new.sum()
             # Rescoring reorders the candidates but never drops one below the words it never looked at.
-            if len(probs) > P["top_k"]:
-                new = np.maximum(new, probs[P["top_k"]:].max() * 1.001)
+            # The floor keeps the transformer's order among the words it lifts (round 5: a hard floor tied every
+            # exact word after "I'm" + the code of omer at one value, so she's stayed ahead of Omar).
+            if len(probs) > K:
+                floor = probs[K:].max() * 1.001
+                low = new < floor
+                if low.any():
+                    # Squeezed into [floor, top), below every candidate already above the floor.
+                    top = min(float(new[~low].min()), floor * 1.001) if (~low).any() else floor * 1.001
+                    new[low] = floor + (top - floor) * 0.999 * new[low] / new[low].max()
             cand_p = new
         t2 = time.perf_counter()
         if not groups and ctx.message:
@@ -266,7 +354,7 @@ class Engine:
                                   self.lex.lengths[tail]])
         # A word of tier 2 or 3 never outranks a tier-1 word unless the conversation mentioned it (a partner or
         # user turn, the message, or a commit); words outside the lexicon come from the conversation by construction.
-        lex_tiers = np.where(promoted[idx], 1, self.lex.tier[idx]).astype(np.int8)
+        lex_tiers = np.where(promoted[idx] | lifted, 1, self.lex.tier[idx]).astype(np.int8)
         tiers = np.concatenate([lex_tiers[:k], np.ones(len(dyn_words), dtype=np.int8), lex_tiers[k:]])
         all_p = self.demote(tiers, all_p)
         if P["savings"] > 0 and groups:
@@ -288,6 +376,9 @@ class Engine:
         mass = float(all_p.sum())
         result = (ranked_words, all_p[order] / mass if mass > 0 else all_p[order], lengths[order], mass)
         self._ranked[key] = result
+        self.lifted[key] = {self.lex.words[i] for i in idx[lifted]}
+        if len(self.lifted) > 64:
+            self.lifted.pop(next(iter(self.lifted)))
         if len(self._ranked) > 64:
             self._ranked.popitem(last=False)
         self.last_timing = {"prior_ms": 1000 * (t1 - t0), "neural_ms": 1000 * (t2 - t1),
@@ -299,7 +390,7 @@ class Engine:
         return self.ranked(ctx, code)[0][:n]
 
     # ---- API views ---------------------------------------------------------
-    def display(self, word, forms):
+    def display(self, word, forms, lifted=()):
         """How the UI should show the word: I and its contractions, names as the conversation wrote them,
         first names the dictionary does not list as common words (priya, not will or may)."""
         if word in forms:
@@ -308,6 +399,8 @@ class Engine:
             return "I" + word[1:]
         if word in self.lex.names and word not in self.lex.dictionary:
             return word[0].upper() + word[1:]
+        if (word in lifted or self.name_slot >= self.params["name_promote"]) and word in self.lex.name_written and word not in self.common:
+            return self.lex.name_written[word]
         return word
 
     def slips(self, ctx, groups, exact_best):
@@ -370,6 +463,7 @@ class Engine:
         ctx = self.context(history, message)
         words, probs, lengths, mass = self.ranked(ctx, groups)
         forms = self.prior(ctx)[3]
+        lifted = self.lifted.get(self._key(ctx) + (groups,), set())
         branch = self.branch(groups, probs, lengths)
         longer = float(probs[lengths > len(groups)].sum()) if len(words) else 0.0
         if complete:
@@ -381,6 +475,15 @@ class Engine:
         total = len(words)
         page = [{"word": w, "p": float(p), "complete": int(n) == len(groups)}
                 for w, p, n in zip(words[offset:offset + limit], probs[offset:offset + limit], lengths[offset:offset + limit])]
+        if groups and not complete and offset == 0 and total > limit:
+            # The best two whole words always reach the first page, after it: when completions fill the page
+            # ("I'm" + the code of omer: sharing, smart, ...), the screen still sees the rival of the whole word it
+            # shows and opens Options (Omar, Omer) instead of hiding Omer behind Other words.
+            on_page = sum(1 for item in page if item["complete"])
+            if on_page < 2:
+                whole = np.flatnonzero(lengths == len(groups))
+                for j in whole[whole >= limit][: 2 - on_page]:
+                    page.append({"word": words[int(j)], "p": float(probs[j]), "complete": True})
         if groups and not complete and offset == 0 and total:
             # A likely gaze slip: the best exact match is far less probable, before any context, than a word one
             # digit away. The corrections join the first page by posterior, marked, and Q4 stays Delete.
@@ -401,15 +504,15 @@ class Engine:
         promoted = self.prior(ctx)[2]
         for item in page:
             item["p"] = round(item["p"], 6)
-            shown = self.display(item["word"], forms)
+            shown = self.display(item["word"], forms, lifted)
             if shown != item["word"]:
                 item["display"] = shown
             # Round 4: a word of tier 2 or 3 the conversation never mentioned. When the best the engine can
             # offer is such a word, the UI may open Options (with Spell) rather than show it in Q1.
             i = self.lex.index.get(item["word"])
-            if i is not None and self.lex.tier[i] > 1 and not promoted[i]:
+            if i is not None and self.lex.tier[i] > 1 and not promoted[i] and item["word"] not in lifted:
                 item["rare"] = True
-        return {"groups": groups, "words": page, "total": total, "longer": round(longer, 6), "branch": branch}
+        return {"groups": groups, "words": page, "total": total, "longer": round(longer, 6), "branch": branch, "name": round(self.name_slot, 4)}
 
     def predict_v0(self, history, message, groups=""):
         """The v0 /api/predict shape for s0: likely, choose, short, ghost, candidates."""

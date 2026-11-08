@@ -120,3 +120,19 @@ Added by the v1 engine; every field above keeps its meaning.
 - **`rare`.** A word may carry `"rare": true`: it is tier 2 or 3 (an abbreviation, a rare name or token, a
   Wiktionary word, a single letter) and the conversation has not mentioned it. Absent means a common word or
   one the conversation introduced.
+
+## Round 5 additions (compatible)
+
+- **Names.** `data/names.tsv.gz` (`build_names.py`) holds 174,781 given names and surnames: English
+  Wiktionary's (CC BY-SA 4.0), the 2010 US Census surnames, and `propernames`. The 141,231 that the lexicon
+  lacked join it as tier 2, so `GET /api/v1/health` reports a `vocabulary` of 1,007,594. Where a name is
+  likely ("my name is", "hi I'm", a partner asking who), names rank with the common words and carry their
+  written form in `display` (Okafor, O'Brien).
+- **`name`.** Every response carries `"name"`, the rescorer's probability (0 to 1) that the next word is a
+  name. It is 0 without the MLX rescorer. The UI need not read it.
+- **The first page's whole words.** When `groups` is typed and completions fill the first page, the engine
+  appends the best one or two whole words of that length after the `limit` words. The screen then still sees
+  the rival of the whole word it shows. Paging with `offset` is unchanged.
+- **Commit.** `POST /api/v1/commit` now also learns a name the lexicon holds when the name is rare as a word
+  (Omer, Priya), so that name comes first in later messages. Everyday words that are also names (will, may)
+  are still not learned.
