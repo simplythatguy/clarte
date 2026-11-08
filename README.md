@@ -27,4 +27,7 @@ takes 40 to 80 seconds to load its models, the other apps a few seconds. Every s
 resumable, so an interrupted first run continues where it stopped. Each prototype's README
 keeps the manual setup as a fallback.
 
+`prototypes/Gaze Lab` is a measurement harness for the eye tracker, not a `clarte` app; its README
+has the npm commands.
+
 [Development tooling and setup](docs/dependencies.md)

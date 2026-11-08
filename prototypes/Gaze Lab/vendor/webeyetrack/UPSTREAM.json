@@ -1,0 +1,803 @@
+{
+  "repository": "https://github.com/RedForestAI/WebEyeTrack",
+  "revision": "75fbd2f5f784f2eb3a39675a8dcbf1b01c697f1c",
+  "archiveSha256": "ee8726eaa0b781269cc2b5791db1f00daeb08903a2718ef7ea8e3027bc6d9501",
+  "files": [
+    {
+      "path": ".github/workflows/deploy.yml",
+      "sha256": "b8ae5bdec613f42cf224ace88f6455eef5779aba55a32b21f41cf4587c265f21"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "decd377af555c4f8dd9a63387a07b97fbf12bd711d6a3aa1affe2a932812bd7f"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "f779143d708f5f3d510a155fa751fbf205e0aace2660ccfce972fc9503992c19"
+    },
+    {
+      "path": "README.md",
+      "sha256": "248dc57195271e486e69ba3572d603d2cac55554159b209b77f42e93a9b2f8c0"
+    },
+    {
+      "path": "data/.gitignore",
+      "sha256": "5c89a8a9c5af258d02d0bfd3582c75963bea53baa1f5f5132662b80020a63452"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "12fb6aef14b0f93d7bd8f61f2aacfcaf4624ebda25249b4339afc0b7ae1dd7a1"
+    },
+    {
+      "path": "docs/components.json",
+      "sha256": "e5e9a17eae49456f49f1981afb53798c0723e01fabf154445e71fb67ab5918d9"
+    },
+    {
+      "path": "docs/eslint.config.js",
+      "sha256": "7a39f6bf29b2b84a243df3330c218b9688114594081bd1280a32ffaa4766d023"
+    },
+    {
+      "path": "docs/index.html",
+      "sha256": "0ab8f5cafbadb84e54da45479eacb68d0a9a9e27555cb843fbca3eaa8c053d3d"
+    },
+    {
+      "path": "docs/package-lock.json",
+      "sha256": "9e957dc08de6f8f9626d9d2b23e81c61ef62dded5ba2680803a970de77fe874b"
+    },
+    {
+      "path": "docs/package.json",
+      "sha256": "1c1420878bf9e70befcabd9e0c99800b090804257bd3431ffb992b90789c2af2"
+    },
+    {
+      "path": "docs/public/demo.gif",
+      "sha256": "4db0b55e58e6b7f31cdc9867f782c733ad9594220c14faa6b73b3ac61e2dfa9a"
+    },
+    {
+      "path": "docs/public/favicon.ico",
+      "sha256": "ca51cb55839060ba52aa584872c041c2fa8f69511e7dd72d90b9898ba6965538"
+    },
+    {
+      "path": "docs/public/profiles/amanda_goodwin.jpg",
+      "sha256": "746a7ddbe4d70ad9d2fb84b210c53c3f007307531b19ab1bef01c78bedf7cd65"
+    },
+    {
+      "path": "docs/public/profiles/ashwin_ts.png",
+      "sha256": "5a06af58ef501565fe5132563bca3586d2cd08b00c12d7efe8a89ef88b708ec3"
+    },
+    {
+      "path": "docs/public/profiles/eduardo_davalos.webp",
+      "sha256": "9f174bf718cbeb7c98de4317a036341e2ea17580394dec83f71de8bc91ffa0d3"
+    },
+    {
+      "path": "docs/public/profiles/gautam_biswas.jpg",
+      "sha256": "14a9246a88a1055dbf2ea9605602d3d38f3c6e0362a7dbe8899636ec29f784d0"
+    },
+    {
+      "path": "docs/public/profiles/jorge_a_salas.jpeg",
+      "sha256": "dcbc1aa261b1e70b0f78b5a50f951a1c7ca57f9bdf69a6bc1f4a213af77adca9"
+    },
+    {
+      "path": "docs/public/profiles/namrata_srivastava.jpeg",
+      "sha256": "9a535a686040067051103aa30218e039ee4fda7cdc3685fa0accf164e1c428f0"
+    },
+    {
+      "path": "docs/public/profiles/sara_mcfadden.png",
+      "sha256": "c3a76199f7c7adccab0cb24759c1fe960850bf517e99e589a4a446bed18e87d2"
+    },
+    {
+      "path": "docs/public/profiles/sunjoo_cho.jpg",
+      "sha256": "b45ca47f3301d330ffcab27207bb26cd9ab12cfcc8f77b64ae1fd9e84128c448"
+    },
+    {
+      "path": "docs/public/profiles/yashvitha_thatigotla.jpeg",
+      "sha256": "3eddc911839b37271301b414b9a21be0e43cc4ee1377dd53e58c2fe710f0145a"
+    },
+    {
+      "path": "docs/public/profiles/yike_zhang.jpeg",
+      "sha256": "2a70e215740444f515c9256ee4ac29e51f2eb8c677ccbe00e323bb332dad80f6"
+    },
+    {
+      "path": "docs/public/robots.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/public/web/group1-shard1of1.bin",
+      "sha256": "c030a762a2d21ac0f3c59700a723b2d8790f2003b3f8e72fbe31129fcb234e58"
+    },
+    {
+      "path": "docs/public/web/model.json",
+      "sha256": "a214f074ccd4724cf4ebf008814a05485e7eaa5faf5aaeb85e66b24a1af55688"
+    },
+    {
+      "path": "docs/src/.gitignore",
+      "sha256": "9a42fa45f00d5df81ad903eb65cdba7cfb1a62f5afbf7e8f581467e962e024e2"
+    },
+    {
+      "path": "docs/src/App.tsx",
+      "sha256": "bd83ee55a09ca3b22425dafc923c8f78093c498ef2a560c051feaf97e8c6bd44"
+    },
+    {
+      "path": "docs/src/assets/react.svg",
+      "sha256": "35ef61ed53b323ae94a16a8ec659b3d0af3880698791133f23b084085ab1c2e5"
+    },
+    {
+      "path": "docs/src/components/ui/avatar-card.tsx",
+      "sha256": "c74c6009c2eb03dc6e34e350c594512131052d67d4db77fa830930acde297517"
+    },
+    {
+      "path": "docs/src/components/ui/button.tsx",
+      "sha256": "82403231e33fd3d45b111e5e819df194cdfa7cef9a726770185724a60bd20932"
+    },
+    {
+      "path": "docs/src/components/ui/code-block.tsx",
+      "sha256": "e165012b0c2c0370d37534b39db737987e98b8d59810488586db1bbcc8c42a3d"
+    },
+    {
+      "path": "docs/src/components/ui/inline-code.tsx",
+      "sha256": "620c17f59f1e4397ac932a7aa77ed990d236ce11a5674999a710d9600f1f096c"
+    },
+    {
+      "path": "docs/src/components/ui/navigation-menu.tsx",
+      "sha256": "d71f57fe0f365541fbf5d00196b0b78a461d8c4f38d35293e5754680d93b9245"
+    },
+    {
+      "path": "docs/src/components/ui/separator.tsx",
+      "sha256": "e9dddbd8dbbc0eccd683306481b0f0bbc8e2b60ea97817416ebb9fe7fbbbdca8"
+    },
+    {
+      "path": "docs/src/components/ui/sheet.tsx",
+      "sha256": "fbe9b257fd95b9865e1aba651489899c959ed5c16cb8493fe8c2733f83b92ee1"
+    },
+    {
+      "path": "docs/src/components/ui/youtube-embed.tsx",
+      "sha256": "7ddb89c7c504a364672565ae0336c22c1faf7bc14da8b42dca95898c7263836e"
+    },
+    {
+      "path": "docs/src/demo/DebugOverlay.tsx",
+      "sha256": "8eb1207515ff8bbc7657ff25d373462cf6380a5c997bed0ffda3dc0f18e38388"
+    },
+    {
+      "path": "docs/src/demo/DemoApp.tsx",
+      "sha256": "01bd474408be82cf837590fefb9fa3d3b7287d51f197e599358b69949801582a"
+    },
+    {
+      "path": "docs/src/demo/GazeDot.tsx",
+      "sha256": "6b70efc15d3422edba7aaa12cb0b68c179857bdcbefb9168077018fad98eef56"
+    },
+    {
+      "path": "docs/src/demo/drawMesh.ts",
+      "sha256": "bbd25bec9a94eb25b89bc1017bb1ef6bc0e28d7d66000a572160bb2ba486f4b9"
+    },
+    {
+      "path": "docs/src/index.css",
+      "sha256": "c33ed87a9605fc9b00c85a13163ed6d532f54de1bd006e4c85b1786bab5d6991"
+    },
+    {
+      "path": "docs/src/lib/utils.ts",
+      "sha256": "7c8c3dfc0cdd370d44932828eb067ef771c8fe7996693221d5d4b90af6d54f2d"
+    },
+    {
+      "path": "docs/src/main.tsx",
+      "sha256": "6e9e5807fcbd48b75a96db5cbef36c996262196be42e6d4760dc86babbe61ad2"
+    },
+    {
+      "path": "docs/src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "path": "docs/tsconfig.app.json",
+      "sha256": "f59f8e7531cc9653930e24d50408a423c3240fb734d30a9fd371a10161ae2771"
+    },
+    {
+      "path": "docs/tsconfig.json",
+      "sha256": "3f24c40e2f822c632d0448261986f1422a255dc00733640a1f7a565afb42d740"
+    },
+    {
+      "path": "docs/tsconfig.node.json",
+      "sha256": "dbece770acebd1448ab84fbdae194dc23670ee2e91ebcb1b534cace99cd0bea6"
+    },
+    {
+      "path": "docs/vite.config.ts",
+      "sha256": "2f16c9b3d80dcbe76c088de3c5782a686152e0082c2c32246b315a0066457860"
+    },
+    {
+      "path": "js/README.md",
+      "sha256": "efc89ee272119f09b2fd6964f46eefa8b47ed1133ecf03bbddfb8132190f475d"
+    },
+    {
+      "path": "js/babel.config.js",
+      "sha256": "1a55d9c67a57b13ff013313e220c7689551a07e49a3f3797084022b7bb350a7f"
+    },
+    {
+      "path": "js/examples/README.md",
+      "sha256": "511fb570432c037b07e504913a52e0ac0be8b03e10e2c3da9831bb8cbe443895"
+    },
+    {
+      "path": "js/examples/demo-app/README.md",
+      "sha256": "ae1b7d33fb549132e0ff13dfbbcc5b16d83f62fdc69600162d57e253ccd854c0"
+    },
+    {
+      "path": "js/examples/demo-app/package-lock.json",
+      "sha256": "9ce0035c6363246e6b4d5883f9eea7a7c6c564ee1a8c8e94365881ea306663a3"
+    },
+    {
+      "path": "js/examples/demo-app/package.json",
+      "sha256": "5b98b02ec44b6832b3e92074675ab400e0d0da90b4c44f8fefc471691f27da90"
+    },
+    {
+      "path": "js/examples/demo-app/postcss.config.js",
+      "sha256": "124d6c0fd6a4a4a8694f076079377d1262264d3b0b7ac2db6089f8d7725fdc5c"
+    },
+    {
+      "path": "js/examples/demo-app/public/index.html",
+      "sha256": "140e92d5dac67437a94394457e25b1572d1cba1cc7fca3e2808eb17ce95d2f5e"
+    },
+    {
+      "path": "js/examples/demo-app/public/web/group1-shard1of1.bin",
+      "sha256": "c030a762a2d21ac0f3c59700a723b2d8790f2003b3f8e72fbe31129fcb234e58"
+    },
+    {
+      "path": "js/examples/demo-app/public/web/model.json",
+      "sha256": "a214f074ccd4724cf4ebf008814a05485e7eaa5faf5aaeb85e66b24a1af55688"
+    },
+    {
+      "path": "js/examples/demo-app/src/App.tsx",
+      "sha256": "7b27b7cff4a1fe6f93dbb2ba7b562edd73d730d7b955511b4a1fbc66f9734be9"
+    },
+    {
+      "path": "js/examples/demo-app/src/DebugOverlay.tsx",
+      "sha256": "5d5678f8d8aa4968f2d3e76380e975f8c781d33ef06f97647e47924fbd70e920"
+    },
+    {
+      "path": "js/examples/demo-app/src/GazeDot.jsx",
+      "sha256": "bc0690045a7f8cbd91502f8dc99cedcd7bc32b3a62a15163341e850d0d2930e0"
+    },
+    {
+      "path": "js/examples/demo-app/src/drawMesh.ts",
+      "sha256": "5e31063058e33b9f3d6e8082482408eea64600ecd2c14fd5f693343bd73bdc03"
+    },
+    {
+      "path": "js/examples/demo-app/src/index.css",
+      "sha256": "2b05a6f9fc5a3812083c60987df2c11884f3b46702bae80830b5c6957e760dde"
+    },
+    {
+      "path": "js/examples/demo-app/src/index.tsx",
+      "sha256": "1904f88d74eeb0989f2e7f40c660410e92f870c22ba3ac864547aa0849ded1ea"
+    },
+    {
+      "path": "js/examples/demo-app/tailwind.config.js",
+      "sha256": "c1696e6ecdf84c3a31e0a8eafba359957bd76380e1d8fe4004d82e0027b4ae33"
+    },
+    {
+      "path": "js/examples/demo-app/tsconfig.json",
+      "sha256": "5265e0110d24ab0acbe645540123eab2a075f4fb3654fcbc2083c9b1c0d7e355"
+    },
+    {
+      "path": "js/examples/minimal-example/.gitignore",
+      "sha256": "fe718e7babb14f3cbad2d97f08889b9ce5215ed3fe0e43b2b8cfbfb3b9b844e8"
+    },
+    {
+      "path": "js/examples/minimal-example/README.md",
+      "sha256": "912f75c7b273efa8562ac254a231b1d256d5f7b878534634c0d4639f5f1995be"
+    },
+    {
+      "path": "js/examples/minimal-example/eslint.config.js",
+      "sha256": "088e9031a1668aacb8163463e8c1238c82f9188075c4216b04a615e7ad4c92d4"
+    },
+    {
+      "path": "js/examples/minimal-example/index.html",
+      "sha256": "db908a36f7f8ea1b2697b54f5d792edeb9a525ff5b8df5785470641abe531753"
+    },
+    {
+      "path": "js/examples/minimal-example/package-lock.json",
+      "sha256": "69080746d61265d6a7585cd7de83ce9de32d62f24da6a378c3cae019cfc41609"
+    },
+    {
+      "path": "js/examples/minimal-example/package.json",
+      "sha256": "58210eac87632a8db2866288f26e571a03f41535c43ae4780191091ad07b0073"
+    },
+    {
+      "path": "js/examples/minimal-example/public/vite.svg",
+      "sha256": "4a748afd443918bb16591c834c401dae33e87861ab5dbad0811c3a3b4a9214fb"
+    },
+    {
+      "path": "js/examples/minimal-example/public/web/group1-shard1of1.bin",
+      "sha256": "c030a762a2d21ac0f3c59700a723b2d8790f2003b3f8e72fbe31129fcb234e58"
+    },
+    {
+      "path": "js/examples/minimal-example/public/web/model.json",
+      "sha256": "a214f074ccd4724cf4ebf008814a05485e7eaa5faf5aaeb85e66b24a1af55688"
+    },
+    {
+      "path": "js/examples/minimal-example/src/App.css",
+      "sha256": "a0715e0a09edbd0fbde65816a75e0fa0fc8b314c5260c0768c19bf3aac22621a"
+    },
+    {
+      "path": "js/examples/minimal-example/src/App.tsx",
+      "sha256": "244005d56b0fceec2fbdafed80c9c6a956e42ad705df8ed65cc708c10b93bbf6"
+    },
+    {
+      "path": "js/examples/minimal-example/src/GazeDot.tsx",
+      "sha256": "8973b69764125d1c985752c49b2245f0af69285ee64ddb69d30640d8697223de"
+    },
+    {
+      "path": "js/examples/minimal-example/src/index.css",
+      "sha256": "bdba2919116e9b72ac06558f88371dc4c80fb0196da6403d239e0fb085250892"
+    },
+    {
+      "path": "js/examples/minimal-example/src/main.tsx",
+      "sha256": "6e9e5807fcbd48b75a96db5cbef36c996262196be42e6d4760dc86babbe61ad2"
+    },
+    {
+      "path": "js/examples/minimal-example/src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "path": "js/examples/minimal-example/tsconfig.app.json",
+      "sha256": "7852d040a820ba680aae219f3cfe771e7ad33bb26e9d1578e3ee21c70fad5acc"
+    },
+    {
+      "path": "js/examples/minimal-example/tsconfig.json",
+      "sha256": "770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+    },
+    {
+      "path": "js/examples/minimal-example/tsconfig.node.json",
+      "sha256": "dbece770acebd1448ab84fbdae194dc23670ee2e91ebcb1b534cace99cd0bea6"
+    },
+    {
+      "path": "js/examples/minimal-example/vite.config.ts",
+      "sha256": "4d36db3522a7b2dd10e0936e1004373c7ee65f10f7cd7920cd76410459c15a45"
+    },
+    {
+      "path": "js/jest.config.js",
+      "sha256": "541dae878885f357314f56bd6340178839e81ab556ce0a3b9606990a79b27cd6"
+    },
+    {
+      "path": "js/package-lock.json",
+      "sha256": "4e4c6987511e2faf501d31fb9640ade837feaa42b36df042ee695d3e4c82289f"
+    },
+    {
+      "path": "js/package.json",
+      "sha256": "1503a1b39cebe656612426baca48f5c58c2ffd1aee36c0463dbacbf688e69c2b"
+    },
+    {
+      "path": "js/src/BlazeGaze.ts",
+      "sha256": "fdece7f2c2e033bf19c6955216d3a7041f71e04701811c461cee45c4127edc9d"
+    },
+    {
+      "path": "js/src/FaceLandmarkerClient.ts",
+      "sha256": "c4c465d27cf53b89049ced5aa137362d1235f2919a2afc0e2b5eb85044425402"
+    },
+    {
+      "path": "js/src/FacemeshDatas.ts",
+      "sha256": "44c3a91bf9eef6e924d1b71ed15002d97bf94a44f69ea2ca71041e120da6c96f"
+    },
+    {
+      "path": "js/src/WebEyeTrack.ts",
+      "sha256": "bc1e04d87e97431b4ae36a75ce73820fc8df1660b4e3fd8ad389b33b7180c836"
+    },
+    {
+      "path": "js/src/WebEyeTrackProxy.ts",
+      "sha256": "1fd7a9bcbef559e24fc22c50665f0a24189ec3226479c623dfdc393b761deae4"
+    },
+    {
+      "path": "js/src/WebEyeTrackWorker.ts",
+      "sha256": "64c99aa4f3284d8ebccae635c2c61a9c1ab451ad882d35f0fc6aa2530fa9e6e8"
+    },
+    {
+      "path": "js/src/WebcamClient.ts",
+      "sha256": "ea4a5b9512b60eed953b53a9c2ee331cce1a1b8d6185b47ffac854263db5575f"
+    },
+    {
+      "path": "js/src/index.ts",
+      "sha256": "e71dcecdffa4d8083763c1ab58be468039743ae3f0950a3e7a3105f5dcbb2a27"
+    },
+    {
+      "path": "js/src/types.ts",
+      "sha256": "020a5cc2b24c2d4e3979beb04732cdc1b72606db736950b803ea9de8cb780e06"
+    },
+    {
+      "path": "js/src/typings/worker-loader.d.ts",
+      "sha256": "88e258758ac1d816122f616daa04b44cb7a5c4048fe31fb81266766455a49b19"
+    },
+    {
+      "path": "js/src/utils/filter.ts",
+      "sha256": "639b11040cee469dd1740c763c8b4c10484bdc7cbd3db3bcfcf66de94043b52e"
+    },
+    {
+      "path": "js/src/utils/mathUtils.test.ts",
+      "sha256": "e670726e3dcd5c574c0e7deaad735b07fdd42a8f90cc006af904e19cb688f646"
+    },
+    {
+      "path": "js/src/utils/mathUtils.ts",
+      "sha256": "0e7fd644c92a846482ca5e939e52fdbaf181400863fb3772d8740e63499f60d9"
+    },
+    {
+      "path": "js/src/utils/misc.ts",
+      "sha256": "22a68bc30bba08f27d8ad054f28e1ece40a875cec094f83cb2bc15b2263ac236"
+    },
+    {
+      "path": "js/src/utils/safeSVD.ts",
+      "sha256": "b0b5205184ef91c04d6cfe60fa38fa2382629bc05f1e9019014421b6110b0a9f"
+    },
+    {
+      "path": "js/src/utils/vis.ts",
+      "sha256": "927deac2d7648d35060942478211c2f6b3b68238f9fd805680823dcaea4b96bf"
+    },
+    {
+      "path": "js/tsconfig.json",
+      "sha256": "fcbaf772ec8ed64b868aae490ca6d70cc09c9af375a15607db4611107dd474a1"
+    },
+    {
+      "path": "js/webpack.config.js",
+      "sha256": "d3007f2f97cfc11ec016abd32f8bd4b54479fea45666be4bf1e873bf407f11c3"
+    },
+    {
+      "path": "python/.gitignore",
+      "sha256": "9fd8ec0cade44c749a655ccb55c1e99357d956cb2737b5195c1b5762309db44c"
+    },
+    {
+      "path": "python/README.md",
+      "sha256": "94b46a88465ac20ad2ebc56b751940fd342ada83b936430aa3d6df61a3518a43"
+    },
+    {
+      "path": "python/assets/canonical_face_model.obj",
+      "sha256": "8bac80443397e113f41a8b565ea72c59390bc031d9defab289dba7bc0c54e618"
+    },
+    {
+      "path": "python/assets/canonical_face_render.blend",
+      "sha256": "673c51ed22abe6bd62e94af85b7d4cab21184fc68dd31c820279432b443b780b"
+    },
+    {
+      "path": "python/assets/canonical_face_render.blend1",
+      "sha256": "5657e77bf476d545409604cf579c115cd14dfda198d753e6e9a6c363055568c6"
+    },
+    {
+      "path": "python/assets/canonical_face_render_reprojection.blend",
+      "sha256": "1ec0b3655640f7536d9b0325dd0f3db3c0716bff44e27bf52f6e70ccc2f70419"
+    },
+    {
+      "path": "python/assets/canonical_face_render_reprojection.blend1",
+      "sha256": "6529682f1f01d2436ff73f218cb9158dac53c364328af82ce58fccfce10a2f85"
+    },
+    {
+      "path": "python/assets/eyeball/Eye_D.jpg",
+      "sha256": "f7bc221d0ca04b8dc41b835f04030888457938fb020d6466a1ebca940b7f3d86"
+    },
+    {
+      "path": "python/assets/eyeball/Eye_N.jpg",
+      "sha256": "57b57c7e6f28570bd82acbee22cbc117ee9cf57ec5d1b2455df7ebaf8d0e9434"
+    },
+    {
+      "path": "python/assets/eyeball/REF 1.jpg",
+      "sha256": "a81809f5dc5004a9bc08e725ba84d4966ced2c2caf34bdc5f67d8fa6f7c6b98c"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball.obj",
+      "sha256": "b628dcf2412dd0f921761bbc95f3b828ba8ce820a8460f367cb3808c0b5cf420"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_check.py",
+      "sha256": "4d86c74a93caaad1dc527ca023e877247bc7c6d3e91a97ef2a91c218027d40e2"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_model.blend",
+      "sha256": "b78467d009225a6159402a4951b2668d9f2053251267166ac439c6f1da245389"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_model_simplied.blend",
+      "sha256": "52d4c2513fab2b541dee5127fad268d4ce1dfe28b676dd49ddc3366ac09aef58"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_model_simplied.blend1",
+      "sha256": "9ff6f3424040485dfb00dc176b9f2c5d76a8bf8209c8d43526c53e26e86f0de9"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_model_simplified.mtl",
+      "sha256": "f9cd4eac1fa5cbb0ce6cf89acc1c3821abdf6095c18e96d62b969df5e5ead5a8"
+    },
+    {
+      "path": "python/assets/eyeball/eyeball_model_simplified.obj",
+      "sha256": "6c18b404a245af8929a8fa98c2f3ba1ef8c419965038247f85f3f40822499340"
+    },
+    {
+      "path": "python/assets/eyeball/readme.txt",
+      "sha256": "f59880fb3baaee88e9c1844a705b91f2822cb78e5bd5ce7dac8de8ad81e7c602"
+    },
+    {
+      "path": "python/assets/eyeball/trimesh_eyeball.mtl",
+      "sha256": "29d884ddfe36477ffabdb03f25d51e00098bafb603aaa8d8fc261b1beddbc08a"
+    },
+    {
+      "path": "python/assets/eyeball/trimesh_eyeball.obj",
+      "sha256": "dcbc179bb02dc7807d73ba243117d9339ccc678f7e15015aaac0d068138af57c"
+    },
+    {
+      "path": "python/assets/face_landmarker_keypoints.png",
+      "sha256": "07a2b3476c8c02d47cff03bd53b7a6d6f39b7142cd7fab60a9265dd2562f0cc2"
+    },
+    {
+      "path": "python/assets/face_mesh.obj",
+      "sha256": "892fdbd6a6b755859c4a87e85dd3161347c1452ef54b61362969854bf74d30b4"
+    },
+    {
+      "path": "python/assets/face_model_with_iris.obj",
+      "sha256": "cc5659c31aa4fa3412cb33629b0ebd6e16a75e79746daa07d1c44c61780cae5e"
+    },
+    {
+      "path": "python/assets/facemesh_triangles.npy",
+      "sha256": "1a66cd74c15123ef26374c646d1f471e3758e9db37e66e617b1af6d1b73759cd"
+    },
+    {
+      "path": "python/assets/myface_face_mesh.obj",
+      "sha256": "07074b15ff581d3e8c5aadcd8603358b704d33c6a169e475716b0a30cc8e81de"
+    },
+    {
+      "path": "python/assets/script.py",
+      "sha256": "13b9cccf4e4dfeb4c784139b458cf082661a4b70994ee1e8cad3dc6110828e89"
+    },
+    {
+      "path": "python/demo/calibration_result.png",
+      "sha256": "f5b21a31bb0cbf249a640228daf1825593610471466d221dc84ccd83c87ee3ad"
+    },
+    {
+      "path": "python/demo/calibration_widget.py",
+      "sha256": "701cbebc85ce72b04ca41e9b85760bd6c2c515ab70dcf915949fba61249020bb"
+    },
+    {
+      "path": "python/demo/config.yml",
+      "sha256": "0577a9089ee5a26a1e77439b5c842d66efd9208e448e9ae7bf1b0d37ee13be4d"
+    },
+    {
+      "path": "python/demo/constants.py",
+      "sha256": "e652bee50aa107b75022325bde346061d0d3f61180e70591266c79a3ff37b492"
+    },
+    {
+      "path": "python/demo/gaze_dot_canvas.py",
+      "sha256": "e580e623edca4adf86d712aaac80b4b7cbf4cb34e95417f40ba1eb95e6885cd1"
+    },
+    {
+      "path": "python/demo/main.py",
+      "sha256": "4ba556bcd561ef8ad0b5db923ec32a82499590f88f2a4706a0e487bc6044c9fa"
+    },
+    {
+      "path": "python/demo/requirements.txt",
+      "sha256": "505082f09133eab73680c5c3bfad408d79b2b011dc1a652d6e7ffd3b23fd8662"
+    },
+    {
+      "path": "python/pyproject.toml",
+      "sha256": "75e2339539943cecca92166fa416ae90f1eadd2ac7ab38b0b7189b27cb01b944"
+    },
+    {
+      "path": "python/scripts/GazeCapture_participant_ids.json",
+      "sha256": "b33a62d811a63c56bb95dcc246ad17505f60f8f0ff6afc06776727a89d74c122"
+    },
+    {
+      "path": "python/scripts/config.yaml",
+      "sha256": "15458b451d82b65ba4f3ef2c025114fdf713ef42ae0179eb6b9a4d0f8baa8827"
+    },
+    {
+      "path": "python/scripts/ml_routines/.gitignore",
+      "sha256": "36ac78d6a848abed7216d13d0017dc0fb8ff48b60c565f6cf98b5d2be5279d49"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/autoencoder_mpiifacegaze_config.yml",
+      "sha256": "89ca7d2c8478bb8270a637fe4e9408c32e7309d6e0143e78b90186fbaa17af1a"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/eye_of_the_typer/with_calib.yml",
+      "sha256": "79a1dbd1fdba6216ca630e0a40729a1b17c976bab256cc5a08f38863af5cb99e"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/eye_of_the_typer/without_calib.yml",
+      "sha256": "d9b1e40df2182a5d5d9cc6e959429027a01e476951c0a63d51d436ae17da6017"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/maml_eyediap_config.yml",
+      "sha256": "d4be172d5937f0d3d9af4cfadfd62cf7ac61a85c9a428e43cee1e88feb1b75d8"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/maml_gazecapture_config.yml",
+      "sha256": "1b9e4878da9d26df0471f383a4e94168c49a9ba1f4a18cdeaa9f38634e7e70ad"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/eval/maml_mpiifacegaze_config copy.yml",
+      "sha256": "73d76599bceaf4a3e09e71802b41df1d217bb7601e5d528d1d5b38d02086b6df"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/autoencoder_eyediap.yml",
+      "sha256": "81db20e82d8ea396065b1a5b6fe1d410af0f86fd0f678f48d54c11ae7930b310"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/autoencoder_gazecapture_config.yml",
+      "sha256": "719c40f9a1932e9ffab2428e156e3538f24ca38ec222b3c64c1b45c67f6ccf19"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/autoencoder_mpiifacegaze_config.yml",
+      "sha256": "f9050f739d838c0e91cfe8f6ec4fb56d17d6281f6ef024ef2fff01c786b36bfb"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/maml_eyediap_config.yml",
+      "sha256": "a6b96820150507e4beaf6cbbf889f67d057adb7ca1e7db7472357f01bc43db55"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/maml_gazecapture_config.yml",
+      "sha256": "84d824e1c63d340de6821374833810b0ef6f1123d83786cd363f86ccc3d03d60"
+    },
+    {
+      "path": "python/scripts/ml_routines/configs/train/maml_mpiifacegaze_config.yml",
+      "sha256": "99326bd1d7f4ae2a542b8c94f48c08244a6c5664501afa01fbf8027dd9597f0c"
+    },
+    {
+      "path": "python/scripts/ml_routines/data.py",
+      "sha256": "9d46fbe1256d8ede15c9d9cbab89251e5176e1200768e7b938c8804f57288e1b"
+    },
+    {
+      "path": "python/scripts/ml_routines/eval_autoencoder.py",
+      "sha256": "4d5ed2c46e170603ceca35ea2089d872a90d387252d20cb4408ba9052504bf3b"
+    },
+    {
+      "path": "python/scripts/ml_routines/eval_eye_of_the_typer.ipynb",
+      "sha256": "49478f317fd0cf01192e2d12dddb0aaa5ef85a9dafe16891733f5e62a3c53a07"
+    },
+    {
+      "path": "python/scripts/ml_routines/eval_eye_of_the_typer.py",
+      "sha256": "35449a6aa57862a9e40ace427001b62740aee56abe9651e0a8d8db0dc484e0b1"
+    },
+    {
+      "path": "python/scripts/ml_routines/eval_eye_of_the_typer_3d.py",
+      "sha256": "1a876916d979b5f0cdadca5aa8775f79b03a55beaf777e3fe4732bca158ea754"
+    },
+    {
+      "path": "python/scripts/ml_routines/eval_maml.py",
+      "sha256": "66d16a6d7d2343705046096b58e9daa503e143d4c8a18df36af7be07909eb446"
+    },
+    {
+      "path": "python/scripts/ml_routines/plots.ipynb",
+      "sha256": "939e6d43f211b86416ed8fd5eb1f68fc84fa31e46bdb4d60a2b2e9561cfac444"
+    },
+    {
+      "path": "python/scripts/ml_routines/requirements.txt",
+      "sha256": "6703a3f81c7676200505940dcc62829a3aea6932b67b1a7aea9a1c3c3074c9ba"
+    },
+    {
+      "path": "python/scripts/ml_routines/tfjs_convert.py",
+      "sha256": "530fe0d0fd701731d9ce0ade6c4b482737c5c9f0c23e9bdf645cc6c0a12ee353"
+    },
+    {
+      "path": "python/scripts/ml_routines/train_autoencoder.py",
+      "sha256": "422df471c2720cf31cf35914b339f2c9ae250d89dca2267432e826646d7c92af"
+    },
+    {
+      "path": "python/scripts/ml_routines/train_maml.py",
+      "sha256": "abd982d45b4d0ee07a01160938881c25e99ef2ad022ca3da6501ef205ebed1a9"
+    },
+    {
+      "path": "python/scripts/ml_routines/utils.py",
+      "sha256": "3d63505f2f2368ec4647840414c84785eef36374dfeb81a93881c5ebd137700e"
+    },
+    {
+      "path": "python/scripts/preprocessing/apple_device_data.csv",
+      "sha256": "7a26747dbfc727891369d72e3ea5cc4b1c0cc10b25106ca0e6ac80c45c53857c"
+    },
+    {
+      "path": "python/scripts/preprocessing/eyediap.py",
+      "sha256": "df3b87d0aabf4039d0dc04a2aff341357aab83c844e3255ce3f4a33ed6135e38"
+    },
+    {
+      "path": "python/scripts/preprocessing/gazecapture.py",
+      "sha256": "94e23a403dc0b0f7c3bfc189d0c6f62395310b0ee6cce4811775c332a6851086"
+    },
+    {
+      "path": "python/scripts/preprocessing/mpiifacegaze.py",
+      "sha256": "dc44ea372d2e0c3447d5f372409198c0956d8df6e3cbcad590caab2b0eecff9a"
+    },
+    {
+      "path": "python/scripts/preprocessing/output_space.py",
+      "sha256": "dee5fa41b1efce8bbacd974adc046bb31b948147272fa439b09fe74d764fce9a"
+    },
+    {
+      "path": "python/scripts/preprocessing/preprocess.py",
+      "sha256": "ce5f5382d9e02d8d879c0b1c96ac422264a6a416903f0df34a8c845c0417dc1e"
+    },
+    {
+      "path": "python/scripts/preprocessing/utils.py",
+      "sha256": "1abb5265ce5b5e433ff10f011bbb9bf539a4be026878c35e7cff50889b78caf7"
+    },
+    {
+      "path": "python/scripts/requirements.txt",
+      "sha256": "ef73832592166f97600a0259d2da53816e522d0819a4e7e374c8ac3378369001"
+    },
+    {
+      "path": "python/scripts/tests/screen_projection_example.py",
+      "sha256": "df6433847772ecb8440d3605200a07c04013a2fcbdcd62cf873e869aa2f6645e"
+    },
+    {
+      "path": "python/scripts/tests/space_transformation_test.py",
+      "sha256": "dd24e3f3fbecd5c86b705a12627ce5d2cdd3d4ddbe6bed2f9f65c94c87b8a2e8"
+    },
+    {
+      "path": "python/scripts/tests/test.py",
+      "sha256": "8111f03e542194a0dc4f09571903033ba9339e017c51970961b73c8cd7efb825"
+    },
+    {
+      "path": "python/scripts/tests/test_data_normalization.py",
+      "sha256": "a2db9712b5900cc0020d9f2969eba599e6bc2880f632c8d417f9b85605d52c85"
+    },
+    {
+      "path": "python/scripts/tests/test_vis.py",
+      "sha256": "7b6080b37cf467fd1ccdfc72944343df9a59a80b502b629d14d634ac8786cbf8"
+    },
+    {
+      "path": "python/webeyetrack/__init__.py",
+      "sha256": "70ab47ba642ea8d6c15190e740d1c441c2ed91ebfbe393f670a8ea255c2e8363"
+    },
+    {
+      "path": "python/webeyetrack/__logger.py",
+      "sha256": "bda91e73f3de944b063298dfef228584d503e020df3ca8161bf2f641e896dd72"
+    },
+    {
+      "path": "python/webeyetrack/aug.py",
+      "sha256": "f838c8cd188132683842628f1b774ef5532535688a17e81c74a7939f2dcf64f4"
+    },
+    {
+      "path": "python/webeyetrack/blazegaze.py",
+      "sha256": "35d53b6f9ba5c014c9cb4ddd15439351aef48191ef82c8f86e0d0ada79fbe872"
+    },
+    {
+      "path": "python/webeyetrack/constants.py",
+      "sha256": "564cb9960c350f579f8e5b83288756c6eee2dd84a31a8d556e20de6eb359f329"
+    },
+    {
+      "path": "python/webeyetrack/data_protocols.py",
+      "sha256": "c68e31337234598d9f0fc2220004c197bcbaa63e66f282dbb8cb8b6f9f8db407"
+    },
+    {
+      "path": "python/webeyetrack/default_config.yaml",
+      "sha256": "0cc21f11c870084f310d0483fcd6b89eaea89a595585ef322677903e5ff66b1c"
+    },
+    {
+      "path": "python/webeyetrack/filter.py",
+      "sha256": "57c7a67614a7fd1886502d49350d060f11153b6a5bc7bfec98127231aa1b3f1d"
+    },
+    {
+      "path": "python/webeyetrack/kalman_filter.py",
+      "sha256": "0db2402d0706de04fe56cb6ee780916c33397a5a9d57d4db6c249c6223698cb9"
+    },
+    {
+      "path": "python/webeyetrack/model_based.py",
+      "sha256": "cf979866a5017ade1a7e5b50a291dff87fe43453e36fecdf68d78439926ddb17"
+    },
+    {
+      "path": "python/webeyetrack/model_weights/blazegaze_mpiifacegaze.keras",
+      "sha256": "5b011cfe82466896e27b1ac3e18130117cafbc02dbc964a1ad7315f62005cc05"
+    },
+    {
+      "path": "python/webeyetrack/model_weights/face_landmarker_v2_with_blendshapes.task",
+      "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
+    },
+    {
+      "path": "python/webeyetrack/open3d_utilities.py",
+      "sha256": "66d93c100b84ef1becbcba42e8525d536347bac1b445da4d1ab232f47f8c50e1"
+    },
+    {
+      "path": "python/webeyetrack/tf_utils.py",
+      "sha256": "a92f8c00d3b3d3fc8b8a1b8f2fc73d7ad1d1b5ad4fc0d409daae0199aeb00b8d"
+    },
+    {
+      "path": "python/webeyetrack/utilities.py",
+      "sha256": "6d731cbef19345c8e0df4569d6d1fcbd9dd28d38c758c14f613913255a5079eb"
+    },
+    {
+      "path": "python/webeyetrack/vis.py",
+      "sha256": "a53c7e7de77a9962b49f0e2a60b2b76a9543efc183b7ccd037c5a9d8a6c2f32f"
+    },
+    {
+      "path": "python/webeyetrack/webeyetrack.py",
+      "sha256": "687a75f464bf749db51f0a55099354df4917f57d8986119da34427b87e5a1803"
+    },
+    {
+      "path": "python/webeyetrack/webeyetrack3D.py",
+      "sha256": "945fa1a3e50fba832014098609bbd3dbc8a42cc3ad44517d8a32d0a753b8ec46"
+    }
+  ]
+}
