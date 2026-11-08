@@ -10,6 +10,12 @@ import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 import './tailwind.css';
 import './styles.css';
 
+// `?reset` forgets everything this page saved (first-run state, settings, the calibration) and opens the first run.
+if (new URLSearchParams(location.search).has('reset')) {
+  try { localStorage.clear(); sessionStorage.clear(); } catch { /* storage blocked: nothing saved to forget */ }
+  location.replace(location.pathname);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {new URLSearchParams(location.search).has('demo') ? <main className="demo"><DemoOne /></main> : <App />}

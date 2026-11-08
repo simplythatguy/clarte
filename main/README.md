@@ -35,7 +35,7 @@ On later launches the app opens on the conversation screen and restores the save
 - **Mouse.** Add `?input=mouse` for no camera. Pointer position is the look. **Use the mouse** after a camera failure does the same for the session.
 - **Keys and clicks**, always. Keys 1 to 8 select the quadrant with that number, and a click selects a card.
 
-Other URL options: `?onboarding=off` opens straight into the conversation, `&palette=vibrant` uses the vibrant letter colours, and `#phase=<name>` opens a debug phase (`window.clarteDebug.phases` lists them).
+Other URL options: `?reset` forgets everything the app saved on this browser (first-run state, settings, the calibration) and starts the first run again, `?onboarding=off` opens straight into the conversation, `&palette=vibrant` uses the vibrant letter colours, and `#phase=<name>` opens a debug phase (`window.clarteDebug.phases` lists them).
 
 ## Check it
 
