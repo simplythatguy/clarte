@@ -3,7 +3,8 @@
 //
 //   node scripts/e2e-sound-select.mjs [http://localhost:5200]
 //
-// The microphone plays a generated file: 6 s of steady noise, a 300 ms "ah" (180 Hz with four harmonics), then noise.
+// The microphone plays a generated file: 6 s of steady noise, a 300 ms "ah" (180 Hz with four harmonics) that rises
+// over 80 ms as a voice does, then noise.
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -20,7 +21,7 @@ const noise = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return (s
 for (let i = 0; i < N; i++) {
   const t = i / RATE;
   let v = 0.03 * noise();
-  if (t >= 6 && t < 6.3) { const env = Math.min(1, (t - 6) / 0.02, (6.3 - t) / 0.02); for (const h of [1, 2, 3, 4, 5]) v += (env * 0.25 / h) * Math.sin(2 * Math.PI * 180 * h * t); }
+  if (t >= 6 && t < 6.3) { const env = Math.min(1, (t - 6) / 0.08, (6.3 - t) / 0.05); for (const h of [1, 2, 3, 4, 5]) v += (env * 0.25 / h) * Math.sin(2 * Math.PI * 180 * h * t); }
   wav.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(v * 32767))), 44 + i * 2);
 }
 const dir = path.join(os.tmpdir(), 'clarte-e2e');

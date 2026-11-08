@@ -12,11 +12,13 @@
  */
 
 /** How far above the noise floor a sound must rise, and for how long. */
-const ONSET_DB = 12;
+const ONSET_DB = 10;
 const ONSET_MS = 60;
 /** Quiet (within QUIET_DB of the floor) needed just before a sound and after one. */
 const QUIET_DB = 6;
 const QUIET_BEFORE_MS = 150;
+/** A voice takes a few frames to rise: the quiet stretch may end this long before the sound counts as loud. */
+const RISE_MS = 120;
 const SETTLE_MS = 150;
 /** Below this level nothing counts, however quiet the room. */
 const MIN_DB = -62;
@@ -41,12 +43,25 @@ export async function startSoundSelect(onSound: () => void, enabled: () => boole
   source.connect(highpass).connect(lowpass).connect(analyser);
   const samples = new Float32Array(analyser.fftSize);
 
+  // A browser may start audio paused until the page is used; the first click or key starts it.
+  const resume = () => { if (ctx.state === 'suspended') void ctx.resume(); };
+  window.addEventListener('pointerdown', resume);
+  window.addEventListener('keydown', resume);
+
   const recent: number[] = [];
-  let quietFor = 0;
+  /** The current run of quiet frames, the last finished one, and the time since the last quiet frame. */
+  let quietRun = 0;
+  let lastQuietRun = 0;
+  let sinceQuiet = 0;
   let loudFor = 0;
   let armed = true;
+  const trace = { db: -120, floor: -120, peak: -120, triggers: 0, ignored: 0 };
+  const report = import.meta.hot ? window.setInterval(() => {
+    import.meta.hot?.send('clarte:sound', { ctx: ctx.state, track: stream.getAudioTracks()[0]?.readyState, label: stream.getAudioTracks()[0]?.label, ...trace, armed, enabled: enabled() });
+    trace.peak = -120;
+  }, 250) : 0;
   const tick = () => {
-    if (ctx.state === 'suspended') void ctx.resume();
+    resume();
     analyser.getFloatTimeDomainData(samples);
     let sum = 0;
     for (const v of samples) sum += v * v;
@@ -55,26 +70,29 @@ export async function startSoundSelect(onSound: () => void, enabled: () => boole
     recent.push(db);
     if (recent.length > FLOOR_FRAMES) recent.shift();
     const floor = [...recent].sort((a, b) => a - b)[Math.floor(recent.length * FLOOR_PERCENTILE)];
+    trace.db = Math.round(db); trace.floor = Math.round(floor); trace.peak = Math.max(trace.peak, Math.round(db));
     const loud = db > floor + ONSET_DB && db > MIN_DB;
     const quiet = db < floor + QUIET_DB;
     loudFor = loud ? loudFor + FRAME_MS : 0;
+    if (quiet) { quietRun += FRAME_MS; sinceQuiet = 0; }
+    else { if (quietRun) lastQuietRun = quietRun; quietRun = 0; sinceQuiet += FRAME_MS; }
     if (!armed) {
-      quietFor = quiet ? quietFor + FRAME_MS : 0;
-      if (quietFor >= SETTLE_MS) armed = true;
+      if (quietRun >= SETTLE_MS) armed = true;
       return;
     }
-    if (loudFor >= ONSET_MS && quietFor >= QUIET_BEFORE_MS) {
+    if (loudFor >= ONSET_MS && lastQuietRun >= QUIET_BEFORE_MS && sinceQuiet <= loudFor + RISE_MS) {
       armed = false;
-      quietFor = 0;
-      if (enabled()) onSound();
-      return;
+      lastQuietRun = 0;
+      if (enabled()) { trace.triggers++; onSound(); } else trace.ignored++;
     }
-    if (!loud) quietFor = quiet ? quietFor + FRAME_MS : 0;
   };
   const timer = window.setInterval(tick, FRAME_MS);
   return {
     stop() {
       window.clearInterval(timer);
+      window.clearInterval(report);
+      window.removeEventListener('pointerdown', resume);
+      window.removeEventListener('keydown', resume);
       stream.getTracks().forEach((t) => t.stop());
       void ctx.close();
     },
