@@ -30,8 +30,19 @@ try {
   await page.screenshot({ path: path.join(out, 'want-options.png') });
   await primary().click();
   await page.waitForFunction(() => window.clarteDebug.phase() === 'options');
-  assert.equal(await page.locator('.cell-q4 [data-action]').getAttribute('data-action'), 'pick-0',
-    'the first prediction must stay in the top-right quadrant');
+  // Options changes only Q1 and the bottom row (owner, 2026-11-08): Q4 keeps the card that opened it,
+  // the words start in Q5, and the conversation is neither blurred nor titled.
+  assert.equal(await page.locator('.cell-q4 [data-action]').getAttribute('data-action'), 'primary', 'Q4 keeps the Options card');
+  const first = await page.locator('[data-action="pick-0"]').boundingBox();
+  assert.ok(first && first.y > 450 && first.x < 400, 'the most likely word comes first, at the start of the bottom row');
+  assert.equal(await page.locator('.cell-q1 [data-action]').getAttribute('data-action'), 'back');
+  assert.equal(await page.locator('.thread-behind, .thread-title').count(), 0, 'nothing is blurred and no title covers the conversation');
+  await primary().click();
+  await page.waitForFunction(() => window.clarteDebug.phase() !== 'options');
+  assert.equal(await page.locator('.rest-entering .in-progress .typed').count(), 4, 'Options again closes it and keeps the input');
+  await primary().click();
+  await page.waitForFunction(() => window.clarteDebug.phase() === 'options');
+  results.push('Options changes only Q1 and the bottom row; Q4 keeps Options and closes it; nothing blurs.');
   assert.equal(await page.locator('.rest-entering .word:not(.in-progress)').count(), 0, 'opening Options must not accept anything');
   await page.locator('[data-action="back"]').click();
   await page.getByRole('button', { name: /^Options:/ }).waitFor();
