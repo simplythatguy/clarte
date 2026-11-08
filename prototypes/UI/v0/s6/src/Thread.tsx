@@ -11,9 +11,9 @@
  * slides. Glyphs appear by opacity, accepted words settle from group ink to ink over 180 ms.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { pendingGlyphs, type Composition, type Glyph, type Word } from '../../shared/composer.ts';
+import { glyphsForWord, type Composition, type Glyph, type Word } from '../../shared/composer.ts';
 import { groupOf } from '../../shared/decoder.ts';
-import type { Live, Turn } from './model.ts';
+import { wordDisplay, type Live, type Turn } from './model.ts';
 import { wordsOf } from './voice.ts';
 import { displayWord } from './text.ts';
 import { Mic, Speaker } from './icons.tsx';
@@ -25,8 +25,13 @@ type Props = {
   state: StateName | null;
   turns: Turn[];
   live: Live;
+  /** The partner's words as they are being heard (listening is always on). */
+  hearing: string;
   composition: Composition;
-  context: string[];
+  /** The word the engine shows for the pending groups (Q1), drawn as the word in progress. */
+  candidate: string | null;
+  /** Other words: the last word is the selected object (it is about to give way). */
+  marked?: boolean;
   wordColours: boolean;
 };
 
@@ -41,12 +46,13 @@ function Spoken({ text, word }: { text: string; word: number }) {
 }
 
 /** An accepted word: its letters start in their group ink and settle to ink (or keep colour). */
-function AcceptedWord({ word, index }: { word: Word; index: number }) {
-  const text = word.source === 'phrase' ? word.text : displayWord(word.text, index);
-  if (word.source === 'unresolved') return <span className="word word-unresolved">{'•'.repeat(word.groups.length)}</span>;
-  if (word.source !== 'decoded') return <span className="word">{text}</span>;
+function AcceptedWord({ word, index, marked = false }: { word: Word; index: number; marked?: boolean }) {
+  const text = word.source === 'phrase' ? word.text : displayWord(word.text, index, wordDisplay(word));
+  const cls = marked ? 'word selected' : 'word';
+  if (word.source === 'unresolved') return <span className={`${cls} word-unresolved`}>{'•'.repeat(word.groups.length)}</span>;
+  if (word.source !== 'decoded') return <span className={cls}>{text}</span>;
   return (
-    <span className="word">
+    <span className={cls}>
       {[...text].map((ch, i) => <span key={i} className="settle" data-group={groupOf(ch) ?? undefined}>{ch}</span>)}
     </span>
   );
@@ -74,14 +80,20 @@ function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) 
   }, [glyphs]);
   const slots: Slot[] = [...glyphs, ...tail];
   const hasLetters = glyphs.some((g) => g.letter !== null);
+  // Dots after the letters (groups typed past the word the screen can offer) may wrap; the letters never break.
+  const dotted = glyphs.some((g) => g.letter === null);
   return (
-    <span className={`word in-progress${hasLetters ? '' : ' dots'}`}>
+    <span className={`word in-progress${hasLetters ? '' : ' dots'}${hasLetters && dotted ? ' tail' : ''}${glyphs.length > 12 ? ' long' : ''}`}>
       <span className="sr-only">{hasLetters ? glyphs.map((g) => g.letter ?? '').join('') : `${glyphs.length} letters typed`}</span>
       {slots.map((g, i) => {
         const letter = g.letter === null ? null : first && i === 0 ? g.letter.toUpperCase() : g.letter;
-        const cls = `glyph ${g.typed ? 'typed' : 'ghost'}${letter === null ? ' dot' : ''}${g.leaving ? ' leaving' : ''}`;
+        // A letter from another group than the one typed at its place (a gaze-slip correction)
+        // takes its own group's colour, so the colour tells where the look went astray.
+        const own = g.typed && g.letter ? groupOf(g.letter) : null;
+        const slip = own !== null && own !== g.group;
+        const cls = `glyph ${g.typed ? 'typed' : 'ghost'}${letter === null ? ' dot' : ''}${slip ? ' slip' : ''}${g.leaving ? ' leaving' : ''}`;
         return (
-          <span key={i} className={cls} data-group={g.group} aria-hidden="true">
+          <span key={i} className={cls} data-group={slip ? own : g.group} aria-hidden="true">
             <span key={letter ?? 'dot'}>{letter ?? ''}</span>
           </span>
         );
@@ -90,12 +102,12 @@ function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) 
   );
 }
 
-function Message({ composition, context, wordColours }: { composition: Composition; context: string[]; wordColours: boolean }) {
-  const glyphs = pendingGlyphs(composition, context);
+function Message({ composition, candidate, marked, wordColours }: { composition: Composition; candidate: string | null; marked: boolean; wordColours: boolean }) {
+  const glyphs = glyphsForWord(composition.pending, candidate);
   const { words } = composition;
   return (
     <span className={wordColours ? 'keep-colour' : undefined}>
-      {words.map((w, i) => <span key={i}><AcceptedWord word={w} index={i} />{' '}</span>)}
+      {words.map((w, i) => <span key={i}><AcceptedWord word={w} index={i} marked={marked && i === words.length - 1} />{' '}</span>)}
       {glyphs.length > 0 && <WordInProgress glyphs={glyphs} first={words.length === 0} />}
     </span>
   );
@@ -117,7 +129,7 @@ function useLeaving(key: string, node: ReactNode): ReactNode {
   return leaving ? <span className="now-leaving" aria-hidden="true">{leaving.node}</span> : null;
 }
 
-export function Thread({ state, turns, live, composition, context, wordColours }: Props) {
+export function Thread({ state, turns, live, hearing, composition, candidate, marked = false, wordColours }: Props) {
   const nowRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const highlight = live.kind === 'speaking' && live.turnId !== null ? live : null;
@@ -139,23 +151,28 @@ export function Thread({ state, turns, live, composition, context, wordColours }
   let nowKey = 'empty';
   let nowClass = 'now';
   let now: ReactNode = null;
-  if (live.kind === 'listening') {
-    nowKey = `listen-${live.token}`;
-    nowClass += ' now-partner';
-    now = live.transcript ? <span className="now-text">{live.transcript}</span> : null;
-  } else if (live.kind === 'speaking' && live.turnId === null) {
+  // The partner's words are the live line while the message is empty. Once the person types,
+  // the message is the live line and the words being heard join the history as the newest turn.
+  const typing = Boolean(composition.words.length || composition.pending.length);
+  const heard = typing && hearing ? hearing : null;
+  if (live.kind === 'speaking' && live.turnId === null) {
     // A spoken message stays the same element it was while composing: only the highlight changes.
-    nowKey = live.holder ? `holder-${live.token}` : 'compose';
-    nowClass += live.holder ? ' now-holder' : '';
-    now = <span className="now-text"><Spoken text={live.text} word={live.word} /></span>;
-  } else if (composition.words.length || composition.pending.length) {
     nowKey = 'compose';
-    now = <span className="now-text"><Message composition={composition} context={context} wordColours={wordColours} /></span>;
+    now = <span className="now-text"><Spoken text={live.text} word={live.word} /></span>;
+  } else if (typing) {
+    nowKey = 'compose';
+    now = <span className="now-text"><Message composition={composition} candidate={candidate} marked={marked} wordColours={wordColours} /></span>;
+  } else if (hearing) {
+    nowKey = 'hearing';
+    nowClass += ' now-partner';
+    now = <span className="now-text">{hearing}</span>;
   }
   const leaving = useLeaving(nowKey, now);
-  // Fit: when the live line is taller than its room (long messages, large text), step its type
-  // down to a floor of 75% at 100% scale and 50% at 200% (the 100% size), so the whole message
-  // stays visible; past the floor it is marked overflowing and keeps its latest words.
+  // Fit: when the live line is taller than its room (long messages, large text) or wider than it
+  // (one long unbreakable word), step its type down to a floor of 75% at 100% scale and 50% at
+  // 200% (the 100% size), so the whole message stays visible; past the floor it is marked
+  // overflowing and keeps its latest words, whole lines only: the earlier lines are hidden above
+  // the room, never half-erased (round 4: the first visible line used to sit under a fade).
   // History shows whole lines only. Turns cut by the top edge are hidden, not half-erased. The
   // newest turn keeps its head (a question starts there): when it alone does not fit, it is
   // anchored to its first line and clamped to the whole lines that fit.
@@ -166,13 +183,21 @@ export function Thread({ state, turns, live, composition, context, wordColours }
     const inner = el.querySelector<HTMLElement>(':scope > span > .now-text');
     const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale')) || 1;
     const floor = Math.max(0.5, 0.75 / scale);
+    // One word wider than the room (a 28-letter word at 200%) is never cut: the type goes on down
+    // for width alone, to 20 px at the least, since a word the person may speak must stay whole.
+    const base = parseFloat(getComputedStyle(el).fontSize) / (parseFloat(el.style.getPropertyValue('--fit')) || 1);
+    const wideFloor = Math.max(0.2, 20 / base);
     const history = historyRef.current;
-    const over = () => Boolean(inner && inner.offsetHeight > el.clientHeight + 1);
+    const tall = () => Boolean(inner && inner.offsetHeight > el.clientHeight + 1);
+    const wide = () => Boolean(inner && inner.scrollWidth > el.clientWidth + 1);
+    const over = () => tall() || wide();
     const step = () => {
       let f = 1;
       el.style.setProperty('--fit', '1');
-      while (over() && f > floor) {
-        f = Math.max(floor, f - 0.05);
+      el.style.removeProperty('--now-clip');
+      // Height stops stepping at `floor`; width alone may go on down to `wideFloor`.
+      while (f > wideFloor && ((tall() && f > floor) || wide())) {
+        f = Math.max(wideFloor, f - 0.05);
         el.style.setProperty('--fit', f.toFixed(2));
       }
     };
@@ -181,6 +206,14 @@ export function Thread({ state, turns, live, composition, context, wordColours }
     step();
     if (over() && history) { history.setAttribute('data-yield', ''); step(); }
     el.toggleAttribute('data-overflow', over());
+    if (tall() && inner) {
+      // The room is anchored to the text's last line; clip its top to whole lines, so the first line
+      // in view is never cut through (at least one line always shows).
+      const lineHeight = parseFloat(getComputedStyle(inner).lineHeight) || 1;
+      const whole = Math.max(1, Math.floor(el.clientHeight / lineHeight));
+      const cut = Math.max(0, el.clientHeight - whole * lineHeight);
+      if (cut > 1) el.style.setProperty('--now-clip', `${cut.toFixed(1)}px`);
+    }
     if (history) {
       const turns = [...history.children] as HTMLElement[];
       const newest = turns[turns.length - 1];
@@ -202,7 +235,7 @@ export function Thread({ state, turns, live, composition, context, wordColours }
   };
   // When its inputs change, and whenever the thread's room or the live text's size changes for any
   // other reason (text size applied by the parent, the webfont arriving, a resize).
-  useLayoutEffect(() => fit.current(), [state, turns, live, composition, wordColours]);
+  useLayoutEffect(() => fit.current(), [state, turns, live, hearing, composition, candidate, marked, wordColours]);
   useLayoutEffect(() => {
     const ro = new ResizeObserver(() => fit.current());
     const watch = () => {
@@ -222,7 +255,7 @@ export function Thread({ state, turns, live, composition, context, wordColours }
       </div>
       <div ref={historyRef} className="history">
         {turns.map((turn) => (
-          <p key={turn.id} className={`turn turn-${turn.who}${turn.holder ? ' turn-holder' : ''}`}>
+          <p key={turn.id} className={`turn turn-${turn.who}`}>
             {/* Heard turns carry a microphone on their left, spoken replies a speaker on their right. */}
             <span className="turn-icon" aria-hidden="true">{turn.who === 'partner' ? <Mic /> : <Speaker />}</span>
             <span className="sr-only">{turn.who === 'partner' ? 'Heard: ' : 'Said: '}</span>
@@ -231,6 +264,13 @@ export function Thread({ state, turns, live, composition, context, wordColours }
             </span>
           </p>
         ))}
+        {heard && (
+          <p key="heard" className="turn turn-partner">
+            <span className="turn-icon" aria-hidden="true"><Mic /></span>
+            <span className="sr-only">Hearing: </span>
+            <span className="turn-text">{heard}</span>
+          </p>
+        )}
       </div>
       <div className="rule" aria-hidden="true" />
       <div ref={nowRef} className={nowClass} aria-live="polite">

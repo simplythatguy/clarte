@@ -853,7 +853,8 @@
   "lintapple_npm": "0.1.24",
   "authored_skills": [
     "skills/lintapple-ui",
-    "skills/apple-hig-ui"
+    "skills/apple-hig-ui",
+    "skills/linear-research"
   ],
   "clarte_overlays": [
     "skills/animate-expo/CLARTE.md",

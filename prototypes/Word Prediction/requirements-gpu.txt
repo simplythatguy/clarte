@@ -1,0 +1,9 @@
+# The GPU rescorer (Qwen2.5-1.5B on Apple's MLX), Apple Silicon only. Without it the server rescored with
+# the SmolLM2-135M fine-tune on torch, or with no rescorer (README "Set up and run").
+# mlx-lm 0.32.2 declares transformers>=5.7, which breaks the torch path pinned in requirements.txt; it runs
+# with 4.57.3, so install it without dependencies, after this file:
+#   .venv/bin/python -m pip install -r requirements-gpu.txt && .venv/bin/python -m pip install --no-deps mlx-lm==0.32.2
+mlx==0.32.4; sys_platform == "darwin" and platform_machine == "arm64"
+mlx-metal==0.32.4; sys_platform == "darwin" and platform_machine == "arm64"
+sentencepiece==0.2.3
+protobuf==7.36.2

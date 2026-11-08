@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Prediction v1</title>
+<style>
+  :root { color-scheme: light dark; font: 16px/1.4 -apple-system, system-ui, sans-serif; }
+  body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+  textarea, input { width: 100%; box-sizing: border-box; font: inherit; padding: .5rem; }
+  .row { display: flex; gap: .5rem; margin: .5rem 0; }
+  button { font: inherit; padding: .5rem 1rem; }
+  ol { columns: 2; }
+  small { opacity: .6; }
+</style>
+<h1>Prediction v1</h1>
+<label>Partner said<textarea id="partner" rows="2">Where would you like to go for dinner tonight?</textarea></label>
+<label>Message so far<input id="message" value="i want to go to the"></label>
+<div class="row"><button data-g="1">A–F</button><button data-g="2">G–N</button><button data-g="3">O–S</button><button data-g="4">T–Z</button><button id="del">⌫</button><button id="clear">clear</button></div>
+<p>groups: <code id="groups"></code> <small id="meta"></small></p>
+<ol id="words"></ol>
+<script>
+let groups = '';
+async function go() {
+  const history = document.getElementById('partner').value.trim() ? [['partner', document.getElementById('partner').value.trim()]] : [];
+  const message = document.getElementById('message').value.split(/\s+/).filter(Boolean);
+  const res = await fetch('/api/v1/predict', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id: Date.now(), history, message, groups, limit: 16})});
+  const data = await res.json();
+  document.getElementById('groups').textContent = groups || '(next word)';
+  document.getElementById('meta').textContent = `total ${data.total} · longer ${data.longer} · ${data.ms} ms`;
+  document.getElementById('words').innerHTML = data.words.map(w => `<li>${w.word} <small>${w.p.toFixed(3)}${w.complete ? ' ·' : ''}${w.corrected ? ' ?' : ''}</small></li>`).join('');
+}
+document.querySelectorAll('button[data-g]').forEach(b => b.onclick = () => { groups += b.dataset.g; go(); });
+document.getElementById('del').onclick = () => { groups = groups.slice(0, -1); go(); };
+document.getElementById('clear').onclick = () => { groups = ''; go(); };
+document.getElementById('partner').oninput = document.getElementById('message').oninput = go;
+go();
+</script>

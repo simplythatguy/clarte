@@ -27,8 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / ".tools"
 PROTOTYPES = ROOT / "prototypes"
-ENGINE = PROTOTYPES / "Word Prediction" / "v0"
-AUTOCOMPLETE = PROTOTYPES / "Autocomplete" / "v0"
+ENGINE = PROTOTYPES / "Word Prediction"
 UI = PROTOTYPES / "UI" / "v0"
 VOICE = PROTOTYPES / "Voice"
 EYES = PROTOTYPES / "Eye Tracking"
@@ -475,13 +474,6 @@ def start_predict(env, log_dir, procs):
     return [port], [f"http://127.0.0.1:{port}/"], lambda: (expect_json(f"http://127.0.0.1:{port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0]), expect_model(procs[0], ENGINE_MODEL))
 
 
-def start_autocomplete(env, log_dir, procs):
-    port = pick_port(8766)
-    command = [venv_python(ENGINE / ".venv"), "server.py", "--port", port] + (["--model", "light"] if ENGINE_MODEL == "light" else [])
-    procs.append(Proc("autocomplete", command, AUTOCOMPLETE, env, log_dir))
-    return [port], [f"http://127.0.0.1:{port}/"], lambda: (expect_json(f"http://127.0.0.1:{port}/api/complete", EXAMPLE, "word", "outside"), expect_model(procs[0], ENGINE_MODEL))
-
-
 def start_ui(env, log_dir, procs):
     base = pick_port(5100, count=UI_STYLES + 1)  # switcher, then one port per style after it
     ports = list(range(base, base + UI_STYLES + 1))
@@ -531,7 +523,6 @@ def start_eyes(env, log_dir, procs):
 APPS = {
     "ui": ("UI v0 switcher with S0-S6 and the prediction engine", provision_ui, start_ui),
     "predict": ("Word Prediction engine and its test page", provision_engine, start_predict),
-    "autocomplete": ("Autocomplete server and its test page", provision_engine, start_autocomplete),
     "voice": ("Voice cloning page and service (needs ELEVENLABS_API_KEY in .env)", provision_voice, start_voice),
     "eyes": ("Eye Tracking calibration app", provision_eyes, start_eyes),
 }

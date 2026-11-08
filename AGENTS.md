@@ -9,6 +9,15 @@ Clarte is an application for giving back clarity of speech to people with dysart
 - gstack planning and design skills require the complete pinned runtime; do not claim a folder-only install makes them standalone.
 - Do not execute setup skills, runtime installers, external review loops, or publishing workflows merely because their text is included here.
 
+## Shared research lives in Linear
+
+The team's research memory is the natHacks Linear workspace. Start at [Start here](https://linear.app/nathacks/document/start-here-8f7baf0146fe). Follow `skills/linear-research/SKILL.md` on every Clarte task:
+
+- **Before** researching or choosing between options, read Start here, then only the READMEs and docs for the areas you touch. Check the Decision log before re-deciding anything.
+- **Before you end the turn**, write back any sourced finding to its topic doc. Write any choice between options, made or proposed, as a `DEC-###` doc plus a Decision log row. Keep sources and mark unverified claims.
+- Only the top-level agent writes to Linear. Subagents and delegated children read, then return findings to their parent, unless the parent's brief names them the writer for specific docs.
+- If Linear is unreachable, say so. Never invent that you checked or saved.
+
 ## Glossary
 
 - **Backend quadrant**: one of the eight cells of the fixed 2-row × 4-column grid the gaze backend classifies every look into (Q1–Q8, reading order). The grid never changes. At most one actionable element may occupy a backend quadrant; the element need not fill the quadrant and may be any size inside it; an element may span several quadrants and then owns all of them; a quadrant with no action is a rest zone. Defined in `prototypes/UI/v0/README.md`.

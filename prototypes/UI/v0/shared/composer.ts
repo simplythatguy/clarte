@@ -5,7 +5,7 @@
  * prototypes drive this same reducer, so they differ only in how they show it, never in what a
  * selection means.
  */
-import { decode, groupLabel, groupOf, type Candidate, type GroupId } from './decoder.ts';
+import { decode, groupLabel, groupOf, signatureOf, type Candidate, type GroupId } from './decoder.ts';
 
 export type Word = {
   text: string;
@@ -14,6 +14,8 @@ export type Word = {
   /** Which candidate was taken, so a later delete can reopen the word at the next one. */
   candidateIndex: number;
   source: 'decoded' | 'unresolved' | 'phrase';
+  /** The groups actually typed when they differ from `groups` (a gaze-slip correction was accepted). */
+  typed?: GroupId[];
 };
 
 export type Composition = {
@@ -78,15 +80,32 @@ export type Glyph = { group: GroupId; letter: string | null; typed: boolean };
  * letters as untyped ghost glyphs. The UI colours typed glyphs by group and ghosts in tertiary ink.
  */
 export function pendingGlyphs(c: Composition, context: readonly string[] = []): Glyph[] {
-  const candidate = currentCandidate(c, context);
-  const word = candidate?.word ?? '';
-  const letters = word.split('');
-  const glyphs: Glyph[] = c.pending.map((group, i) => ({ group, letter: letters[i] ?? null, typed: true }));
-  for (let i = c.pending.length; i < letters.length; i++) {
+  return glyphsForWord(c.pending, currentCandidate(c, context)?.word ?? null);
+}
+
+/**
+ * The glyphs for `pending` given the candidate `word` from any decoder (the stand-in above or an
+ * engine answering asynchronously): typed positions take the word's letters, the rest are ghosts.
+ * Letters without a group (an apostrophe) are skipped, as the group signature skips them.
+ */
+export function glyphsForWord(pending: readonly GroupId[], word: string | null): Glyph[] {
+  const letters = (word ?? '').split('').filter((ch) => groupOf(ch) !== null);
+  const glyphs: Glyph[] = pending.map((group, i) => ({ group, letter: letters[i] ?? null, typed: true }));
+  for (let i = pending.length; i < letters.length; i++) {
     const g = groupOf(letters[i]);
     if (g) glyphs.push({ group: g, letter: letters[i], typed: false });
   }
   return glyphs;
+}
+
+/**
+ * Commit `word`, as a style whose decoder is not the stand-in does: for the pending groups, or as
+ * a predicted next word when nothing is pending (it then remembers its own groups, so Delete can
+ * reopen it like any typed word).
+ */
+export function acceptWord(c: Composition, word: string, candidateIndex = c.candidateIndex): Composition {
+  const groups = c.pending.length ? c.pending : signatureOf(word);
+  return { words: [...c.words, { text: word, groups, candidateIndex, source: 'decoded' }], pending: [], candidateIndex: 0, reopened: false };
 }
 
 export function reduce(c: Composition, event: ComposerEvent, context: readonly string[] = []): Composition {
