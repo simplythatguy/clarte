@@ -29,15 +29,28 @@ The Cloud turns green and livelier while Clarte speaks, as in style 6. Style 7 h
 
 - **The Cloud is style 7's size again.** A 0.8× Cloud was tried and undone at the owner's request.
 
-## Menu (owner, 2026-11-07)
+## Menu (owner, 2026-11-08)
 
-One moment and Phrases are gone from the menu, and the Phrases page went with them. The other items keep their places: Back (Q1), Settings (Q6), Recalibrate (Q7) and Demo (Q8). Q4 and Q5 are rest zones on that page. It stays on the conversation screen while listening, renamed **Wait!** (owner, 2026-11-07). Selecting it says "Wait! I'm answering."
+The menu is a small tree, kept in one table in `Menu.tsx` (title, parent, entries per page):
+
+| Page | Cards |
+| -- | -- |
+| Menu | Recalibrate (Q5–Q6), Settings (Q7–Q8): two wide cards |
+| Settings | Dwell (Q4), Appearance (Q5), Suggested replies (Q6), Sound (Q7), Dev Tools (Q8) |
+| Dwell | Selection, Letter dwell, Button dwell |
+| Appearance | Text size, Motion, Word colours |
+| Sound | Sounds, Volume |
+| Dev Tools (was Demo) | Gaze noise, Repeat, Partner voice |
+
+A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. The owner reserved Q7 and Q8 for ← and → arrows on any page with more than five entries, but the grouping keeps every page at five or fewer, so no page has arrows today. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Dwell) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
+
+Earlier (owner, 2026-11-07): One moment and Phrases left the menu, and the Phrases page went with them. One moment stays on the conversation screen while listening, renamed **Wait!**. Selecting it says "Wait! I'm answering."
 
 ## No dark theme (owner, 2026-11-07)
 
 Style 8 has no dark theme. The owner tried several dark looks and then asked for the whole theme to go: solid vibrant cards, tinted glass, a light peach Cloud, and an iridescent "dream" palette with white text. Removed with it:
 
-- the Theme setting (its place on Settings page 1 is now a rest zone)
+- the Theme setting
 - every dark-theme style
 - the Cloud's dark palettes and shading, and the `?cloud=` alternatives
 
@@ -45,7 +58,7 @@ The Cloud renders exactly as style 7's in the light theme.
 
 ## Sound (NAT-24)
 
-Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume now share a third settings page, **Sound**: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Sounds' old place on the second settings page (Q5) is a rest zone. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
+Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume share the **Sound** settings page: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
 
 ## The companion (owner, 2026-11-08)
 
@@ -76,4 +89,4 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening), `composing` (the word in progress in group colours).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).

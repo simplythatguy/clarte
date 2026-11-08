@@ -25,7 +25,7 @@ export type Turn = {
   holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'settings' | 'settings-2' | 'settings-3' | 'demo';
+export type MenuPage = 'main' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
 export type CalibrationStep = 'position' | 'points' | 'validate' | 'ready';
 /** The first-run setup pages (owner concept: a report per step). */
 export type SetupStep = 'eyes' | 'voice' | 'ready';

@@ -131,6 +131,12 @@ body {
 .cell-q6 { grid-area: 2 / 2; --col: 1; --row: 1; }
 .cell-q7 { grid-area: 2 / 3; --col: 2; --row: 1; }
 .cell-q8 { grid-area: 2 / 4; --col: 3; --row: 1; }
+/* A wide card spans its quadrant and the next (Menu: Recalibrate Q5–Q6, Settings Q7–Q8): two card
+   widths and the space between them, drawn above the neighbour it covers. */
+.card.card-span { width: calc(var(--card-w) * 2 + var(--space)); }
+.cell:has(> .card-span) { z-index: 3; }
+/* The card a wide one covers vanishes at once: through the glass, its fade would show as a ghost. */
+.cell:has(> .card-span) + .cell > .card { opacity: 0; transition: none; }
 
 /* Cards: frosted glass tiles, icon top left, words bottom left (glass-tiles reference). */
 .card {
@@ -245,6 +251,8 @@ body {
 .card-label.is-word { font-size: calc(min(var(--fs-label), calc(150cqi / var(--len, 6))) * var(--fit, 1)); }
 .card-label.is-quote { font-size: calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1)); }
 .card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
+/* Where Back goes (owner, 2026-11-08): the page's name, small and faded, above "Back". */
+.crumb { font-size: max(16px, min(calc(17px * var(--scale)), 9cqi)); font-weight: 500; line-height: 1.25; color: currentColor; opacity: 0.5; }
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
 
@@ -373,13 +381,12 @@ body {
 /* Menu and calibration titles sit where the live line sits. */
 .thread-title { justify-content: flex-end; }
 .page-title { margin: 0; font-size: var(--fs-message); font-weight: 600; line-height: 1.16; letter-spacing: 0; }
+/* The menu path above the page title (owner, 2026-11-08): small and quiet. */
+.page-trail { margin: 0 0 6px; font-size: calc(20px * var(--scale)); font-weight: 500; line-height: 1.3; color: var(--ink-3); }
 .page-sub { margin: 8px 0 0; font-size: var(--fs-turn); font-weight: 500; color: var(--ink-2); }
 .setting-name { font-size: max(20px, calc(min(calc(20px * var(--scale)), calc(170cqi / var(--len, 8))) * var(--fit, 1))); font-weight: 500; color: var(--ink-2); text-wrap: balance; }
 .setting-value { font-size: calc(min(calc(36px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.1; text-wrap: balance; }
 .phrase { font-size: calc(min(calc(32px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.12; text-wrap: balance; }
-.pager { display: flex; gap: 8px; }
-.pager i { display: block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.25; }
-.pager i[data-on] { opacity: 1; }
 
 /* Calibration (MOTION.md "The calibration sequence") */
 .cal-target { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; overflow: visible; pointer-events: none; color: var(--ink); }

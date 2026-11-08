@@ -42,6 +42,8 @@ export type SlotView = {
   disabled?: boolean;
   /** Keys the content: a new key cross-fades the content in place. */
   bodyKey: string;
+  /** A wide card across this quadrant and the next one to the right, which it then owns. */
+  span?: 2;
   body: ReactNode;
 };
 export type SlotName = 'q1' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8';

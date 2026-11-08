@@ -5,7 +5,7 @@
  */
 import { EMPTY_COMPOSITION, candidates, reduce, type Composition } from '../../shared/composer.ts';
 import { signatureOf } from '../../shared/decoder.ts';
-import { contextWords, type State, type Turn } from './model.ts';
+import { contextWords, type MenuPage, type State, type Turn } from './model.ts';
 
 export const PHASES = [
   'idle',
@@ -20,9 +20,10 @@ export const PHASES = [
   'spoken',
   'menu',
   'menu-settings',
-  'menu-settings-2',
-  'menu-settings-3',
-  'menu-demo',
+  'menu-dwell',
+  'menu-appearance',
+  'menu-sound',
+  'menu-dev-tools',
   'worst-case',
   'worst-nomatch',
   'calibrate-position',
@@ -103,13 +104,11 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'menu':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'main' } };
     case 'menu-settings':
-      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings' } };
-    case 'menu-settings-2':
-      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings-2' } };
-    case 'menu-settings-3':
-      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings-3' } };
-    case 'menu-demo':
-      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'demo' } };
+    case 'menu-dwell':
+    case 'menu-appearance':
+    case 'menu-sound':
+    case 'menu-dev-tools':
+      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: name.slice(5) as MenuPage } };
     case 'worst-case': {
       const worst = withTurns(clean, WORST);
       const ctx = contextWords(worst);

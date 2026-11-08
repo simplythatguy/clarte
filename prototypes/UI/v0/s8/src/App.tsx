@@ -38,7 +38,7 @@ import {
 } from './model.ts';
 import { Tile, type SlotName, type SlotView, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
-import { TITLES, menuSlots, nextValue, type SettingKey } from './Menu.tsx';
+import { TITLES, menuSlots, nextValue, parentOf, trailOf, type SettingKey } from './Menu.tsx';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
@@ -54,7 +54,6 @@ import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Sparkle, S
 
 const SAY_AGAIN_MS = 6000;
 /** "More" walks the three settings pages in a loop. */
-const NEXT_PAGE: Record<MenuPage, MenuPage> = { main: 'main', settings: 'settings-2', 'settings-2': 'settings-3', 'settings-3': 'settings', demo: 'demo' };
 // Style 8 (owner, 2026-11-07): the floor-holder is "Wait!" (style 7: "One moment").
 const HOLDER = "Wait! I'm answering.";
 const STORE = 'clarte.style8.v1';
@@ -382,9 +381,13 @@ export function App() {
       return;
     }
     if (s.screen.kind === 'menu') {
-      if (action === 'back') { s.screen.page === 'main' ? dispatch({ type: 'screen', screen: { kind: 'talk' } }) : page('main'); play('control'); return; }
-      if (action === 'settings' || action === 'demo') { page(action); return; }
-      if (action === 'more') { page(NEXT_PAGE[s.screen.page]); return; }
+      if (action === 'back') {
+        const up = parentOf(s.screen.page);
+        if (up) page(up);
+        else { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); }
+        return;
+      }
+      if (action.startsWith('open-')) { page(action.slice(5) as MenuPage); return; }
       if (action === 'recalibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
@@ -479,6 +482,8 @@ export function App() {
           <Thread state={null} turns={state.turns} live={live} composition={state.composition} context={contextWords(state)} wordColours={settings.wordColours} />
         </div>
         <section className="thread thread-title" aria-label={TITLES[screen.page]}>
+          {/* The path above the title (owner, 2026-11-08), once there is more than the page itself. */}
+          {trailOf(screen.page).length > 1 && <p className="page-trail">{trailOf(screen.page).join(' › ')}</p>}
           <h1 className="page-title">{TITLES[screen.page]}</h1>
         </section>
       </>
@@ -546,7 +551,7 @@ function Board({ slots, screen, activate }: { slots: Slots; screen: string; acti
         return (
           <Cell key={q} q={q}>
             {view && (
-              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate}>
+              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate} className={slots[q]?.span ? 'card-span' : ''}>
                 <Swap swapKey={view.bodyKey} className="card-swap" leavingClass="card-leaving" fast={fast}>{view.body}</Swap>
               </Tile>
             )}

@@ -1,14 +1,16 @@
 /**
- * Menu pages. The menu replaces the conversation screen and keeps its geometry: Q1 goes back,
- * Q4 holds the page's own extra action, Q5–Q8 hold four items, and Q2–Q3 stay a rest zone that
- * shows only the page name. Settings show their current value and advance to the next value on
+ * Menu pages (owner, 2026-11-08). The menu replaces the conversation screen and keeps its geometry:
+ * Q1 goes back one level and names where it goes (Home, Menu, Settings), and Q2–Q3 stay a rest zone
+ * that shows the page name with its path above it (Menu › Settings › Dwell). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
+ * Settings (Q7–Q8). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
+ * and a fifth top right (Q4). Settings show their current value and advance to the next value on
  * selection, so every change is one look.
  */
 import type { ReactNode } from 'react';
 import type { MenuPage, Settings } from './model.ts';
 import type { SlotName, Slots, SlotView } from './Tile.tsx';
 import { longest } from './text.ts';
-import { Again, Back, Blob, Flask, Mic, Next, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave } from './icons.tsx';
+import { Again, Back, Blob, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave } from './icons.tsx';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
@@ -44,22 +46,49 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
   return values[(i + 1) % values.length];
 }
 
-const PAGES: Record<Exclude<MenuPage, 'main'>, (SettingKey | null)[]> = {
-  // Style 8 (owner, 2026-11-07): the dark theme is gone, so Theme's place is a rest zone.
-  settings: ['letterDwell', 'controlDwell', 'textScale', null],
-  // NAT-24: Sounds moved to its own page beside Volume; its old place is a rest zone.
-  'settings-2': [null, 'mode', 'orbMotion', 'suggestions'],
-  'settings-3': ['sound', 'volume', null, null],
-  demo: ['noise', 'repeat', 'partner', 'wordColours'],
+/** What a menu page offers: a setting to cycle, a page to open, or Recalibrate. */
+type Entry =
+  | { kind: 'setting'; key: SettingKey }
+  | { kind: 'page'; page: MenuPage; glyph: () => ReactNode }
+  | { kind: 'recalibrate' };
+
+type Page = { title: string; parent: MenuPage | null; entries: Entry[] };
+
+const setting = (key: SettingKey): Entry => ({ kind: 'setting', key });
+const open = (page: MenuPage, glyph: () => ReactNode): Entry => ({ kind: 'page', page, glyph });
+
+/**
+ * Every page, its place in the tree, and what it offers, in order (owner, 2026-11-08): dwell
+ * settings together, appearance together, Sound, and Dev Tools (the old Demo page) last.
+ */
+const PAGES: Record<MenuPage, Page> = {
+  main: { title: 'Menu', parent: null, entries: [{ kind: 'recalibrate' }, open('settings', Sliders)] },
+  settings: {
+    title: 'Settings',
+    parent: 'main',
+    entries: [open('dwell', Timer), open('appearance', Palette), setting('suggestions'), open('sound', Speaker), open('dev-tools', Flask)],
+  },
+  dwell: { title: 'Dwell', parent: 'settings', entries: [setting('mode'), setting('letterDwell'), setting('controlDwell')] },
+  appearance: { title: 'Appearance', parent: 'settings', entries: [setting('textScale'), setting('orbMotion'), setting('wordColours')] },
+  sound: { title: 'Sound', parent: 'settings', entries: [setting('sound'), setting('volume')] },
+  'dev-tools': { title: 'Dev Tools', parent: 'settings', entries: [setting('noise'), setting('repeat'), setting('partner')] },
 };
 
-export const TITLES: Record<MenuPage, string> = {
-  main: 'Menu',
-  settings: 'Settings',
-  'settings-2': 'Settings',
-  'settings-3': 'Sound',
-  demo: 'Demo',
-};
+export const TITLES = Object.fromEntries(Object.entries(PAGES).map(([id, p]) => [id, p.title])) as Record<MenuPage, string>;
+
+/** The page Back returns to, or null on the Menu page (Back returns to the conversation). */
+export const parentOf = (page: MenuPage): MenuPage | null => PAGES[page].parent;
+
+/** The path to a page, root first: Menu, Settings, Dwell. */
+export function trailOf(page: MenuPage): string[] {
+  const parent = PAGES[page].parent;
+  return [...(parent ? trailOf(parent) : []), PAGES[page].title];
+}
+
+/** Up to four entries run along the bottom; a fifth takes the top right first. */
+function placesFor(count: number): SlotName[] {
+  return count === 5 ? ['q4', 'q5', 'q6', 'q7', 'q8'] : (['q5', 'q6', 'q7', 'q8'] as SlotName[]).slice(0, count);
+}
 
 /** One setting as a card: its name, its current value; selecting it advances to the next value. */
 export function settingSlot<K extends SettingKey>(k: K, settings: Settings): SlotView {
@@ -78,33 +107,28 @@ export function settingText<K extends SettingKey>(k: K, settings: Settings): { n
 
 /** The menu as slot descriptions, rendered by the same persistent cards as the conversation. */
 export function menuSlots(page: MenuPage, settings: Settings): Slots {
-  const icon = (action: string, label: string, glyph: ReactNode, tone: 'surface' | 'ink' = 'surface'): SlotView => ({
-    action, tone, icon: glyph, bodyKey: `${action}:${label}`,
+  const card = (action: string, label: string, glyph: ReactNode, span?: 2): SlotView => ({
+    action, tone: 'surface', icon: glyph, span, bodyKey: `${action}:${label}`,
     body: <span className="card-label" style={longest(label)}>{label}</span>,
   });
-  const setting = <K extends SettingKey>(k: K) => settingSlot(k, settings);
-  const back = icon('back', 'Back', <Back />, 'ink');
-
-  // Style 8 (owner, 2026-11-07): One moment and Phrases are gone from the menu; the other items
-  // keep their places. Q4 and Q5 are rest zones on this page; Wait! (style 7's One moment) stays on the conversation
-  // screen while listening.
-  if (page === 'main') {
-    return {
-      q1: back,
-      q6: icon('settings', 'Settings', <Sliders />),
-      q7: icon('recalibrate', 'Recalibrate', <Target />),
-      q8: icon('demo', 'Demo', <Flask />),
-    };
-  }
+  // Above "Back", the page it returns to; the conversation is Home.
+  const parent = PAGES[page].parent;
+  const to = parent ? PAGES[parent].title : 'Home';
+  const back: SlotView = {
+    action: 'back', tone: 'ink', icon: <Back />, label: `Back to ${to}`, bodyKey: `back:${to}`,
+    body: <><span className="crumb">{to}</span><span className="card-label" style={longest('Back')}>Back</span></>,
+  };
+  const view = (e: Entry, span?: 2): SlotView => {
+    switch (e.kind) {
+      case 'setting': return settingSlot(e.key, settings);
+      case 'page': return card(`open-${e.page}`, PAGES[e.page].title, e.glyph(), span);
+      case 'recalibrate': return card('recalibrate', 'Recalibrate', <Target />, span);
+    }
+  };
+  const { entries } = PAGES[page];
+  // The Menu page's two entries are wide cards, each across two quadrants (Q5–Q6, Q7–Q8).
+  if (page === 'main') return { q1: back, q5: view(entries[0], 2), q7: view(entries[1], 2) };
   const slots: Slots = { q1: back };
-  const pages = ['settings', 'settings-2', 'settings-3'] as const;
-  const at = pages.indexOf(page as (typeof pages)[number]);
-  if (at >= 0) {
-    slots.q4 = {
-      action: 'more', tone: 'surface', icon: <Next />, label: `More, page ${at + 1} of ${pages.length}`, bodyKey: 'more',
-      body: <><span className="card-label" style={longest('More')}>More</span><span className="pager" aria-hidden="true">{pages.map((p) => <i key={p} data-on={p === page || undefined} />)}</span></>,
-    };
-  }
-  PAGES[page].forEach((k, i) => { if (k) slots[`q${i + 5}` as SlotName] = setting(k); });
+  placesFor(entries.length).forEach((q, i) => { slots[q] = view(entries[i]); });
   return slots;
 }
