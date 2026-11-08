@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ReactNode } from 'react';
 import { attachKeyboard, startTicking } from '../../shared/gaze.ts';
 import { trackActionables } from '../../shared/overlay.ts';
-import { GROUP_IDS, groupLetters, type GroupId } from '../../shared/decoder.ts';
+import { GROUP_IDS, groupLetters, signatureOf, type GroupId } from '../../shared/decoder.ts';
 import { stopSpeaking } from '../../shared/speech.ts';
 import { quadrantAt, viewportOf, type QuadrantId } from '../../shared/quadrants.ts';
 import { attachPointerStream, engine, gazeOutside, guardQuadrant, isGuarded, markIgnored, noteKeyActivation, suppressMotionBriefly, resolveQuadrant, setDwellClasses, useLooked, validateNow } from './gaze.ts';
@@ -43,7 +43,7 @@ import type { Conflict } from './conflict.ts';
 import { Tile, type SlotName, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
 import { TITLES, doneSlots, menuSlots, nextValue, otherSlots, spellSlots, type SettingKey } from './Menu.tsx';
-import { rankLetters } from './spell.ts';
+import { groupsUsed, rankLetters } from './spell.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { hearPartner, nextScript, playScript, resetScript, speakWords, wordsOf, type OnHeard, type PartnerSession, type Speech } from './voice.ts';
@@ -188,6 +188,12 @@ function useChooser(state: State): { req: PredictRequest; prediction: Prediction
     if (req.offset / CHOOSER_PAGE + 1 < pages) void fetchPrediction({ ...req, offset: req.offset + CHOOSER_PAGE });
   }, [key, pages]); // eslint-disable-line react-hooks/exhaustive-deps
   return req && prediction ? { req, prediction } : null;
+}
+
+/** The groups Spell walks: the ones being typed, or the last word's own when it respells that word. */
+function spellGroups(state: State): GroupId[] {
+  if (state.screen.kind === 'spell' && state.screen.replace) { const last = state.composition.words.at(-1); return [...(last?.typed ?? last?.groups ?? [])]; }
+  return [...state.composition.pending];
 }
 
 function applyTheme(theme: Settings['theme']): void {
@@ -551,6 +557,7 @@ export function App() {
       const pages = Math.max(1, Math.ceil(total / CHOOSER_PAGE));
       const pending = Boolean(s.screen.pending);
       if (action === 'back') go({ kind: 'talk' });
+      else if (action === 'spell') go({ kind: 'spell', letters: '', page: 0, replace: !pending });
       // More was chosen: the new page shows at once, under the gaze that chose it.
       else if (action === 'more' && s.screen.page + 1 < pages) { go({ kind: 'other', page: s.screen.page + 1, pending }); resync('other'); }
       else if (/^other-[0-3]$/.test(action)) {
@@ -562,18 +569,19 @@ export function App() {
       return;
     }
     if (s.screen.kind === 'spell') {
-      const { letters, page } = s.screen;
-      const pending = s.composition.pending;
-      const ranked = rankLetters(letters, pending);
+      const { letters, page, replace } = s.screen;
+      const groups = spellGroups(s);
+      const ranked = rankLetters(letters, groups);
       const pages = Math.max(1, Math.ceil(ranked.length / CHOOSER_PAGE));
-      if (action === 'back') { go({ kind: 'talk' }); resync('primary'); }
-      else if (action === 'delete-letter') { dispatch({ type: 'screen', screen: { kind: 'spell', letters: letters.slice(0, -1), page: 0 } }); play('delete'); }
-      else if (action === 'more' && page + 1 < pages) go({ kind: 'spell', letters, page: page + 1 });
+      if (action === 'back') { go(replace ? { kind: 'other', page: 0 } : { kind: 'talk' }); resync('primary'); }
+      else if (action === 'delete-letter') { dispatch({ type: 'screen', screen: { kind: 'spell', letters: letters.slice(0, -1), page: 0, replace } }); play('delete'); }
+      else if (action === 'more' && page + 1 < pages) go({ kind: 'spell', letters, page: page + 1, replace });
       else if (/^letter-[0-2]$/.test(action)) {
         const letter = ranked[page * CHOOSER_PAGE + Number(action.slice(-1))];
         if (!letter) return;
         const word = letters + letter;
-        if (word.length < pending.length) { dispatch({ type: 'screen', screen: { kind: 'spell', letters: word, page: 0 } }); play('commit'); }
+        if (groupsUsed(word) < groups.length) { dispatch({ type: 'screen', screen: { kind: 'spell', letters: word, page: 0, replace } }); play('commit'); }
+        else if (replace) replaceWord({ text: word }, 0);
         else { accept(word, 0); dispatch({ type: 'screen', screen: { kind: 'talk' } }); resync('primary'); }
       }
       return;
@@ -671,10 +679,28 @@ export function App() {
       partner: (text?: string) => hearLine(text),
       heard: (text: string) => dispatch({ type: 'heard', text }),
       speak: (text: string) => startSpeaking(sentence(text), null),
+      /** The oracle user (scripts/oracle.mjs): a conversation of [role, text] turns before the partner speaks. */
+      setHistory: (turns: [string, string][]) => {
+        const s = stateRef.current;
+        const list = turns.map(([role, text], i) => ({ id: i + 1, who: role === 'user' ? 'me' as const : 'partner' as const, text }));
+        dispatch({ type: 'replace', state: { ...s, turns: list, nextId: list.length + 1 } });
+      },
+      /** The oracle user: put the message right after a word it could not produce, so the sentence goes on. */
+      forceMessage: (text: string) => {
+        const words = text.split(' ').filter(Boolean).map((w) => ({ text: w, groups: signatureOf(w), candidateIndex: 0, source: 'decoded' as const }));
+        dispatch({ type: 'replace', state: { ...stateRef.current, screen: { kind: 'talk' }, composition: { words, pending: [], candidateIndex: 0, reopened: false } } });
+      },
+      /** Looks to spell `word` from nothing: its groups, Spell, and each letter as Spell ranks it. */
+      spellLooks: (word: string) => {
+        const groups = signatureOf(word);
+        let looks = groups.length + 1;
+        for (let i = 0; i < word.length; i++) looks += 1 + Math.floor(Math.max(0, rankLetters(word.slice(0, i), groups).indexOf(word[i])) / CHOOSER_PAGE);
+        return looks;
+      },
     };
     // `#phase=<name>` opens a phase directly, for demos and fresh-browser checks.
     const linked = /^#phase=([\w-]+)$/.exec(location.hash)?.[1];
-    if (linked && (PHASES as readonly string[]).includes(linked)) window.clarteDebug.setPhase(linked);
+    if (linked && (PHASES as readonly string[]).includes(linked)) window.clarteDebug?.setPhase(linked);
   }, [hearLine, startSpeaking]);
 
   if (screen.kind === 'calibration') {
@@ -699,7 +725,7 @@ export function App() {
     : null;
   // The word in progress draws the shown word's letters (in its written form), so the glyphs and the
   // card agree. With nothing typed the next word stays on its card only: the message shows what was said, not a guess.
-  const candidate = screen.kind === 'spell' ? screen.letters || null
+  const candidate = screen.kind === 'spell' ? (screen.replace ? null : screen.letters || null)
     : state.composition.pending.length && primary.value.fn.kind === 'word' ? primary.value.fn.display ?? primary.value.fn.word : null;
   const thread = (shown: StateName | null, marked = false) => <Thread state={shown} turns={state.turns} live={live} hearing={state.hearing} composition={state.composition} candidate={candidate} marked={marked} wordColours={settings.wordColours} />;
 
@@ -732,12 +758,13 @@ export function App() {
     rest = thread(status);
   } else if (screen.kind === 'spell') {
     // The word being spelled stays in the message: its chosen letters, then a dot per group still to spell.
-    const ranked = rankLetters(screen.letters, state.composition.pending);
+    const ranked = rankLetters(screen.letters, spellGroups(state));
     const pages = Math.max(1, Math.ceil(ranked.length / CHOOSER_PAGE));
     slotViews = spellSlots(ranked.slice(screen.page * CHOOSER_PAGE, (screen.page + 1) * CHOOSER_PAGE), screen.page, pages, screen.letters.length > 0);
     restKey = 'thread';
     boardKey = `spell-${screen.letters.length}-${screen.page}`;
-    rest = thread(status);
+    // Respelling the last word marks it as the word about to give way, as Other words does.
+    rest = thread(status, Boolean(screen.replace));
   } else if (screen.kind === 'other') {
     // The message stays, with the word about to give way marked as the selected object.
     const { words, total } = otherShown.value;
@@ -864,6 +891,9 @@ declare global {
       heard(text: string): void;
       /** Speak `text` as the person's reply (checks). */
       speak(text: string): void;
+      setHistory(turns: [string, string][]): void;
+      forceMessage(text: string): void;
+      spellLooks(word: string): number;
     };
   }
 }

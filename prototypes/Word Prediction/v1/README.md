@@ -65,7 +65,8 @@ next-word top-1 21/30 (round 1: 16/30). Coverage: RESULTS.md round 2.
 
 ```
 request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 66,501 words)
-        ──► spread onto the 120,961-word lexicon (wordfreq backoff for the 54k extra words)
+        ──► spread onto the 866,363-word lexicon (wordfreq backoff for the 54k extra words; round 4 adds
+            745k English Wiktionary words as tier 2, each with a tiny prior)
         ──► pointer cache: words from the conversation (recency, speaker, IDF damping),
             out-of-lexicon words (names) join the candidate pool; committed words learned per session
         ──► candidates matching the typed groups, best 24 by prior + every context word
@@ -86,6 +87,17 @@ request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 
   a wordfreq probability; words outside v0's vocabulary share `extra_share` of the prior mass in
   proportion to it. The source column also tells the engine which words are first names and which
   are Webster's dictionary words (the sentence-initial name cue below).
+- **Wiktionary** (round 4, `add_wiktionary.py`, 866,363 words in all): 745,410 English Wiktionary words
+  the built lexicon lacks (polyphiloprogenitive, levothyroxine, apricity, doomscrolling), so any real
+  word can be typed rather than spelled. Kept: headwords and inflected forms that are not names,
+  abbreviations, symbols or affixes and not only misspellings, obsolete, archaic, nonstandard or eye
+  dialect; never the bare contractions round 3 dropped, the junk list or new apostrophe words. They are
+  tier 2 (below every common word) with their wordfreq probability when wordfreq has seen them, else a
+  1e-12 floor scaled by a letter 4-gram's view of the spelling. Rebuild after `build_lexicon.py`:
+  `curl -sSL https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz | gunzip |
+  python3 wiktionary_extract.py wiktionary-english.tsv && ../v0/.venv/bin/python add_wiktionary.py
+  wiktionary-english.tsv`. The prefix index is one sorted array (`engine/lexicon.py` `PrefixIndex`):
+  the lexicon takes 196 MB and 3.2 s to load.
 - **Word tiers** (round 3, the `tier` column; rules in `build_lexicon.py`): tier 1 is every word a real
   dictionary attests: the New Oxford American Dictionary through macOS DictionaryServices (headword,
   inflection of a noun/verb/adjective, or variant spelling; affix-only entries such as `ur-`, `im-`, `-let`
@@ -165,4 +177,6 @@ request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 
 
 See RESULTS.md. The models inherit v0's licences (DailyDialog: non-commercial). The lexicon includes
 rare and foreign-looking words from wordfreq; the paging contract makes them reachable, the prior
-keeps them out of the way.
+keeps them out of the way. The rows added from Wiktionary (sources `k`) come from Wiktionary, the free
+dictionary (https://en.wiktionary.org), via the kaikki.org extract, under CC BY-SA 4.0; a copy or
+derivative of `data/lexicon.tsv.gz` must keep that attribution and licence.

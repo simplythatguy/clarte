@@ -76,9 +76,12 @@ class Engine:
         self.base_ix = np.array([v0_index.get(w, -1) for w in self.lex.words], dtype=np.int64)
         self.is_base = self.base_ix >= 0
         extra = np.where(self.is_base, 0.0, self.lex.freq)
-        extra[~self.is_base] = np.maximum(extra[~self.is_base], 1e-9)
+        # The 1e-9 floor is for words wordfreq barely saw; a Wiktionary word keeps its own smaller prior
+        # (add_wiktionary.py), so 750,000 of them do not take the rare words' share.
+        self.core = np.flatnonzero(~self.lex.added).astype(np.int32)
+        floored = ~self.is_base & ~self.lex.added
+        extra[floored] = np.maximum(extra[floored], 1e-9)
         self.extra_prior = extra / extra.sum()
-        self.unigram = dict(zip(self.lex.words, self.lex.freq))
         self.wf_prior = self.lex.freq / self.lex.freq.sum()
         self.rescorer = None
         if rescorer:
@@ -156,7 +159,7 @@ class Engine:
         weights = context_weights(ctx.history, ctx.message, self.session_weights(), decay=P["cache_decay"],
                                   partner=P["cache_partner"], user=P["cache_user"], in_message=P["cache_message"],
                                   session_weight=P["cache_session"], idf_floor=P["cache_idf"],
-                                  unigram=lambda w: self.unigram.get(w, 0.0), name_boost=P["name_boost"],
+                                  unigram=self.unigram, name_boost=P["name_boost"],
                                   known_name=(lambda w: w in self.lex.names or w not in self.lex.dictionary) if P["name_initial"] else None)
         if weights and P["cache_share"] > 0:
             total = sum(weights.values())
@@ -177,6 +180,10 @@ class Engine:
         display.update(self.session_display)
         self._prior_key, self._prior = key, (p, dyn, promoted, display)
         return self._prior
+
+    def unigram(self, w):
+        i = self.lex.index.get(w)
+        return float(self.lex.freq[i]) if i is not None else 0.0
 
     def demote(self, tiers, p):
         """Scale p so every word of tier t sits below every word of a lower tier (tier 1 = common
@@ -200,9 +207,23 @@ class Engine:
         t0 = time.perf_counter()
         p, dyn, promoted, _ = self.prior(ctx)
         idx = self.lex.matching(groups)
+        if not groups:
+            # A next word with nothing typed never needs Wiktionary's 745,000 rare words (round 4) unless the
+            # conversation mentioned one; they are reachable from the first typed group on.
+            idx = self.core if not promoted.any() else np.flatnonzero(~self.lex.added | promoted).astype(np.int32)
         dyn_words = [w for w in dyn if code_of(w).startswith(groups)]
         probs = p[idx]
-        order = np.argsort(-probs, kind="stable")
+        # Only the best top_k need an order here (they go to the rescorer); the final order is set below.
+        # A full sort of a next word's 866,000 matches cost 25 ms (round 4).
+        K = P["top_k"]
+        if len(probs) > 4 * K:
+            best = np.argpartition(-probs, K - 1)[:K]
+            best = best[np.argsort(-probs[best], kind="stable")]
+            rest = np.ones(len(probs), dtype=bool)
+            rest[best] = False
+            order = np.concatenate([best, np.flatnonzero(rest)])
+        else:
+            order = np.argsort(-probs, kind="stable")
         idx, probs = idx[order], probs[order]
         words = [self.lex.words[i] for i in idx[:P["top_k"]]] + dyn_words
         cand_p = np.concatenate([probs[:P["top_k"]], np.array([dyn[w] for w in dyn_words])])
@@ -226,7 +247,7 @@ class Engine:
             new *= cand_p.sum() / new.sum()
             # Rescoring reorders the candidates but never drops one below the words it never looked at.
             if len(probs) > P["top_k"]:
-                new = np.maximum(new, probs[P["top_k"]] * 1.001)
+                new = np.maximum(new, probs[P["top_k"]:].max() * 1.001)
             cand_p = new
         t2 = time.perf_counter()
         if not groups and ctx.message:
@@ -238,10 +259,11 @@ class Engine:
                 if w in recent and (neural is None or float(np.exp(neural[j])) < P["repeat_lm_floor"]):
                     cand_p[j] *= P["repeat_discount"]
         k = len(words) - len(dyn_words)
-        all_words = words + [self.lex.words[i] for i in idx[k:]]
+        head = words                     # the rescored candidates and the conversation's own words, as text
+        tail = idx[k:]                   # every other match, as lexicon indices (866k for a next word: never as text)
         all_p = np.concatenate([cand_p, probs[k:]])
         lengths = np.concatenate([self.lex.lengths[idx[:k]], np.array([len(code_of(w)) for w in dyn_words], dtype=np.int32),
-                                  self.lex.lengths[idx[k:]]])
+                                  self.lex.lengths[tail]])
         # A word of tier 2 or 3 never outranks a tier-1 word unless the conversation mentioned it (a partner or
         # user turn, the message, or a commit); words outside the lexicon come from the conversation by construction.
         lex_tiers = np.where(promoted[idx], 1, self.lex.tier[idx]).astype(np.int8)
@@ -253,16 +275,18 @@ class Engine:
         else:
             score = all_p
         order = np.lexsort((-score, tiers))
-        if not groups and ctx.message and len(order) > 1 and all_words[order[0]] == ctx.message[-1]:
+        ranked_words = RankedWords(order, head, tail, self.lex)
+        if not groups and ctx.message and len(order) > 1 and ranked_words[0] == ctx.message[-1]:
             all_p[order[0]] = all_p[order[1]] * 0.999
             order[[0, 1]] = order[[1, 0]]
-        if self.ghost is not None and len(all_words) > 1:
+        if self.ghost is not None and len(order) > 1:
             first = self.ghost.rank(ctx, groups)
-            if first and first[0] in all_words:
-                g = all_words.index(first[0])
+            if first and first[0] in ranked_words:
+                g = ranked_words.position(first[0])
                 order = np.concatenate([[g], order[order != g]])
+                ranked_words = RankedWords(order, head, tail, self.lex)
         mass = float(all_p.sum())
-        result = ([all_words[i] for i in order], all_p[order] / mass if mass > 0 else all_p[order], lengths[order], mass)
+        result = (ranked_words, all_p[order] / mass if mass > 0 else all_p[order], lengths[order], mass)
         self._ranked[key] = result
         if len(self._ranked) > 64:
             self._ranked.popitem(last=False)
@@ -350,7 +374,7 @@ class Engine:
         longer = float(probs[lengths > len(groups)].sum()) if len(words) else 0.0
         if complete:
             keep = lengths == len(groups)
-            words = [w for w, k in zip(words, keep) if k]
+            words = words.keep(keep)
             probs, lengths = probs[keep], lengths[keep]
             if len(probs):
                 probs = probs / probs.sum()
@@ -374,11 +398,17 @@ class Engine:
             page = self.corrected(ctx, groups, limit)
         elif total and not page:
             page = [{"word": words[-1], "p": float(probs[-1]), "complete": int(lengths[-1]) == len(groups)}]
+        promoted = self.prior(ctx)[2]
         for item in page:
             item["p"] = round(item["p"], 6)
             shown = self.display(item["word"], forms)
             if shown != item["word"]:
                 item["display"] = shown
+            # Round 4: a word of tier 2 or 3 the conversation never mentioned. When the best the engine can
+            # offer is such a word, the UI may open Options (with Spell) rather than show it in Q1.
+            i = self.lex.index.get(item["word"])
+            if i is not None and self.lex.tier[i] > 1 and not promoted[i]:
+                item["rare"] = True
         return {"groups": groups, "words": page, "total": total, "longer": round(longer, 6), "branch": branch}
 
     def predict_v0(self, history, message, groups=""):
@@ -390,9 +420,62 @@ class Engine:
         exact = [w for w, n in zip(words[:200], lengths[:200]) if n == len(groups)]
         choose = list(dict.fromkeys(likely[:1] + exact + words[1:200]))[:12]
         lo, hi = max(len(groups), 1), max(len(groups), 1) + 2
-        short = [w for w, n in zip(words, lengths) if lo <= n <= hi][:8]
+        fit = np.flatnonzero((lengths >= lo) & (lengths <= hi))[:8]
+        short = [words[int(i)] for i in fit]
         return {"likely": likely, "choose": choose, "short": short,
                 "ghost": likely[0] if likely else "", "candidates": likely}
 
     def close(self):
         self.v0.close()
+
+
+class RankedWords:
+    """The ranked words of one request, read lazily: position i is `head[j]` for the first len(head)
+    candidates (the rescored ones and the conversation's words) and the lexicon word `tail[j - len(head)]`
+    after them, with j = order[i]. A next-word list holds every word of the lexicon; making 866,000
+    strings for a page of eight cost a second per request (round 4)."""
+
+    def __init__(self, order, head, tail, lex):
+        self.order, self.head, self.tail, self.lex = order, head, tail, lex
+
+    def _word(self, j):
+        j = int(j)
+        return self.head[j] if j < len(self.head) else self.lex.words[int(self.tail[j - len(self.head)])]
+
+    def __len__(self):
+        return len(self.order)
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return [self._word(j) for j in self.order[i]]
+        return self._word(self.order[i])
+
+    def __iter__(self):
+        return (self._word(j) for j in self.order)
+
+    def position(self, word):
+        """Index into the unordered candidates (head, then tail) of `word`, or None."""
+        if word in self.head:
+            return self.head.index(word)
+        i = self.lex.index.get(word)
+        if i is None:
+            return None
+        hit = np.flatnonzero(self.tail == i)
+        return len(self.head) + int(hit[0]) if len(hit) else None
+
+    def index(self, word):
+        j = self.position(word)
+        hit = np.flatnonzero(self.order == j) if j is not None else []
+        if not len(hit):
+            raise ValueError(f"{word!r} is not ranked")
+        return int(hit[0])
+
+    def __contains__(self, word):
+        return self.position(word) is not None
+
+    def keep(self, mask):
+        """The words at the positions where `mask` (over this ranking) is true, in the same order."""
+        return RankedWords(self.order[np.asarray(mask, dtype=bool)], self.head, self.tail, self.lex)
+
+    def __eq__(self, other):
+        return list(self) == list(other)

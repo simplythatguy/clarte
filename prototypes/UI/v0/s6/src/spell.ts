@@ -21,7 +21,7 @@ function counts(): Counts {
   if (model) return model;
   model = new Map();
   for (const [word] of LEXICON as [string, number][]) {
-    if (!/^[a-z]+$/.test(word)) continue;
+    if (!/^[a-z]+('[a-z]+)?$/.test(word)) continue;
     const s = START.repeat(ORDER - 1) + word + END;
     for (let i = ORDER - 1; i < s.length; i++) {
       for (let n = 0; n < ORDER; n++) {
@@ -61,14 +61,24 @@ function ahead(history: string, groups: readonly GroupId[], depth: number): numb
   return best;
 }
 
-/** The letters of the group at `chosen.length`, best first. */
+/** How many groups `chosen` has used: an apostrophe has no group. */
+export function groupsUsed(chosen: string): number {
+  return chosen.replace(/'/g, '').length;
+}
+
+/**
+ * The letters of the next group, best first. After a letter an apostrophe is a choice too (it takes
+ * no group: don't, y'all, Kensky's), ranked where the letter model puts it, so a contraction or a
+ * possessive the dictionary lacks can still be spelled.
+ */
 export function rankLetters(chosen: string, groups: readonly GroupId[]): string[] {
-  const at = chosen.length;
+  const at = groupsUsed(chosen);
   const group = groups[at];
   if (!group) return [];
   const rest = groups.slice(at + 1);
-  return LETTERS[group]
-    .map((c) => ({ c, s: prob(chosen, c) * ahead(chosen + c, rest, LOOKAHEAD) }))
-    .sort((a, b) => b.s - a.s)
-    .map((x) => x.c);
+  const scored = LETTERS[group].map((c) => ({ c, s: prob(chosen, c) * ahead(chosen + c, rest, LOOKAHEAD) }));
+  if (chosen && !chosen.endsWith("'") && !chosen.includes("'")) {
+    scored.push({ c: "'", s: prob(chosen, "'") * ahead(chosen + "'", groups.slice(at), LOOKAHEAD) });
+  }
+  return scored.sort((a, b) => b.s - a.s).map((x) => x.c);
 }

@@ -14,6 +14,8 @@ export type Word = {
   /** Which candidate was taken, so a later delete can reopen the word at the next one. */
   candidateIndex: number;
   source: 'decoded' | 'unresolved' | 'phrase';
+  /** The groups actually typed when they differ from `groups` (a gaze-slip correction was accepted). */
+  typed?: GroupId[];
 };
 
 export type Composition = {

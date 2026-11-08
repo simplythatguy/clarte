@@ -39,10 +39,8 @@ def reachability(engine, exact=False):
     ranks = np.zeros(len(lex), dtype=np.int32)
     ranks_complete = np.zeros(len(lex), dtype=np.int32)     # rank among complete words only (the "Other words" chooser)
     codes = tier_violations = 0
-    for code, idx in lex.prefix.items():
-        full = idx[lex.lengths[idx] == len(code)]        # words whose full code is exactly this code
-        if not len(full):
-            continue
+    for code, full in lex.prefix.full_codes():          # every distinct whole-word code and its words
+        idx = lex.matching(code)
         codes += 1
         if exact:
             words, _, lengths, _ = engine.ranked(ctx, code)
@@ -66,11 +64,11 @@ def reachability(engine, exact=False):
     for r in ranks:
         hist["top1" if r == 0 else "top2" if r == 1 else "page2-5 (rank 2-9)" if r < 10 else "rank 10-49" if r < 50 else "rank 50+"] += 1
     for r in ranks_complete:
-        histc["page1 (rank 0-3)" if r < 4 else "page2" if r < 8 else "pages 3-5" if r < 20 else "pages 6-13" if r < 52 else "page 14+"] += 1
+        histc["page1 (rank 0-2)" if r < 3 else "page2" if r < 6 else "pages 3-5" if r < 15 else "pages 6-13" if r < 39 else "page 14+"] += 1
     worst = sorted(((int(r), lex.words[i]) for i, r in enumerate(ranks)), reverse=True)[:10]
     tier1 = lex.tier == 1
     by_tier = {f"tier{t}": {"words": int((lex.tier == t).sum()),
-                            "chooser_page1": int(((lex.tier == t) & (ranks_complete < 4)).sum()),
+                            "chooser_page1": int(((lex.tier == t) & (ranks_complete < 3)).sum()),
                             "chooser_mean_rank": float(ranks_complete[lex.tier == t].mean()) if (lex.tier == t).any() else None}
                for t in (1, 2, 3)}
     return {"words": len(lex), "codes": codes, "exact": exact, "distribution": dict(hist), "beyond_top2": int((ranks >= 2).sum()),

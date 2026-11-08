@@ -43,8 +43,12 @@ export type Screen =
    * and a pick accepts the new word (Q1 Options).
    */
   | { kind: 'other'; page: number; pending?: boolean }
-  /** Spell: no dictionary word fits the typed groups; the letters chosen so far, one per group, and the page of the current group's letters. */
-  | { kind: 'spell'; letters: string; page: number }
+  /**
+   * Spell: the letters chosen so far, one per group, and the page of the current group's letters. The
+   * groups are the ones being typed, or with `replace` the last word's own (from Other words: the word
+   * spelled replaces it).
+   */
+  | { kind: 'spell'; letters: string; page: number; replace?: boolean }
   /** `origin` is where Back returns to from a settings page opened from the Done page. */
   | { kind: 'menu'; page: MenuPage; origin?: 'done' }
   /** `from` is the screen calibration returns to, by Start, Back or Escape: the conversation or the Done page it was opened from, or the setup report on the first run. */
@@ -159,7 +163,9 @@ export const CHOOSER_PAGE = 3;
 /** The code the chooser reopens: the last word's own letters, so exact-length words are its peers. */
 export function chooserCode(state: State): string {
   const last = state.composition.words[state.composition.words.length - 1];
-  return last ? groupsOf(signatureOf(last.text)) : '';
+  // The groups the person typed for it, not the accepted word's own spelling: after "up" (two groups)
+  // was accepted as the completion "upstairs", Other words must list two-letter words (round 4).
+  return last ? groupsOf(last.typed ?? (last.groups.length ? last.groups : signatureOf(last.text))) : '';
 }
 
 /** The Other words page: exact-length words for the last word's code, without that word in the message. */
@@ -286,7 +292,9 @@ function acceptFor(c: Composition, word: string, rank: number, display?: string)
   const own = signatureOf(word);
   const continues = c.pending.every((g, i) => own[i] === g);
   if (!c.pending.length || continues) return withDisplay(acceptWord(c, word, rank), display);
-  return withDisplay({ words: [...c.words, { text: word, groups: own, candidateIndex: rank, source: 'decoded' }], pending: [], candidateIndex: 0, reopened: false }, display);
+  // A correction keeps what was typed too: Other words and Spell work from the person's own groups (round 4:
+  // "xyz" typed, "you" accepted as the correction, could not then be spelled).
+  return withDisplay({ words: [...c.words, { text: word, groups: own, typed: [...c.pending], candidateIndex: rank, source: 'decoded' }], pending: [], candidateIndex: 0, reopened: false }, display);
 }
 
 /** Typing or accepting ends the Say again window. */

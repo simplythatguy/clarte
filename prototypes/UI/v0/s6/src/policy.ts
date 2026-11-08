@@ -10,7 +10,7 @@
  * takes its place. When nothing matches the typed groups it shows the engine's top correction
  * (one digit off) or the best word for the longest matching prefix, marked `slip`, so Q1 is never
  * empty. While typing, a word exactly as long as the groups typed comes before a longer completion
- * when it is at least a tenth as likely (`EXACT_FIRST`). Accepting it appends it. When several whole words fit the typed groups and no two are
+ * when it is at least 3% as likely (`EXACT_FIRST`). Accepting it appends it. When several whole words fit the typed groups and no two are
  * close enough to branch on, Q1 is Options instead: it shows the top four in Q5–Q8 (owner,
  * 2026-11-08). While the device speaks, Q1 is Stop.
  *
@@ -52,9 +52,10 @@ export type SecondaryFn =
  * when it is at least this share of the completion's probability (owner, 2026-11-08: "the" typed in
  * full showed "what"). Replayed on the round-3 dev records with the branch and Options: 2.9194
  * selections per word vs 2.9632 for completion first; showing only exact-length words would cost
- * about 4.96, since nothing could be completed early.
+ * about 4.96, since nothing could be completed early. Round 4 (bench/policy_eval.py, with OPTIONS_NEXT):
+ * 0.03 rather than 0.1.
  */
-export const EXACT_FIRST = 0.1;
+export const EXACT_FIRST = 0.03;
 
 /** The word Q1 offers from `prediction`: the first that is not the word just accepted (next word only). */
 export function nextWordIndex(state: State, prediction: Prediction): number {

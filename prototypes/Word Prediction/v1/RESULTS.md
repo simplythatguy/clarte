@@ -965,3 +965,35 @@ Pending.
 | Coverage | 120,953 / 120,953 reachable, 0 tier-order violations; partner-mentioned words top-2 6,000 / 6,000 |
 | Adversarial | 94 / 100, unchanged; the six misses are rank 2 after one group |
 | Latency, idle GPU, 300 requests | typed p95 26.8 ms, next word p95 116.7 ms, max 122.3 ms, 0 over 150 ms, cold start 24.9 s |
+
+# Round 4: any real word, and every route measured
+
+**Lexicon.** 745,410 English Wiktionary words join as tier 2 (`add_wiktionary.py`, CC BY-SA 4.0): 866,363
+words. Chosen over SCOWL 95 and dwyl by coverage of a 71-word hard set (71/71 vs 57 and 51) and of rare
+words in real use (`r4.lists`). Bare contractions, the junk list and new apostrophe words stay out.
+
+| Check | Round 3 | Round 4 |
+| --- | --- | --- |
+| Dev, paired (`bench/cmp.sh r3_final r4_wikt`) | spw_ui 2.4692 | 2.4663 (−0.0029, CI [−0.0077, 0.0000], n.s.); top1_next unchanged |
+| Hard set, after "I need" (71 words) | 18.5 looks/word (21 by Spell, estimated) | 11.4; 53 in Q1 before the end |
+| Lexicon in memory / load | 58 MB / 1.6 s | 196 MB / 3.2 s (one sorted prefix index) |
+| Latency, idle GPU, 300 requests | typed p95 26.8, next word p95 116.7 ms | typed p95 37.5, next word p95 103.0 ms, 0 over 150 ms |
+| Cold start | 24.9 s | 28.3 s |
+| Engine tests / adversarial | 55 / 94 of 100 | 56 / 94 of 100 |
+
+Two slow paths the larger lexicon exposed are gone: ranking returns words lazily (`RankedWords`, text only
+for the page shown; a next word had cost a second building 866,000 strings), and the rescorer's top 24 come
+from `argpartition`. A next word with nothing typed ranks the 121k core words plus any Wiktionary word the
+conversation mentioned.
+
+**Screen policy, tuned on cached engine answers** (`bench/policy_cache.py`, `bench/policy_eval.py`): Options
+also opens when the next whole word below the one Q1 would show is at least 1% of it, and exact-length-first
+drops from 0.1 to 0.03. 965 dev words: 2.8394 → 2.8280 looks each, words dearer than spelling 12 → 8;
+2,655 word-contexts of every kind (very common to invented, 1 to 45 letters): 538 → 509, never more than 3
+looks dearer than spelling. The responses now mark `rare` words (CONTRACT.md round 4).
+
+**Oracle user** (`../../UI/v0/s6/scripts/oracle.mjs`): 61 sentences, 222 words, through the real screen and
+engine. Every word produced exactly. 53 sentences cost no more than spelling each word; 8 cost 1–4 looks more,
+all through Done → Other words: unseen names (okafor, amal), slang the engine ranks low (nah, idk, sus, rizz),
+y'all, and up. The UI fixes it found: Other words now lists words of the groups typed, not of the accepted
+word's spelling, and an accepted slip correction keeps the groups typed, so Spell can reach the intended word.

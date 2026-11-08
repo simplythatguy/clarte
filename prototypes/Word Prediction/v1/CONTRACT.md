@@ -110,3 +110,13 @@ Added by the v1 engine; every field above keeps its meaning.
   server's lifetime with a weight that fades with later commits. Lexicon words, junk tokens and profanity are
   accepted and ignored.
 - **Server.** The listen backlog is 64 (was 5), so 20 concurrent clients no longer see connection resets.
+
+## Round 4 additions (compatible)
+
+- **Lexicon.** 866,363 words: round 3's 120,953 plus 745,410 English Wiktionary words (`add_wiktionary.py`,
+  sources `k`, CC BY-SA 4.0). They are tier 2, so every common word of a code still comes first; `total`
+  counts them, and `complete: true` chooser pages are longer for short codes. `GET /api/v1/health`
+  reports the new `vocabulary`.
+- **`rare`.** A word may carry `"rare": true`: it is tier 2 or 3 (an abbreviation, a rare name or token, a
+  Wiktionary word, a single letter) and the conversation has not mentioned it. Absent means a common word or
+  one the conversation introduced.

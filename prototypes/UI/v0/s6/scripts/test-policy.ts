@@ -99,7 +99,7 @@ check('Q4 2. not after a reopen', secondaryFor({ ...branching, composition: { ..
 const theTyped: State = { ...talk, composition: typing(message([]), 'the') };
 const WHAT_THE = pred([['what', 0.764, false], ['the', 0.122, true], ['where', 0.026, false]], { branch: false });
 check('Q1 exact length first: "the" typed in full shows the, not what', same(primaryFor(theTyped, WHAT_THE), { kind: 'word', word: 'the', rank: 1, complete: true }));
-check('Q1 exact length first: not when the whole word is under a tenth of the completion', (primaryFor(theTyped, pred([['what', 0.9, false], ['the', 0.05, true]], { branch: false })) as { word?: string }).word === 'what');
+check('Q1 exact length first: not when the whole word is under 3% of the completion', (primaryFor(theTyped, pred([['what', 0.9, false], ['the', 0.02, true]], { branch: false })) as { word?: string }).word === 'what');
 check('Q1 exact length first: a slip correction is never preferred', (primaryFor(theTyped, { ...WHAT_THE, words: [WHAT_THE.words[0], { ...WHAT_THE.words[1], corrected: true }] }) as { word?: string }).word === 'what');
 check('Q1 exact length first: not after a reopen (Delete word pages the ranking)', (primaryFor({ ...theTyped, composition: { ...theTyped.composition, reopened: true, candidateIndex: 1 } }, WHAT_THE) as { word?: string }).word === 'what');
 
@@ -128,7 +128,8 @@ check('Q1 Options: phase', phaseOf(hosting, AMBIGUOUS) === 'composing-options');
 check('Q1 Options: not when the second whole word is far below 1e-4 of the first', primaryFor(hosting, pred([['growing', 0.99999, true], ['hosting', 0.00000005, true]], { branch: false })).kind === 'word');
 check('Q1 Options: not when the second word is not whole (typing more decides)', primaryFor(hosting, pred([['growing', 0.6, true], ['growingly', 0.3, false]], { branch: false })).kind === 'word');
 check('Q1 Options: also when the exact-length word Q1 would show has a whole-word rival further down (the hero / less)', primaryFor(hosting, pred([['message', 0.44, false], ['happy', 0.22, false], ['less', 0.056, true], ['hero', 0.047, true]], { branch: false })).kind === 'options');
-check('Q1 Options: not when a longer completion is shown (no whole word is close enough to it)', primaryFor(hosting, pred([['grow', 0.9, false], ['growing', 0.05, true], ['hosting', 0.04, true]], { branch: false })).kind === 'word');
+check('Q1 Options: not when a longer completion is shown and no whole word is near it', primaryFor(hosting, pred([['grow', 0.9, false], ['growing', 0.02, true], ['hosting', 0.0001, true]], { branch: false })).kind === 'word');
+check('Q1 Options: the next whole word below the exact-length word at 1% of it (round 4)', primaryFor(hosting, pred([['grow', 0.9, false], ['growing', 0.05, true], ['hosting', 0.04, true]], { branch: false })).kind === 'options');
 check('Q1 Options: not when the only whole word is the one shown', primaryFor(hosting, pred([['message', 0.44, false], ['less', 0.3, true], ['happy', 0.2, false]], { branch: false })).kind === 'word');
 check('Q1 Options: not when the engine branches (Q4 offers the second word)', primaryFor(branching, BRANCH).kind === 'word' && secondaryFor(branching, BRANCH).kind === 'second');
 check('Q1 Options: not with nothing typed', primaryFor({ ...talk, composition: message(['computer', 'science', 'is']) }, AMBIGUOUS).kind === 'word');
@@ -179,6 +180,8 @@ const req0 = chooserRequestOf(ready, 0);
 check('page 1 asks for exact-length words, three at a time, without the word itself in the message', req0.complete === true && req0.limit === CHOOSER_PAGE && req0.offset === 0 && req0.groups === '23' && same(req0.message, ['i', 'would', 'love', 'to']));
 check('page 3 starts at offset 6 (three words a page)', chooserRequestOf(ready, 2).offset === 6);
 check('the chooser code of an empty message is empty', chooserCode(talk) === '');
+check('the chooser uses the groups typed for the last word, not its completion', chooserCode({ ...talk, composition: reducer({ ...talk, composition: typing(message(['i']), 'up') }, { type: 'accept', word: 'upstairs', rank: 0 }).composition }) === '43');
+check('after a slip correction is accepted, the chooser uses the groups typed', chooserCode({ ...talk, composition: reducer({ ...talk, composition: typing(message([]), 'xyz') }, { type: 'accept', word: 'you', rank: 0 }).composition }) === '444');
 s = reducer(ready, { type: 'screen', screen: { kind: 'other', page: 0 } });
 check('the chooser phase', phaseOf(s, NEXT) === 'other-words');
 s = reducer(s, { type: 'replace-word', word: 'no', rank: 1 });

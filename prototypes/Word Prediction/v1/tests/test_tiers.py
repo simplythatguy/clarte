@@ -167,6 +167,20 @@ class BuiltFile(unittest.TestCase):
         for w in COMMON:
             self.assertEqual(self.lex.tier[self.lex.index[w]], 1, w)
 
+    def test_wiktionary_words_are_tier_2_and_reachable(self):
+        """Round 4 (add_wiktionary.py): rare real words from Wiktionary join as tier 2, never above a common word."""
+        self.assertGreater(len(self.lex), 800_000)
+        for w in ("polyphiloprogenitive", "levothyroxine", "atorvastatin", "apricity", "doomscrolling", "situationship",
+                  "otorhinolaryngologist", "floccinaucinihilipilification", "petrichor", "vellichor"):
+            i = self.lex.index.get(w)
+            self.assertIsNotNone(i, w)
+            self.assertEqual(int(self.lex.tier[i]), 2, w)
+            self.assertTrue(self.lex.added[i], w)
+            self.assertIn(i, self.lex.matching(self.lex.codes[i]))
+        self.assertFalse((self.lex.added & (self.lex.tier == 1)).any())
+        for w in ("im", "dont", "thats", "ive", "youre"):
+            self.assertNotIn(w, self.lex.index, w)
+
     def test_every_word_reachable_by_tier_order(self):
         # the paged list is the whole match set in tier order; nothing is filtered
         idx = self.lex.matching("22")
@@ -226,7 +240,10 @@ class EngineOrder(unittest.TestCase):
             tiers = self.tiers_of(words)
             self.assertEqual(tiers, sorted(tiers), code)
             self.assertTrue((np.diff(probs) <= 1e-12).all(), code)       # p is monotone with the order
-            self.assertEqual(len(words), len(self.lex.matching(code)), code)    # every match is still listed
+            # every match is still listed; a next word (no groups) lists the core words only (round 4: Wiktionary's
+            # rare words wait for the first typed group)
+            expected = len(self.lex.matching(code)) if code else int((~self.lex.added).sum())
+            self.assertEqual(len(words), expected, code)
 
     def test_common_words_reach_the_first_chooser_page(self):
         self.engine.start_conversation("tiers")

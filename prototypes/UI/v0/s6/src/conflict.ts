@@ -42,6 +42,13 @@ export type Conflict = { first: string; second: string };
 export const OPTIONS_RATIO = 1e-4;
 /** A whole word further down the first page is a rival when it is at least this share of the word Q1 would show. */
 export const OPTIONS_RIVAL = 0.3;
+/**
+ * The next whole word below the one Q1 would show opens Options at this share of it (round 4: "me" after
+ * "i think the" showed a noun and only the 3-look Other words detour reached it). Tuned with
+ * bench/policy_eval.py on cached engine answers: 965 dev words 2.8394 → 2.8280 looks each, words dearer
+ * than spelling 12 → 8; 2,655 matrix word-contexts 538 → 509.
+ */
+export const OPTIONS_NEXT = 0.01;
 
 /**
  * `shown` is the word Q1 would offer (policy.ts: the top word, or the exact-length word preferred to
@@ -60,6 +67,8 @@ export function optionsFor(prediction: Prediction, shown = 0): boolean {
   const whole = (w: Prediction['words'][number] | undefined) => Boolean(w && w.complete && !w.corrected);
   const next = prediction.words[1];
   if (shown === 0 && whole(next) && next.p >= OPTIONS_RATIO * a.p) return true;
+  const below = prediction.words.find((w, i) => i > shown && whole(w));
+  if (below && below.p >= OPTIONS_NEXT * a.p) return true;
   return prediction.words.some((w, i) => i !== shown && whole(w) && w.p >= OPTIONS_RIVAL * a.p);
 }
 

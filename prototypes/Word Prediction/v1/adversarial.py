@@ -74,7 +74,9 @@ def run_case(system, case):
               "first_top2": next((k for k, r in enumerate(ranks) if r in (0, 1) and k >= 1), None)}
     failures = []
     if case.get("expect_corrected"):
-        if not (out["total"] == 0 and out["words"] and out["words"][0].get("corrected") and out["words"][0]["word"] == target):
+        # Round 4: with Wiktionary's words a slipped code may match a few obscure words (total > 0); the
+        # correction must still come first.
+        if not (out["words"] and out["words"][0].get("corrected") and out["words"][0]["word"] == target):
             failures.append(f"expected corrected {target}, got {out['words'][:2]}")
     for k, top in case.get("expect", []):
         kk = len(code) if k == "full" else k

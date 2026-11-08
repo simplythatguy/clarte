@@ -132,11 +132,13 @@ export const WORD_SLOTS: SlotName[] = ['q5', 'q6', 'q7'];
 /**
  * The word chooser (Options and Other words; owner, 2026-11-08): three words in Q5–Q7 and, while
  * more remain, a right arrow in Q8 that swaps in the next three. On the last page the arrow is gone;
- * Back (Q1) leaves. `words` is this page's list (each with its written form when the engine sent
- * one), `index` the word's place in the message (for its capital), `page` and `pages` the position.
+ * Back (Q1) leaves; Spell (Q4) spells the word instead, for a name or new word that shares its code
+ * with dictionary words (with 866,000 words, most codes have some). `words` is this page's list (each
+ * with its written form when the engine sent one), `index` the word's place in the message (for its
+ * capital), `page` and `pages` the position.
  */
 export function otherSlots(words: Shown[], index: number, page: number, pages: number): Slots {
-  const slots: Slots = { q1: item('back', 'Back', <Back />, 'ink') };
+  const slots: Slots = { q1: item('back', 'Back', <Back />, 'ink'), q4: item('spell', 'Spell', <TextSize />) };
   if (page + 1 < pages) {
     const at = `Page ${page + 1} of ${pages}`;
     slots.q8 = {

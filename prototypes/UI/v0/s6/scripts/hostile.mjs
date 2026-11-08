@@ -460,7 +460,7 @@ await run('14 Other words: three a page, the arrow to the end, picking', async (
   if (!page1.length || page1.length > 3) problem(`page 1 shows ${page1.length} words`);
   const arrow = () => evaluate(() => Boolean(document.querySelector('.cell-q8 .card[data-action="more"]')));
   if (pages > 1 && !(await arrow())) problem('no arrow in Q8 though more words remain');
-  if (await evaluate(() => Boolean(document.querySelector('.cell-q4 .card[data-action]')))) problem('Q4 holds an action on the chooser');
+  if ((await evaluate(() => document.querySelector('.cell-q4 .card[data-action]')?.dataset.action)) !== 'spell') problem('Q4 is not Spell on the chooser');
   await shot('14a-other-words-page-1');
   if (pages > 1) {
     await press('8', 400); // the arrow
@@ -1073,6 +1073,42 @@ await run('35 a word no dictionary has: Q1 offers Spell, and the letters spell i
     if ((await look()).pending !== 2) problem('Back from Spell lost the typed groups');
   }
   note(`"${word}" spelled in ${looks} looks for ${word.length} letters`);
+  await sane();
+});
+
+await run('36 Spell from the chooser: a name that shares its code with dictionary words (Options and Other words)', async () => {
+  await fresh(); await rest();
+  // Typing: the code of "kensky" matches dictionary words, so Q1 never says Spell; Options or the chooser must reach it.
+  await heard('What is your surname?'); await settle();
+  await type('kensky', 100); await settle();
+  let q1 = await labelOf('.cell-q1');
+  if (q1 === 'Options') await press('1', 300);
+  else { await press('1', 150); await settle(); await press('4', 400); await press('7', 500); }   // accept whatever, then Done → Other words
+  await settle();
+  const q4 = await evaluate(() => document.querySelector('.cell-q4 .card[data-action]')?.dataset.action);
+  if (q4 !== 'spell') problem(`the chooser's Q4 is "${q4}", not spell (Q1 was "${q1}")`);
+  await press('4', 300);
+  const screen = await evaluate(() => window.clarteDebug.state().screen);
+  if (screen.kind !== 'spell') problem(`Spell opened ${screen.kind}`);
+  for (const ch of 'kensky') {
+    let found = false;
+    for (let tries = 0; tries < 4 && !found; tries++) {
+      const shown = await evaluate(() => [5, 6, 7].map((q) => document.querySelector(`.cell-q${q} .card[data-action] .card-swap:not(.card-leaving) .card-label`)?.textContent?.trim().toLowerCase() ?? ''));
+      const at = shown.indexOf(ch);
+      if (at >= 0) { await press(String(5 + at), 120); found = true; await sleep(250); }
+      else {
+        const before = await evaluate(() => window.clarteDebug.state().screen.page);
+        await press('8', 120);
+        await waitFor((b) => window.clarteDebug.state().screen.page !== b, before, 3000); await sleep(250);
+      }
+    }
+    if (!found) { problem(`"${ch}" was not offered`); break; }
+  }
+  await settle();
+  const v = await look();
+  if (v.words.at(-1) !== 'kensky' || v.screen !== 'talk') problem(`after spelling: "${v.words.join(' ')}" on ${v.screen}`);
+  await shot('36-spelled-from-chooser');
+  note(`Q1 was "${q1}"; spelled from the ${screen.replace ? 'Other words' : 'Options'} page; message "${v.words.join(' ')}"`);
   await sane();
 });
 
