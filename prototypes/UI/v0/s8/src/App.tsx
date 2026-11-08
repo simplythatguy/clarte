@@ -42,7 +42,7 @@ import { TITLES, menuSlots, nextValue, type SettingKey } from './Menu.tsx';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
-import { play, setSoundEnabled, unlockOnGesture } from './earcons.ts';
+import { configureSound, duck, play, unlockOnGesture } from '../../shared/sound.ts';
 import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
@@ -55,6 +55,8 @@ import { SETUP_STEPS } from './model.ts';
 import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
+/** "More" walks the three settings pages in a loop. */
+const NEXT_PAGE: Record<MenuPage, MenuPage> = { main: 'main', settings: 'settings-2', 'settings-2': 'settings-3', 'settings-3': 'settings', demo: 'demo' };
 const HOLDER = "One moment, I'm answering.";
 const STORE = 'clarte.style8.v1';
 
@@ -67,12 +69,20 @@ function loadStored(): State {
     const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean };
     return {
       ...INITIAL_STATE,
-      settings: { ...INITIAL_STATE.settings, ...saved.settings },
+      settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }),
       screen: saved.setupDone || skip ? { kind: 'talk' } : INITIAL_STATE.screen,
     };
   } catch {
     return INITIAL_STATE;
   }
+}
+
+/** Settings saved before NAT-24 stored `sound` as on/off. */
+function migrate(settings: Settings): Settings {
+  const sound = settings.sound as Settings['sound'] | boolean;
+  if (sound === true) return { ...settings, sound: 'all' };
+  if (sound === false) return { ...settings, sound: 'off' };
+  return settings;
 }
 
 function setupDone(): boolean {
@@ -205,6 +215,14 @@ export function App() {
   const [syncs, setSyncs] = useState(0);
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
   const primary = useSettled('primary', primaryKey(slots.primary), slots.primary, looked, syncs);
+
+  // No word fits the groups typed so far: a soft "not yet", a second late, and only if it lasts.
+  const noMatch = slots.primary.kind === 'no-match';
+  useEffect(() => {
+    if (!noMatch) return;
+    const timer = setTimeout(() => play('unsure'), 1000);
+    return () => clearTimeout(timer);
+  }, [noMatch]);
   const second = useSettled('delete', secondKey(slots.second), slots.second, looked, syncs);
 
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
@@ -214,7 +232,7 @@ export function App() {
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
     applyTheme(settings.theme);
-    setSoundEnabled(settings.sound);
+    configureSound({ level: settings.sound, volume: settings.volume });
     store({ settings });
   }, [settings, screen.kind]);
 
@@ -281,11 +299,13 @@ export function App() {
   const speakText = live.kind === 'speaking' ? live.text : '';
   useEffect(() => {
     if (!speakToken) return;
-    play('rise');
+    // A short breath in, then every cue ducks under the voice until it ends (SOUND.md).
+    play('speak-start');
+    duck(true);
     const s = speakWords(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }));
     speech.current = s;
-    void s.done.then(() => { dispatch({ type: 'speak-end', token: speakToken }); play('fall'); });
-    return () => s.cancel();
+    void s.done.then(() => { duck(false); dispatch({ type: 'speak-end', token: speakToken }); play('speak-end'); });
+    return () => { s.cancel(); duck(false); };
   }, [speakToken, speakText]);
 
   // Say again stays offered for a few seconds, and never relabels under the gaze.
@@ -309,16 +329,16 @@ export function App() {
   const runPrimary = useCallback((fn: PrimaryFn) => {
     const s = stateRef.current;
     switch (fn.kind) {
-      case 'listen': token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('rise'); return;
-      case 'stop-listening': dispatch({ type: 'listen-stop' }); play('fall'); return;
-      case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('control'); return;
-      case 'candidate': dispatch({ type: 'accept' }); play('commit'); return;
+      case 'listen': token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
+      case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
+      case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
+      case 'candidate': dispatch({ type: 'accept' }); play('word'); return;
       case 'no-match': return;
       case 'speak': startSpeaking(sentence(messageText(s.composition)), null, false); return;
       case 'stop-speaking':
         // Stopping is a repair: the draft comes back to the composer and nothing joins the thread.
         dispatch({ type: 'speak-cancel' });
-        speech.current?.cancel(); // its end plays the falling earcon once
+        speech.current?.cancel(); // its end plays the speak-end cue once
         stopSpeaking();
         return;
       case 'say-again': {
@@ -335,13 +355,14 @@ export function App() {
       case 'one-moment': startSpeaking(HOLDER, null, true); return;
       case 'menu': dispatch({ type: 'screen', screen: { kind: 'menu', page: 'main' } }); play('control'); return;
       case 'dismiss': dispatch({ type: 'dismiss-suggestion' }); play('delete'); return;
-      case 'alternative': dispatch({ type: 'accept-alternative', word: fn.word }); play('commit'); return;
+      case 'alternative': dispatch({ type: 'accept-alternative', word: fn.word }); play('word'); return;
       case 'none': return;
     }
   }, [startSpeaking]);
 
   // Calibration returns to the setup report until setup is finished, then to the conversation.
   const finishCalibration = useCallback(() => {
+    play('calibrated');
     dispatch({ type: 'calibrated', at: Date.now() });
     dispatch({ type: 'screen', screen: setupDone() ? { kind: 'talk' } : { kind: 'setup', step: 'eyes' } });
   }, []);
@@ -354,7 +375,14 @@ export function App() {
   const onSelect = useCallback((action: string) => {
     const s = stateRef.current;
     const page = (p: MenuPage) => { dispatch({ type: 'screen', screen: { kind: 'menu', page: p } }); play('control'); };
-    if (s.screen.kind === 'calibration') { if (action === 'start') { play('control'); finishCalibration(); } return; }
+    const changeSetting = (key: SettingKey) => {
+      const patch = { [key]: nextValue(key, s.settings) } as Partial<Settings>;
+      // A new sound level or volume applies before the confirming cue, so the cue previews it.
+      configureSound({ level: patch.sound, volume: patch.volume });
+      dispatch({ type: 'settings', patch });
+      play('control');
+    };
+    if (s.screen.kind === 'calibration') { if (action === 'start') finishCalibration(); return; }
     if (s.screen.kind === 'setup') {
       const at = SETUP_STEPS.indexOf(s.screen.step);
       const go = (i: number) => { dispatch({ type: 'screen', screen: { kind: 'setup', step: SETUP_STEPS[i] } }); play('control'); };
@@ -363,23 +391,15 @@ export function App() {
       if (action === 'setup-calibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
       if (action === 'setup-voice-app') { play('control'); openVoiceApp(); return; }
       if (action === 'setup-start') { play('control'); store({ setupDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); return; }
-      if (action.startsWith('set-')) {
-        const key = action.slice(4) as SettingKey;
-        dispatch({ type: 'settings', patch: { [key]: nextValue(key, s.settings) } });
-        play('control');
-      }
+      if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
     if (s.screen.kind === 'menu') {
       if (action === 'back') { s.screen.page === 'main' ? dispatch({ type: 'screen', screen: { kind: 'talk' } }) : page('main'); play('control'); return; }
       if (action === 'settings' || action === 'demo') { page(action); return; }
-      if (action === 'more') { page(s.screen.page === 'settings' ? 'settings-2' : 'settings'); return; }
+      if (action === 'more') { page(NEXT_PAGE[s.screen.page]); return; }
       if (action === 'recalibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
-      if (action.startsWith('set-')) {
-        const key = action.slice(4) as SettingKey;
-        dispatch({ type: 'settings', patch: { [key]: nextValue(key, s.settings) } });
-        play('control');
-      }
+      if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
     const { primary: shownPrimary, second: shownSecond, slots: intended } = shownRef.current;
@@ -397,8 +417,8 @@ export function App() {
       runSecond(intended.second);
       resync();
     } else if (/^G[1-4]$/.test(action) && intended.groups) {
+      // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
-      play('commit');
     }
   }, [finishCalibration, resync, runPrimary, runSecond, startSpeaking]);
 

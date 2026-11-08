@@ -21,6 +21,7 @@ export const PHASES = [
   'menu',
   'menu-settings',
   'menu-settings-2',
+  'menu-settings-3',
   'menu-demo',
   'worst-case',
   'worst-nomatch',
@@ -105,6 +106,8 @@ export function seedFor(name: PhaseName, base: State): State {
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings' } };
     case 'menu-settings-2':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings-2' } };
+    case 'menu-settings-3':
+      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings-3' } };
     case 'menu-demo':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'demo' } };
     case 'worst-case': {

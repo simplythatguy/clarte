@@ -8,5 +8,7 @@ const v0 = fileURLToPath(new URL('..', import.meta.url));
 export default defineConfig({
   plugins: [react()],
   server: { port: 5108, strictPort: true, fs: { allow: [v0] } },
+  // Two pages: the app, and the sound listening page (NAT-24).
+  build: { rollupOptions: { input: { main: fileURLToPath(new URL('index.html', import.meta.url)), sounds: fileURLToPath(new URL('sounds.html', import.meta.url)) } } },
   preview: { port: 5108, strictPort: true },
 });
