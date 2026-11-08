@@ -10,7 +10,7 @@
  *   record     Record / Stop / Record again · Back · Skip · Make my voice · Not now
  *   files      Choose files · Not now       (a helper picks them; the browser needs a click)
  *   making     Not now                      (the voice is made and chosen even if the person leaves)
- *   ready      Continue · Hear it
+ *   ready      Hear it (Q5–Q6) · Continue (Q7–Q8)
  *   need-more  Record more · Not now
  *   error      Try again · Record more · Not now
  *
@@ -34,8 +34,8 @@ export const CONSENT =
 
 export type VoiceView = { step: VoiceStep; source: Source; maker: MakerState; service: ServiceState; note: string | null };
 
-const card = (action: string, label: string, icon: ReactNode, disabled = false): SlotView => ({
-  action, tone: 'surface', icon, disabled, bodyKey: `${action}:${label}`,
+const card = (action: string, label: string, icon: ReactNode, disabled = false, span?: 2): SlotView => ({
+  action, tone: 'surface', icon, disabled, span, bodyKey: `${action}:${label}`,
   body: <span className="card-label" style={longest(label)}>{label}</span>,
 });
 const notNow = () => card('voice-leave', 'Not now', <Close />);
@@ -75,7 +75,8 @@ export function voiceSlots({ step, source, maker, service }: VoiceView): Slots {
     case 'making':
       return { q1: notNow() };
     case 'ready':
-      return { q4: tallCard('voice-done', 'Continue', <Check />), q5: card('voice-hear', 'Hear it', <Speaker />) };
+      // Owner, 2026-11-08: the two choices share the bottom row as wide cards, and the top row is the words.
+      return { q5: card('voice-hear', 'Hear it', <Speaker />, false, 2), q7: { ...card('voice-done', 'Continue', <Check />, false, 2), tone: 'ink' } };
     case 'need-more':
       return { q1: notNow(), q4: tallCard('voice-more', 'Record more', <Mic />) };
     case 'error':

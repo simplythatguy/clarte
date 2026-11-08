@@ -555,7 +555,9 @@ body {
 /* Voice pages (NAT-32): the words sit in the rest zone of the top row, Q2–Q3, between Not now (Q1)
    and the tall card (Q4–Q8) and clear of the bottom row's cards, under a smaller orb (88 px, 24 px
    above the text: GuideOrb.tsx). One title and at most one line, or the sentence to read. */
-.onboarding.voice-page { grid-column: 2 / 4; grid-row: 1; padding: 0 24px; }
+/* `1 / 2`, not `1`: an absolutely placed grid item's `auto` end line is the container's edge, so
+   `grid-row: 1` spanned the whole screen and the words sat behind the bottom row's cards. */
+.onboarding.voice-page { grid-column: 2 / 4; grid-row: 1 / 2; padding: 0 24px; }
 .onboarding.voice-page > * { margin: calc(88px + 24px) 0 0; }
 .voice-text { display: grid; gap: 14px; justify-items: center; max-width: 100%; }
 .voice-page .page-title { font-size: min(var(--fs-message), 44px); text-wrap: balance; }
