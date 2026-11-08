@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Serves the S0–S7 preview on http://localhost:5100 (PORT overrides it). Starts any of the seven
-// style dev servers (s1–s7 on the seven ports after it, 5101–5107 by default) and the local
+// Serves the S0–S8 preview on http://localhost:5100 (PORT overrides it). Starts any of the eight
+// style dev servers (s1–s8 on the eight ports after it, 5101–5108 by default) and the local
 // prediction engine for S0 (port 8765) that are not already running. Ctrl+C stops what this
 // script started.
 import { createServer } from 'node:http';
@@ -25,7 +25,7 @@ const listeningOn = (port, host) => new Promise((resolve) => {
 const listening = async (port) => (await listeningOn(port, '127.0.0.1')) || (await listeningOn(port, '::1'));
 
 const children = [];
-for (let n = 1; n <= 7; n++) {
+for (let n = 1; n <= 8; n++) {
   const port = PORT + n;
   if (await listening(port)) { console.log(`s${n}: already running on ${port}`); continue; }
   // npm is npm.cmd on Windows, which Node can only start through a shell.
