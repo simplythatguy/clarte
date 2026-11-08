@@ -34,10 +34,20 @@ The Cloud renders exactly as style 7's in the light theme.
 
 Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume now share a third settings page, **Sound**: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Sounds' old place on the second settings page (Q5) is a rest zone. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
 
+## The companion (owner, 2026-11-08)
+
+The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, dark blue-grey, very dark blue), with two ink eyes that follow the pointer and blink every 3 s, bobbing every 2.8 s. `?demo` shows it alone.
+
+Two changes from the given file, both needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref.
+
+To take the component as given, style 8 now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
+
+Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse, `sentiment.ts`, `expressions.ts`, `SketchFace.tsx`, `Orb.tsx` and the `?gallery` page. The companion shows only while the middle is blank, and hides while Clarte speaks, so the sentence never sits on its dark gradient. The Orb motion setting is now **Motion**: Still, or the system's reduced-motion preference, stops the bob and the blink. The gradient keeps flowing, because the component has no way to stop it.
+
 ## Open questions for the owner
 
-1. Should the face stay visible while Clarte speaks (above or below the sentence) instead of stepping aside?
+1. The eyes follow the mouse pointer, as in the reference. With a real eye tracker there is no pointer; should they follow the looked-at card instead?
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `idle` (Soft), `vibrant-suggested` (Vibrant), `speaking` (the green Cloud while Clarte speaks), `listening-wait` (Wait! while listening).
+In `evidence/`, real renders at 1440×900: `idle` (Soft), `vibrant-suggested` (Vibrant), `speaking` (the companion steps aside while Clarte speaks), `companion-demo` (`?demo`), `listening-wait` (Wait! while listening).

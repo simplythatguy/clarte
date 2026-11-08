@@ -58,7 +58,7 @@ export type Settings = {
   noise: boolean;
   repeat: 'leave' | 'redwell';
   partner: PartnerSource;
-  /** The orb drifts while gaze rests (moving) or keeps one shape (still). */
+  /** The companion bobs and blinks (moving) or keeps still (still). */
   orbMotion: 'moving' | 'still';
 };
 

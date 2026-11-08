@@ -1,11 +1,11 @@
 /**
- * Style 7 · Cloud: a copy of style 6 · Orb with the Cloud only while the middle is blank
- * (Companion.tsx), more faces (expressions.ts) and a Soft or Vibrant palette (variant.ts).
+ * Style 8: style 7's grid with the owner's mesh-gradient companion (Companion.tsx) in place of the
+ * Cloud, there only while the middle is blank, and a Soft or Vibrant palette (variant.ts).
  * Style 6's notes follow.
  *
  * Style 6 · Orb (owner concept, 2026-11-07), built on style 5 · Dialogue's grid and engine.
  *
- * The conversation screen keeps style 5's quadrants and adds the orb (Orb.tsx) behind the thread
+ * The conversation screen keeps style 5's quadrants and adds the companion (Companion.tsx) behind the thread
  * in the Q2–Q3 rest zone, the branch for word conflicts (Branch.tsx, Q1 and Q4), and a report-style
  * first-run setup (Setup.tsx).
  *
@@ -46,9 +46,7 @@ import { configureSound, duck, play, unlockOnGesture } from '../../shared/sound.
 import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
-import type { OrbMood } from './Orb.tsx';
 import { Companion } from './Companion.tsx';
-import { reactionFor } from './sentiment.ts';
 import { Branch } from './Branch.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { SETUP_STEPS } from './model.ts';
@@ -504,27 +502,16 @@ export function App() {
     rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} context={contextWords(state)} wordColours={settings.wordColours} />;
   }
 
-  // The orb takes the conversation's state as its mood, and pulses on each word heard or spoken.
-  const mood: OrbMood = screen.kind !== 'talk' ? 'idle' : status === 'listening' ? 'listening' : status === 'speaking' ? 'speaking' : status === 'composing' ? 'composing' : 'idle';
-  const pulse = live.kind === 'listening' ? (live.transcript.match(/\S+/g)?.length ?? 0) : live.kind === 'speaking' ? live.word + 1 : 0;
-
-  // Style 7's Cloud (owner, 2026-11-07) is there only while the middle is blank: it leaves as
-  // soon as text appears there (words heard, the message typed, a menu title). Style 8 (owner,
-  // 2026-11-07): it is also there while Clarte speaks, so it turns green and livelier again as in
-  // style 6, with the spoken sentence over it.
+  // The companion (owner, 2026-11-08) is there only while the middle is blank: it leaves as soon
+  // as text appears there (words heard, the message typed, the sentence spoken, a menu title).
   const composing = state.composition.words.length > 0 || state.composition.pending.length > 0;
-  const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || composing;
+  const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || live.kind === 'speaking' || composing;
   const blank = screen.kind === 'talk' && !liveText;
-  // Once a turn has joined the history, its feeling shows on the companion's face.
-  const newest = state.turns[state.turns.length - 1];
-  const finished = live.kind === 'quiet' || live.kind === 'spoken';
-  const feeling = finished && newest && !newest.holder ? reactionFor(newest.text) : null;
-  const reaction = feeling && newest ? { key: `reaction-${newest.id}`, kind: feeling } : null;
-  const still = settings.orbMotion === 'still' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = settings.orbMotion === 'still';
 
   return (
     <Stage id="app" surface={screen.kind === 'setup' ? 'report' : 'talk'}>
-      {screen.kind !== 'setup' && <Companion visible={blank} listening={live.kind === 'listening'} reaction={reaction} mood={mood} pulse={pulse} still={still} />}
+      {screen.kind !== 'setup' && <Companion visible={blank} still={still} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
       {screen.kind === 'talk' && <Branch conflict={slots.conflict ?? null} />}

@@ -33,7 +33,7 @@ const CYCLES = {
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
   repeat: { key: 'repeat', name: 'Repeat', values: ['leave', 'redwell'], format: (v: string) => (v === 'leave' ? 'Look away' : 'Hold') },
   partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'Microphone' : 'Script') },
-  orbMotion: { key: 'orbMotion', name: 'Orb motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
+  orbMotion: { key: 'orbMotion', name: 'Motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
 } as { [K in keyof Settings]: Cycle<K> };
 
 export type SettingKey = keyof Settings;

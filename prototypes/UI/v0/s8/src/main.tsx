@@ -3,15 +3,16 @@ import { createRoot } from 'react-dom/client';
 import { mountOverlay } from '../../shared/overlay.ts';
 import './variant.ts';
 import { App } from './App.tsx';
-import { Gallery } from './Gallery.tsx';
+import DemoOne from '@/components/ui/demo';
 import { engine } from './gaze.ts';
 // Atkinson Hyperlegible Next, bundled: no font request leaves the machine.
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
+import './tailwind.css';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {new URLSearchParams(location.search).has('gallery') ? <Gallery /> : <App />}
+    {new URLSearchParams(location.search).has('demo') ? <main className="demo"><DemoOne /></main> : <App />}
   </StrictMode>,
 );
 
