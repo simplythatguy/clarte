@@ -168,7 +168,7 @@ body {
 .card-ink { background: var(--ink); color: var(--on-ink); border-color: transparent; }
 /* The Menu card is white (owner, 2026-11-08). On the white page a firmer edge and a faint shadow
    keep it reading as a card. */
-.card-white { background: #FFFFFF; color: var(--ink); border-color: rgb(20 20 40 / 0.1); box-shadow: 0 1px 2px rgb(20 20 40 / 0.04), 0 8px 24px rgb(20 20 40 / 0.06); }
+.card-white { background: var(--canvas); color: var(--ink); border-color: rgb(20 20 40 / 0.1); box-shadow: 0 1px 2px rgb(20 20 40 / 0.04), 0 8px 24px rgb(20 20 40 / 0.06); }
 .card-white:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); }
 /* Focus cue: the glass clears a step and its edge turns white. */
 .card:is(.card-surface, .card-group):is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
