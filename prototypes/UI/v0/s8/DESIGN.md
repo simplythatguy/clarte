@@ -14,7 +14,7 @@ The Listening, Replying and Speaking pill is gone from the screen. A hidden live
 
 ## Letter cards (owner, 2026-11-08)
 
-The letter-group cards use the same grey glass as every other card. Their letters stay 36 px, bottom left, in one row. Centred two-row letters at the Menu label's size were tried and undone at the owner's request. Only their letters carry colour, in the owner's palette (2026-11-08), Q5 to Q8: amber `#FFBE0B`, orange `#FB5607`, pink `#FF006E` and blue `#3A86FF`. The typed word's letters use the same inks, so each letter still matches its card. On the grey glass the orange is 3.0:1, the pink 3.5:1 and the blue 3.2:1, at the 3:1 bar for large text (the letters are 36 px semibold). The amber is 1.5:1, below it. The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
+The letter-group cards use the same grey glass as every other card. Their letters stay 36 px, bottom left, in one row. Centred two-row letters at the Menu label's size were tried and undone at the owner's request. Only their letters carry colour, from the owner's palette (2026-11-08), running warm to cool from Q5 to Q8: orange `#FB5607`, pink `#FF006E`, purple `#8338EC` and blue `#3A86FF`. The palette's yellow (`#FFBE0B`) was 1.5:1 on the grey. It would have to darken to about `#B07800`, a mustard-brown, to reach 3:1, so it gave way to the same palette's purple, and the order shifted to keep the warm-to-cool flow. The typed word's letters use the same inks. On the grey glass: orange 3.0:1, pink 3.5:1, purple 5.2:1, blue 3.2:1, all at or above the 3:1 bar for large text (the letters are 36 px semibold). The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
 
 ## The grid (owner, 2026-11-08)
 
