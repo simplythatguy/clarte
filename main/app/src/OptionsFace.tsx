@@ -34,11 +34,13 @@ export function OptionsFace({ top, more }: { top: string[]; more: boolean }) {
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
+    // Tops are measured from the card, not the face: the face is centred in the card, so it moves
+    // when the list's height changes, and a word that stays must play that move out too.
     const now = new Map<string, { top: number; rank: number }>();
     const nodes = [...el.querySelectorAll<HTMLElement>('[data-word]')];
-    for (const n of nodes) now.set(n.dataset.word!, { top: n.offsetTop, rank: Number(n.dataset.rank) });
+    for (const n of nodes) now.set(n.dataset.word!, { top: el.offsetTop + n.offsetTop, rank: Number(n.dataset.rank) });
     if (was.current.size && !reducedMotion()) {
-      const gone = [...was.current].filter(([w]) => !now.has(w)).map(([word, at]) => ({ word, ...at }));
+      const gone = [...was.current].filter(([w]) => !now.has(w)).map(([word, at]) => ({ word, rank: at.rank, top: at.top - el.offsetTop }));
       const wait = gone.length ? ARRIVE_AFTER : 0;
       for (const n of nodes) {
         const before = was.current.get(n.dataset.word!);
