@@ -42,7 +42,18 @@ Three changes from the given file. Two were needed to run here. styled-jsx is Ne
 
 To take the component as given, style 8 now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
 
-Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse, `sentiment.ts`, `expressions.ts`, `SketchFace.tsx`, `Orb.tsx` and the `?gallery` page. The companion shows only while the middle is blank, and hides while Clarte speaks, so the sentence never sits on its dark gradient. The Orb motion setting is now **Motion**: Still, or the system's reduced-motion preference, stops the bob and the blink. The gradient keeps flowing, because the component has no way to stop it.
+Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse, `sentiment.ts`, `expressions.ts`, `SketchFace.tsx`, `Orb.tsx` and the `?gallery` page. The Orb motion setting is now **Motion**: Still, or the system's reduced-motion preference, stops the bob and the blink. The gradient keeps flowing, because the component has no way to stop it.
+
+### Docking (owner, 2026-11-08)
+
+While the middle is blank the ghost floats at its centre. When text arrives there (words heard, the message typed, the sentence spoken, a menu title) it flies to the top-left of Q2 and docks as a 44 px mark beside the state pill, which steps 48 px right to make room. When the middle clears it flies back. The history alone does not count as text, or the ghost would almost never be at the centre.
+
+- **Path.** One curve that rises first and then drifts left along the top. It clears the new words instead of crossing them, and stays 40 px inside Q2, away from Q1. Going home it retraces the same curve.
+- **Timing.** Leaving makes room for words being read, so it launches at once and glides in over 620 ms (`--ease-state`). Coming home, nothing is waiting on it, so it eases out and in over 680 ms (`--ease-move`). It shrinks early on the way out and grows late on the way back.
+- **Body.** It leans up to 9° into the turn and stretches up to 6% along the way. It squashes 10% as it lands, and recovers over 320 ms.
+- **Face.** The eyes go first, 90 ms before the body, looking where it is heading and narrowing as if into the wind. On landing, momentum carries them further up-left (260 ms), they glance up-right (520 ms), and then they return to following the pointer. The landing glances reach about 2.5 times the pointer's range so they still read at 44 px.
+- **Interruption.** Position, size, lean and stretch all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ghost turns round from where it is.
+- **Still or reduced motion.** No flight. It fades out (150 ms), moves, and fades in at the other place, with the face at rest.
 
 ## Open questions for the owner
 
@@ -50,4 +61,4 @@ Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse,
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `idle` (Soft), `vibrant-suggested` (Vibrant), `speaking` (the companion steps aside while Clarte speaks), `companion-demo` (`?demo`), `listening-wait` (Wait! while listening).
+In `evidence/`, real renders at 1440×900: `idle` (Soft), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening).

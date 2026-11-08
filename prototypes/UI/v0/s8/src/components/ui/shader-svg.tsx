@@ -4,7 +4,14 @@ import { MeshGradient } from "@paper-design/shaders-react"
 import { motion } from "framer-motion"
 import { useState, useEffect, useRef } from "react"
 
-export function MeshGradientSVG() {
+type Props = {
+  /** Where the eyes look, overriding the pointer: -1…1 per axis is the pointer's reach, up to ±3 for a big glance. */
+  look?: { x: number; y: number } | null
+  /** Narrowed eyes, as when flying. */
+  squint?: boolean
+}
+
+export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
   const colors = [
     "#FFB3D9", // Pastel pink
     "#87CEEB", // Sky blue
@@ -44,6 +51,11 @@ export function MeshGradientSVG() {
     }
   }, [mousePosition])
 
+  const maxReach = 8
+  const eyes = look
+    ? { x: Math.max(-3, Math.min(3, look.x)) * maxReach, y: Math.max(-3, Math.min(3, look.y)) * maxReach }
+    : eyeOffset
+
   // White eyes (owner, 2026-11-08): currentColor is Clarte's dark ink, which sank into the navy.
   return (
     <motion.div
@@ -72,28 +84,34 @@ export function MeshGradientSVG() {
           </div>
         </foreignObject>
 
-        <motion.ellipse
-          rx="20"
-          ry="30"
-          fill="#FFFFFF"
-          className="animate-blink"
-          animate={{
-            cx: 80 + eyeOffset.x,
-            cy: 120 + eyeOffset.y,
-          }}
-          transition={{ type: "spring", stiffness: 150, damping: 15 }}
-        />
-        <motion.ellipse
-          rx="20"
-          ry="30"
-          fill="#FFFFFF"
-          className="animate-blink"
-          animate={{
-            cx: 150 + eyeOffset.x,
-            cy: 120 + eyeOffset.y,
-          }}
-          transition={{ type: "spring", stiffness: 150, damping: 15 }}
-        />
+        <motion.g
+          animate={{ scaleY: squint ? 0.72 : 1 }}
+          transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+          style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        >
+          <motion.ellipse
+            rx="20"
+            ry="30"
+            fill="#FFFFFF"
+            className="animate-blink"
+            animate={{
+              cx: 80 + eyes.x,
+              cy: 120 + eyes.y,
+            }}
+            transition={{ type: "spring", stiffness: 150, damping: 15 }}
+          />
+          <motion.ellipse
+            rx="20"
+            ry="30"
+            fill="#FFFFFF"
+            className="animate-blink"
+            animate={{
+              cx: 150 + eyes.x,
+              cy: 120 + eyes.y,
+            }}
+            transition={{ type: "spring", stiffness: 150, damping: 15 }}
+          />
+        </motion.g>
       </svg>
 
       {/* styled-jsx is Next.js only; a plain style element carries the same rules in Vite. */}
