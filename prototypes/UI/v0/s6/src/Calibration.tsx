@@ -1,6 +1,7 @@
 /**
  * Simulated calibration and first run (MOTION.md "The calibration sequence"), on the working
- * light canvas so the calibrated brightness is the working brightness (RESEARCH §10).
+ * light canvas so the calibrated brightness is the working brightness (RESEARCH §10). The sequence
+ * is style 5's, unchanged; this style only changes how it is entered and left (round 4).
  *
  *  1. Position: one ring, 38% of the shorter side. The caption types "Sit so your face fills the
  *     circle." At 1.3 s the simulated check passes: stroke to accent and a 12% accent fill over
@@ -11,12 +12,19 @@
  *     400 ms beat; then the next. Caption: "Follow the dot."
  *  3. Check: four other points, travel 900 ms, settle 1200 ms. Caption: "One more look."
  *  4. Ready: title and result in the rest zone, Start in Q1 (the primary quadrant).
- * Escape skips. Under reduced motion the guide jumps and rings fill in one step.
+ *
+ * Leaving (round 4). The run takes about 44 s, so it has a gaze-reachable exit that respects the
+ * quadrant rule: a Back card in Q1, below the corner target, live whenever no target is in Q1 and
+ * unavailable (no action, dimmed) while the guide travels to or rests on a Q1 target, because a
+ * look that follows the dot there must never count as a dwell on Back. When it comes back, the
+ * quadrant guard (gaze.ts) asks the gaze to leave Q1 and return before Back can fire. Escape leaves
+ * too. Back and Escape return without marking calibration done; Start marks it done. Under reduced
+ * motion the guide jumps and rings fill in one step.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { CalibrationStep } from './model.ts';
 import { Tile } from './Tile.tsx';
-import { ArrowRight } from './icons.tsx';
+import { ArrowRight, Back } from './icons.tsx';
 
 type Point = [number, number];
 
@@ -33,6 +41,12 @@ const C = 100; // pathLength
 const TYPE_MS = 32;
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * A target that a look at it may be classified as Q1: inside Q1, or near its edges (the row
+ * boundary at y = 0.5, the column boundary at x = 0.25, with room for tracker noise and the bloom).
+ */
+const nearQ1 = ([x, y]: Point): boolean => x < 0.3 && y <= 0.55;
 
 type Line = { text: string; key?: string };
 
@@ -95,8 +109,12 @@ function px(p: Point): { x: number; y: number } {
   return { x: p[0] * window.innerWidth, y: p[1] * window.innerHeight };
 }
 
-/** The targets, a travelling guide dot, an arc that fills per point, one bloom per point. */
-function PointRun({ points, timing, onDone }: { points: Point[]; timing: { move: number; settle: number }; onDone: () => void }) {
+/**
+ * The targets, a travelling guide dot, an arc that fills per point, one bloom per point. `onBusy`
+ * reports whether the guide is travelling to or resting on a target a look at which may count as
+ * Q1, so the exit card there can stand down.
+ */
+function PointRun({ points, timing, onDone, onBusy }: { points: Point[]; timing: { move: number; settle: number }; onDone: () => void; onBusy: (busy: boolean) => void }) {
   const [active, setActive] = useState(-1);
   const guide = useRef<HTMLSpanElement>(null);
   const arcs = useRef<(SVGCircleElement | null)[]>([]);
@@ -114,6 +132,7 @@ function PointRun({ points, timing, onDone }: { points: Point[]; timing: { move:
       const to = px(point);
       const start = from;
       at(t, () => {
+        onBusy(nearQ1(point));
         place(to);
         if (guide.current) guide.current.style.opacity = '1';
         if (!still) guide.current?.animate([{ transform: `translate(${start.x}px, ${start.y}px)` }, { transform: `translate(${to.x}px, ${to.y}px)` }], { duration: timing.move, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' });
@@ -148,9 +167,9 @@ function PointRun({ points, timing, onDone }: { points: Point[]; timing: { move:
       t += timing.move + timing.settle + BEAT;
       from = to;
     });
-    at(t, onDone);
-    return () => timers.forEach(clearTimeout);
-  }, [points, timing, onDone]);
+    at(t, () => { onBusy(false); onDone(); });
+    return () => { timers.forEach(clearTimeout); onBusy(false); };
+  }, [points, timing, onDone, onBusy]);
 
   return (
     <div className="cal-targets">
@@ -170,7 +189,8 @@ function PointRun({ points, timing, onDone }: { points: Point[]; timing: { move:
 type Props = {
   step: CalibrationStep;
   onStep: (step: CalibrationStep) => void;
-  onDone: () => void;
+  /** Back or Escape before the end: leave without marking calibration done (Start on the Ready step goes through `activate`). */
+  onExit: () => void;
   /** Route a tile activation through the gaze engine, like every other target. */
   activate: (action: string) => void;
 };
@@ -182,9 +202,11 @@ const FIRST_LINE: Record<CalibrationStep, Line[]> = {
   ready: [],
 };
 
-export function Calibration({ step, onStep, onDone, activate }: Props) {
+export function Calibration({ step, onStep, onExit, activate }: Props) {
   const [found, setFound] = useState(false);
   const [lines, setLines] = useState<Line[]>(FIRST_LINE[step]);
+  // The exit stands down while a target in Q1 is being looked at.
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (step !== 'position') return;
@@ -194,10 +216,10 @@ export function Calibration({ step, onStep, onDone, activate }: Props) {
   }, [step, onStep]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onDone(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onExit(); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onDone]);
+  }, [onExit]);
 
   const toValidate = useRef(() => onStep('validate')).current;
   const toReady = useRef(() => onStep('ready')).current;
@@ -220,27 +242,34 @@ export function Calibration({ step, onStep, onDone, activate }: Props) {
 
   const side = Math.min(window.innerWidth, window.innerHeight) * 0.38;
   return (
-    <div className="calibration" aria-label="Calibration">
-      {step === 'position' && (
-        <>
-          <svg className="cal-face" data-found={found || undefined} width={side} height={side} viewBox="-50 -50 100 100" aria-hidden="true">
-            <circle r="49" />
-          </svg>
-          <Caption lines={lines} style={{ left: '50%', top: `calc(50% + ${side / 2 + 24}px)`, transform: 'translateX(-50%)' }} />
-        </>
-      )}
-      {step === 'points' && (
-        <>
-          <PointRun points={POINTS} timing={TIMING.points} onDone={toValidate} />
-          <Caption lines={lines} style={{ left: 'calc(5% + 38px)', top: 'calc(8% - 22px)' }} />
-        </>
-      )}
-      {step === 'validate' && (
-        <>
-          <PointRun points={CHECKS} timing={TIMING.validate} onDone={toReady} />
-          <Caption lines={lines} style={{ left: 'calc(27% + 38px)', top: 'calc(27% - 22px)' }} />
-        </>
-      )}
-    </div>
+    <>
+      <div className="cell cell-q1 cell-exit">
+        <Tile action="back" tone="ink" icon={<Back />} disabled={busy} onActivate={activate}>
+          <span className="card-label">Back</span>
+        </Tile>
+      </div>
+      <div className="calibration" aria-label="Calibration">
+        {step === 'position' && (
+          <>
+            <svg className="cal-face" data-found={found || undefined} width={side} height={side} viewBox="-50 -50 100 100" aria-hidden="true">
+              <circle r="49" />
+            </svg>
+            <Caption lines={lines} style={{ left: '50%', top: `calc(50% + ${side / 2 + 24}px)`, transform: 'translateX(-50%)' }} />
+          </>
+        )}
+        {step === 'points' && (
+          <>
+            <PointRun points={POINTS} timing={TIMING.points} onDone={toValidate} onBusy={setBusy} />
+            <Caption lines={lines} style={{ left: 'calc(5% + 38px)', top: 'calc(8% - 22px)' }} />
+          </>
+        )}
+        {step === 'validate' && (
+          <>
+            <PointRun points={CHECKS} timing={TIMING.validate} onDone={toReady} onBusy={setBusy} />
+            <Caption lines={lines} style={{ left: 'calc(27% + 38px)', top: 'calc(27% - 22px)' }} />
+          </>
+        )}
+      </div>
+    </>
   );
 }

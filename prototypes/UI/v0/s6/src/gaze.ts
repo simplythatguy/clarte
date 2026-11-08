@@ -7,9 +7,12 @@
  */
 import { useEffect, useState } from 'react';
 import { GazeEngine, type GazeSnapshot } from '../../shared/gaze.ts';
-import { actionIn, collectActionables, validateLayout, viewportOf, type QuadrantId } from '../../shared/quadrants.ts';
+import { actionIn, collectActionables, quadrantAt, validateLayout, viewportOf, type QuadrantId } from '../../shared/quadrants.ts';
 
 export const engine = new GazeEngine({ mode: 'dwell', dwellMs: 900 });
+
+/** Selection by click or key only (Settings: Selection Click): a dwell this long never completes. */
+export const CLICK_ONLY_MS = 1e9;
 
 export const GROUP_ACTIONS = new Set(['G1', 'G2', 'G3', 'G4']);
 
@@ -57,8 +60,22 @@ export function validateNow() {
 /** The action the gaze is on, re-rendering only when it changes. */
 export function useLooked(): string | null {
   const [looked, setLooked] = useState<string | null>(engine.snapshot.looked);
-  useEffect(() => engine.subscribe((s: GazeSnapshot) => setLooked((prev) => (prev === s.looked ? prev : s.looked))), []);
+  useEffect(() => engine.subscribe((s: GazeSnapshot) => {
+    const next = enteringAction(s) ?? s.looked;
+    setLooked((prev) => (prev === next ? prev : next));
+  }), []);
   return looked;
+}
+
+/**
+ * The action under the raw gaze point while the engine still holds the previous quadrant (its
+ * `holdMs` acquisition). Labels must freeze from the first sample on a card, not 150 ms later,
+ * or a late engine answer can relabel the word the person has just started reading.
+ */
+function enteringAction(s: GazeSnapshot): string | null {
+  if (!s.point) return null;
+  const q = quadrantAt(s.point.x, s.point.y, viewportOf());
+  return q && q !== s.quadrant ? actionIn(q, collectActionables(), viewportOf())?.id ?? null : null;
 }
 
 /**

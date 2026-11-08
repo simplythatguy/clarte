@@ -53,11 +53,12 @@ const PALETTES: Record<'light' | 'dark', Record<OrbMood, Palette>> = {
     // Speaking turns green (owner, 2026-11-07), matched in lightness to the oranges.
     speaking: ['#BCEBCA', '#E0F6E7', '#CDF0D7', '#F7FDF9'],
   },
+  // Dark: embers kept deep enough that ink stays above 8:1 and secondary ink above 5:1 on them.
   dark: {
-    idle: ['#7A3A18', '#3A2A22', '#5E3622', '#45302A'],
-    listening: ['#7A2E20', '#3E2622', '#5E3026', '#4A2C28'],
-    composing: ['#6E4A12', '#3E3222', '#5C4420', '#4A3A26'],
-    speaking: ['#1F5A36', '#1C3A28', '#2A6A42', '#203A2C'],
+    idle: ['#6E3416', '#3A2A22', '#56321F', '#45302A'],
+    listening: ['#6E2A1E', '#3E2622', '#562C24', '#4A2C28'],
+    composing: ['#634210', '#3E3222', '#523D1D', '#4A3A26'],
+    speaking: ['#1C5030', '#1C3A28', '#255E3B', '#203A2C'],
   },
 };
 

@@ -1,0 +1,11 @@
+# Local environment and native build (README "Set up").
+.venv
+build
+*.dylib
+*.so
+*.dll
+__pycache__/
+*.pyc
+# Run outputs and training data.
+bench/results/
+data/lora/

@@ -1,0 +1,100 @@
+{"id": "topic-dinner", "category": "topic from context", "history": [["partner", "Where would you like to go for dinner tonight?"]], "message": ["i", "want", "to", "go", "to", "the"], "target": "restaurant", "expect": [[1, 2], ["full", 1]]}
+{"id": "topic-doctor", "category": "topic from context", "history": [["partner", "The doctor called about tomorrow."]], "message": ["what", "time", "is", "the"], "target": "appointment", "expect": [[1, 2], ["full", 1]]}
+{"id": "topic-coffee", "category": "topic from context", "history": [["partner", "Would you like tea or coffee?"]], "message": ["i", "would", "like"], "target": "coffee", "expect": [[1, 2], ["full", 1]]}
+{"id": "topic-tea", "category": "topic from context", "history": [["partner", "Would you like tea or coffee?"]], "message": ["i", "would", "like"], "target": "tea", "expect": [[1, 2], ["full", 1]]}
+{"id": "topic-blanket", "category": "topic from context", "history": [["partner", "Are you cold?"]], "message": ["please", "bring", "my"], "target": "blanket", "expect": [[2, 2], ["full", 1]]}
+{"id": "topic-window", "category": "topic from context", "history": [["partner", "Shall I open the window?"]], "message": ["yes", "please", "open", "the"], "target": "window", "expect": [[0, 1]]}
+{"id": "topic-glasses", "category": "topic from context", "history": [["partner", "Do you need your glasses?"]], "message": ["yes", "i", "need", "my"], "target": "glasses", "expect": [[0, 1]]}
+{"id": "topic-outside", "category": "topic from context", "history": [["partner", "Do you want to go outside for a bit? It is sunny."]], "message": ["i", "would", "love", "to", "go"], "target": "outside", "expect": [[0, 1]]}
+{"id": "topic-medicine", "category": "topic from context", "history": [["partner", "Your head still hurts?"], ["user", "yes a lot"], ["partner", "Should I get you something?"]], "message": ["yes", "my"], "target": "medicine", "expect": [[5, 2], ["full", 1]]}
+{"id": "topic-pizza", "category": "topic from context", "history": [["partner", "Shall we order pizza or sushi?"]], "message": ["let", "us", "get"], "target": "pizza", "expect": [[1, 2], ["full", 1]]}
+{"id": "topic-bathroom", "category": "topic from context", "history": [["partner", "Do you need anything before I leave?"]], "message": ["i", "need", "to", "go", "to", "the"], "target": "bathroom", "expect": [[2, 2], ["full", 1]]}
+{"id": "topic-nurse", "category": "topic from context", "history": [["partner", "The nurse will come at nine."]], "message": ["when", "is", "the"], "target": "nurse", "expect": [[0, 2], ["full", 1]]}
+{"id": "name-priya-1", "category": "name introduced earlier", "history": [["partner", "Priya is coming over later."]], "message": ["tell"], "target": "priya", "expect": [[1, 2], ["full", 1]]}
+{"id": "name-priya-gap", "category": "name introduced earlier", "history": [["partner", "Priya is coming over later."], ["user", "that is nice"], ["partner", "She said around six."], ["user", "ok"]], "message": ["i", "want", "to", "see"], "target": "priya", "expect": [[2, 2], ["full", 1]]}
+{"id": "name-jev", "category": "name introduced earlier", "history": [["partner", "I met Jev at the shop."]], "message": ["say", "hi", "to"], "target": "jev", "expect": [[2, 2], ["full", 1]]}
+{"id": "name-okonkwo", "category": "name introduced earlier", "history": [["partner", "I was talking to Okonkwo yesterday."]], "message": ["i", "like"], "target": "okonkwo", "expect": [[2, 2], ["full", 1]]}
+{"id": "name-okonkwo-gap", "category": "name introduced earlier", "history": [["partner", "I was talking to Okonkwo yesterday."], ["user", "oh really"], ["partner", "Yes he is doing well."], ["user", "good to hear"], ["partner", "Anyway, what do you want for lunch?"]], "message": ["ask"], "target": "okonkwo", "expect": [["full", 1]]}
+{"id": "name-zorvella", "category": "name introduced earlier", "history": [["partner", "Your friend Zorvella is here."]], "message": ["hello"], "target": "zorvella", "expect": [[1, 2], ["full", 1]]}
+{"id": "name-user-said", "category": "name introduced earlier", "history": [["user", "my sister thandiwe is visiting"], ["partner", "How lovely, when?"]], "message": [], "target": "thandiwe", "expect": [["full", 1]]}
+{"id": "name-two-names", "category": "name introduced earlier", "history": [["partner", "Marcus and Priya both called."]], "message": ["call"], "target": "marcus", "expect": [[2, 2], ["full", 1]]}
+{"id": "qa-tea-or-coffee", "category": "answer in the question", "history": [["partner", "Tea or coffee?"]], "message": [], "target": "coffee", "expect": [[1, 2], ["full", 1]]}
+{"id": "qa-red-blue", "category": "answer in the question", "history": [["partner", "Do you want the red cup or the blue cup?"]], "message": ["the"], "target": "blue", "expect": [[1, 2], ["full", 1]]}
+{"id": "qa-door-locked", "category": "answer in the question", "history": [["partner", "Is the door locked?"]], "message": ["yes", "it", "is"], "target": "locked", "expect": [[1, 2], ["full", 1]]}
+{"id": "qa-film", "category": "answer in the question", "history": [["partner", "Shall we watch a film?"]], "message": ["yes", "a"], "target": "film", "expect": [[1, 2], ["full", 1]]}
+{"id": "qa-bus-noon", "category": "answer in the question", "history": [["partner", "The bus leaves at noon."]], "message": ["we", "should", "leave", "before"], "target": "noon", "expect": [[1, 2], ["full", 1]]}
+{"id": "qa-curtains", "category": "answer in the question", "history": [["partner", "Should I close the curtains?"]], "message": ["yes", "close", "the"], "target": "curtains", "expect": [[0, 1]]}
+{"id": "contr-dont", "category": "contractions", "history": [["partner", "Do you want more soup?"]], "message": ["no", "i"], "target": "don't", "expect": [[1, 2], ["full", 1]]}
+{"id": "contr-im", "category": "contractions", "history": [["partner", "How are you feeling?"]], "message": [], "target": "i'm", "expect": [[1, 2], ["full", 1]]}
+{"id": "contr-cant", "category": "contractions", "history": [["partner", "Can you reach the remote?"]], "message": ["no", "i"], "target": "can't", "expect": [[1, 2], ["full", 1]]}
+{"id": "contr-yall", "category": "contractions", "history": [["partner", "We are all going to the park."]], "message": ["have", "fun"], "target": "y'all", "expect": [], "expect_complete": 8, "note": "no v0/AAC prior for y'all; reachable on the first two pages of the complete-word chooser"}
+{"id": "contr-youre", "category": "contractions", "history": [["partner", "I brought your tea."]], "message": [], "target": "you're", "expect": [[4, 2], ["full", 1]]}
+{"id": "contr-wont", "category": "contractions", "history": [["partner", "Will you come tomorrow?"]], "message": ["i"], "target": "won't", "expect": [["full", 1]]}
+{"id": "contr-lets", "category": "contractions", "history": [["partner", "It is a lovely day."]], "message": [], "target": "let's", "expect": [["full", 2]]}
+{"id": "contr-unicode-history", "category": "unicode apostrophes", "history": [["partner", "I don\u2019t think you\u2019ve met Jev\u2019s brother."]], "message": ["i"], "target": "don't", "expect": [[1, 2], ["full", 1]]}
+{"id": "contr-unicode-name", "category": "unicode apostrophes", "history": [["partner", "That\u2019s Nkechi\u2019s coat."]], "message": ["give", "it", "to"], "target": "nkechi", "expect": [["full", 1]]}
+{"id": "coll-me-he-1", "category": "signature collisions", "history": [["partner", "Can you pass the salt?"]], "message": ["give", "it", "to"], "target": "me", "expect": [["full", 1]]}
+{"id": "coll-me-he-2", "category": "signature collisions", "history": [["partner", "Where is your brother?"]], "message": [], "target": "he", "expect": [["full", 2]]}
+{"id": "coll-he-after-if", "category": "signature collisions", "history": [["partner", "Will your brother come?"]], "message": ["only", "if"], "target": "he", "expect": [["full", 1]]}
+{"id": "coll-if", "category": "signature collisions", "history": [["partner", "Will you come?"]], "message": ["i", "will", "come"], "target": "if", "expect": [["full", 1]]}
+{"id": "coll-good", "category": "signature collisions", "history": [["partner", "How was the film?"]], "message": ["it", "was"], "target": "good", "expect": [["full", 1]]}
+{"id": "coll-home", "category": "signature collisions", "history": [["partner", "Where do you want to go now?"]], "message": ["i", "want", "to", "go"], "target": "home", "expect": [["full", 1]]}
+{"id": "coll-of", "category": "signature collisions", "history": [["partner", "What would you like?"]], "message": ["a", "cup"], "target": "of", "expect": [["full", 1]]}
+{"id": "coll-is-it", "category": "signature collisions", "history": [["partner", "The soup is ready."]], "message": [], "target": "is", "expect": [["full", 2]]}
+{"id": "coll-it-is", "category": "signature collisions", "history": [["partner", "Is the soup hot?"]], "message": ["yes"], "target": "it", "expect": [["full", 1]]}
+{"id": "first-thank", "category": "first word", "history": [["partner", "Here is your water."]], "message": [], "target": "thank", "expect": [[1, 2], ["full", 1]]}
+{"id": "first-yes", "category": "first word", "history": [["partner", "Are you comfortable?"]], "message": [], "target": "yes", "expect": [[0, 2], ["full", 1]]}
+{"id": "first-no", "category": "first word", "history": [["partner", "Do you want the light on?"]], "message": [], "target": "no", "expect": [[0, 2], ["full", 1]]}
+{"id": "first-i", "category": "first word", "history": [], "message": [], "target": "i", "expect": [["full", 1]]}
+{"id": "first-hello-empty", "category": "empty history", "history": [], "message": [], "target": "hello", "expect": [[3, 1], ["full", 1]]}
+{"id": "empty-please", "category": "empty history", "history": [], "message": [], "target": "please", "expect": [[2, 2], ["full", 1]]}
+{"id": "empty-water", "category": "empty history", "history": [], "message": ["i", "want", "some"], "target": "water", "expect": [[1, 2], ["full", 1]]}
+{"id": "final-tonight", "category": "sentence-final", "history": [["partner", "When do you want to leave?"]], "message": ["i", "want", "to", "leave"], "target": "tonight", "expect": [[3, 2], ["full", 1]]}
+{"id": "final-please", "category": "sentence-final", "history": [["partner", "Do you want the window open?"]], "message": ["yes"], "target": "please", "expect": [[0, 2], [1, 1]]}
+{"id": "final-now", "category": "sentence-final", "history": [["partner", "When should I call the nurse?"]], "message": ["call", "her"], "target": "now", "expect": [[1, 2], ["full", 1]]}
+{"id": "long-antidis", "category": "very long words", "history": [["partner", "What is the longest word you know?"]], "message": [], "target": "antidisestablishmentarianism", "expect": [[10, 1]]}
+{"id": "long-xylophone", "category": "very long words", "history": [["partner", "What instrument did she play?"]], "message": ["a"], "target": "xylophone", "expect": [[5, 2], ["full", 1]]}
+{"id": "long-encyclopedia", "category": "very long words", "history": [["partner", "Which book do you want?"]], "message": ["the"], "target": "encyclopedia", "expect": [[5, 2], ["full", 1]]}
+{"id": "long-quixotic", "category": "very long words", "history": [["partner", "How would you describe his plan?"]], "message": ["it", "is"], "target": "quixotic", "expect": [["full", 1]]}
+{"id": "long-wheelchair", "category": "very long words", "history": [["partner", "Do you need anything?"]], "message": ["please", "move", "my"], "target": "wheelchair", "expect": [[3, 2], ["full", 1]]}
+{"id": "repeat-very", "category": "repeated words", "history": [["partner", "How was it?"]], "message": ["it", "was", "very"], "target": "very", "expect": [["full", 2]]}
+{"id": "repeat-no", "category": "repeated words", "history": [["partner", "Shall I turn it off?"]], "message": ["no", "no"], "target": "no", "expect": [["full", 1]]}
+{"id": "repeat-after-commit", "category": "repeated words", "history": [["partner", "What did you see?"]], "message": ["i", "saw", "a", "heron", "and", "another"], "target": "heron", "expect": [[2, 2], ["full", 1]]}
+{"id": "delete-same-word", "category": "same word after deletion", "history": [["partner", "Where would you like to go for dinner tonight?"]], "message": ["i", "want", "to", "go", "to", "the"], "target": "restaurant", "expect": [["full", 1]], "deletion": true}
+{"id": "giant-history", "category": "giant history", "history_repeat": [["partner", "How are you today?"], ["user", "fine thanks and you"]], "repeat": 50, "history": [["partner", "Priya asked about dinner."]], "message": ["tell"], "target": "priya", "expect": [[1, 2], ["full", 1]]}
+{"id": "giant-message", "category": "giant history", "history": [["partner", "Tell me everything."]], "message_repeat": "and then we went out", "repeat": 12, "message": ["to", "the"], "target": "park", "expect": [["full", 2]]}
+{"id": "case-punct", "category": "mixed case and punctuation", "history": [["partner", "HELLO!!! Are you HUNGRY??? (dinner's at 7...)"]], "message": ["yes", "i", "am"], "target": "hungry", "expect": [[1, 2], ["full", 1]]}
+{"id": "case-shout-name", "category": "mixed case and punctuation", "history": [["partner", "OKONKWO!!! is here, OKONKWO."]], "message": ["hi"], "target": "okonkwo", "expect": [[1, 2], ["full", 1]]}
+{"id": "punct-only-history", "category": "mixed case and punctuation", "history": [["partner", "... ?!? --- 123 456"]], "message": [], "target": "i", "expect": [["full", 1]]}
+{"id": "slip-nothing-matches", "category": "gaze slip", "history": [["partner", "Did you say xylophone?"]], "message": [], "target": "xylophone", "typed": "442132321", "expect_corrected": true}
+{"id": "commit-learn", "category": "session learning", "history": [], "message": [], "commits": ["bartholomew", "bartholomew"], "target": "bartholomew", "expect": [["full", 1]]}
+{"id": "conv-dinner-restaurant", "category": "conversational", "history": [["partner", "Where would you like to go for dinner tonight?"]], "message": ["i", "want", "to", "go", "to", "the"], "target": "restaurant", "expect": [[0, 2]]}
+{"id": "conv-feeling-tired", "category": "conversational", "history": [["partner", "You look exhausted. How are you feeling today?"]], "message": ["i", "feel"], "target": "tired", "expect": [[1, 2]]}
+{"id": "conv-feeling-better", "category": "conversational", "history": [["partner", "You were so sick yesterday. How are you feeling now?"]], "message": ["i", "feel", "much"], "target": "better", "expect": [[0, 2]]}
+{"id": "conv-feeling-sick", "category": "conversational", "history": [["partner", "You have not eaten anything. Are you alright?"]], "message": ["i", "feel"], "target": "sick", "expect": [[1, 2]]}
+{"id": "conv-drink-water", "category": "conversational", "history": [["partner", "You must be thirsty after all that. Can I get you something?"]], "message": ["a", "glass", "of"], "target": "water", "expect": [[0, 2]]}
+{"id": "conv-drink-coffee", "category": "conversational", "history": [["partner", "I'm making a hot drink, what would you like?"]], "message": ["a", "cup", "of"], "target": "coffee", "expect": [[1, 2]]}
+{"id": "conv-drink-tea", "category": "conversational", "history": [["partner", "The kettle has boiled. Coffee or something else?"]], "message": ["i", "would", "prefer"], "target": "tea", "expect": [[1, 2]]}
+{"id": "conv-weather-cold", "category": "conversational", "history": [["partner", "It is snowing outside, do you want to go for a walk?"]], "message": ["no", "it", "is", "too"], "target": "cold", "expect": [[0, 2]]}
+{"id": "conv-weather-hot", "category": "conversational", "history": [["partner", "It is thirty-five degrees today. Shall we sit in the garden?"]], "message": ["it", "is", "too"], "target": "hot", "expect": [[0, 2]]}
+{"id": "conv-weather-rain", "category": "conversational", "history": [["partner", "Should I bring an umbrella?"]], "message": ["yes", "it", "is", "going", "to"], "target": "rain", "expect": [[0, 2]]}
+{"id": "conv-pain-hurts", "category": "conversational", "history": [["partner", "Why are you holding your arm like that?"]], "message": ["it"], "target": "hurts", "expect": [[1, 2]]}
+{"id": "conv-pain-head", "category": "conversational", "history": [["partner", "Do you want a painkiller? Where is the pain?"]], "message": ["in", "my"], "target": "head", "expect": [[1, 2]]}
+{"id": "conv-pain-back", "category": "conversational", "history": [["partner", "You have been sitting in that chair all day. Does anything hurt?"]], "message": ["yes", "my"], "target": "back", "expect": [[1, 2]]}
+{"id": "conv-time-tomorrow", "category": "conversational", "history": [["partner", "I can't do it today. When should we do it?"]], "message": ["let's", "do", "it"], "target": "tomorrow", "expect": [[1, 2]]}
+{"id": "conv-time-later", "category": "conversational", "history": [["partner", "Do you want to eat now?"]], "message": ["no", "maybe"], "target": "later", "expect": [[0, 2]]}
+{"id": "conv-time-now", "category": "conversational", "history": [["partner", "Should I start the film now or after dinner?"]], "message": ["start", "it"], "target": "now", "expect": [[0, 2]]}
+{"id": "conv-family-mother", "category": "conversational", "history": [["partner", "Who is coming to visit you this weekend?"]], "message": ["my"], "target": "mother", "expect": [[1, 2]]}
+{"id": "conv-family-sister", "category": "conversational", "history": [["partner", "Your sister rang earlier. Do you want me to call anyone back?"]], "message": ["yes", "call", "my"], "target": "sister", "expect": [[0, 2]]}
+{"id": "conv-family-daughter", "category": "conversational", "history": [["partner", "Your daughter left a message about Sunday lunch."]], "message": ["tell", "my"], "target": "daughter", "expect": [[0, 2]]}
+{"id": "conv-yes-answer", "category": "conversational", "history": [["partner", "Are you comfortable? Do you want another pillow?"]], "message": [], "target": "yes", "expect": [[0, 2]]}
+{"id": "conv-no-answer", "category": "conversational", "history": [["partner", "Shall I turn the television off?"]], "message": [], "target": "no", "expect": [[0, 2]]}
+{"id": "conv-closer-thank", "category": "conversational", "history": [["partner", "Here is your blanket, I warmed it up for you."]], "message": [], "target": "thank", "expect": [[0, 2]]}
+{"id": "conv-closer-please", "category": "conversational", "history": [["partner", "Do you want me to open the window?"]], "message": ["yes"], "target": "please", "expect": [[0, 2]]}
+{"id": "conv-closer-sorry", "category": "conversational", "history": [["partner", "You spilled the juice all over my notes."]], "message": ["i", "am"], "target": "sorry", "expect": [[0, 2]]}
+{"id": "conv-implied-glasses", "category": "conversational", "history": [["partner", "You are squinting at the screen again."]], "message": ["i", "need", "my"], "target": "glasses", "expect": [[1, 2]]}
+{"id": "conv-implied-bathroom", "category": "conversational", "history": [["partner", "You have had three cups of tea. Do you need anything?"]], "message": ["i", "need", "the"], "target": "bathroom", "expect": [[1, 2]]}
+{"id": "conv-implied-sleep", "category": "conversational", "history": [["partner", "It is almost midnight and you keep yawning."]], "message": ["i", "want", "to"], "target": "sleep", "expect": [[0, 2]]}
+{"id": "conv-implied-medication", "category": "conversational", "history": [["partner", "It is eight o'clock, the nurse left the pills on the table."]], "message": ["i", "will", "take", "my"], "target": "medication", "expect": [[1, 2]]}
+{"id": "conv-twoturn-restaurant", "category": "conversational", "history": [["partner", "Shall we eat out tonight?"], ["user", "yes that would be nice"], ["partner", "Any idea where?"]], "message": ["the", "italian"], "target": "restaurant", "expect": [[0, 2]]}
+{"id": "conv-twoturn-name", "category": "conversational", "history": [["partner", "Thandiwe is bringing the kids over later."], ["user", "lovely"], ["partner", "Should I tell her to bring food?"]], "message": ["ask"], "target": "thandiwe", "expect": [[1, 2]]}

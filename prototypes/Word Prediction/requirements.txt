@@ -1,0 +1,34 @@
+# Word Prediction: one environment, .venv in this folder.
+#   python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
+# Apple Silicon adds the GPU rescorer: requirements-gpu.txt (see that file).
+# Intel Macs (no torch 2.9.1 wheel): requirements-light.txt runs the count models only.
+certifi==2026.10.23
+charset-normalizer==3.5.2
+filelock==4.2.9
+fsspec==2026.9.0
+hf-xet==1.8.0
+huggingface-hub==0.36.0
+idna==3.20
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+mpmath==1.3.0
+networkx==3.6.1
+numpy==2.3.5
+packaging==26.3
+PyYAML==6.0.3
+regex==2026.11.7
+requests==2.34.2
+safetensors==0.8.0
+sympy==1.14.0
+tokenizers==0.22.2
+torch==2.9.1
+tqdm==4.70.1
+transformers==4.57.3
+typing_extensions==4.16.0
+urllib3==2.8.0
+wordfreq==3.1.1
+ftfy==6.3.1
+langcodes==3.5.1
+locate==1.1.1
+msgpack==1.2.4
+wcwidth==0.9.4

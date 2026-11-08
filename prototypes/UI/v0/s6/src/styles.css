@@ -22,29 +22,29 @@
   --ink: #1D1B1F;
   --ink-focus: #333036;
   --on-ink: #FFFFFF;
-  --on-ink-2: rgb(255 255 255 / 0.7);
-  /* Secondary text sits on the orb: at least 4.5:1 on its deepest orange. */
-  --ink-2: #4A4650;
-  /* Ghost letters: at least 3:1 on the orb's deepest orange, clearly lighter than ink. */
+  --on-ink-2: rgb(255 255 255 / 0.8);
+  /* Secondary text sits on the orb: 8.1:1 or more (APCA Lc 76+) on every mood's deepest orange. */
+  --ink-2: #3F3B45;
+  /* Ghost letters: 4.5:1 (Lc 62) on the orb's deepest orange, clearly lighter than ink. */
   --ink-3: #69646F;
   --hairline: #E4E2E8;
   /* The selection edge and keyboard focus: ink, so the orb stays the only orange. */
   --accent: #1D1B1F;
   --destructive: #D42A1E;
-  /* The selection box around the word in progress (editor reference). */
-  --select-line: #C9C6CF;
+  /* The selection box around the word in progress (editor reference): 3:1 on the orb. */
+  --select-line: #83808A;
   --report-hairline: #DAD7DF;
   /* Letter groups: group ink on glass */
   --g1-ink: #1E5A82;
   --g2-ink: #59409A;
-  --g3-ink: #2B6A4C;
+  --g3-ink: #27634A;
   --g4-ink: #8A4A22;
   /* Group inks for glyphs set on the canvas (the word in progress) */
   --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
   /* Conversation state: the pill is white glass; only its dot carries the state's colour. */
   --listening: #C4001A;
   --composing: #9E1F63;
-  --speaking: #1F7A38;
+  --speaking: #1A6E32;
   --speaking-face: #E3F2E7;
 
   /* Motion tokens (MOTION.md) */
@@ -68,11 +68,17 @@
   --fs-hint: calc(20px * var(--scale));
   --fs-pill: min(calc(26px * var(--scale)), 34px);
 
-  /* Geometry: cards float inside their quadrant (README rule 1), on an 8 px grid */
+  /* Geometry: cards float inside their quadrant (README rule 1), on an 8 px grid. The gutters,
+     edges and paddings are fixed at 1280×720 and above and give way below it (browser zoom at
+     200% makes a 1280×720 window 640×360 CSS px), so a card never collapses to a sliver and its
+     20 px type floor holds (round 4). */
   --radius-card: 40px;
-  --card-w: calc(25vw - 64px);           /* 64 px gutter between neighbouring cards */
-  --card-h: min(calc(50vh - 112px), 344px);
-  --edge-y: 40px;                         /* top cards from the top, bottom cards from the bottom */
+  --gutter: clamp(24px, 5vw, 64px);       /* 64 px between neighbouring cards at 1280 and wider */
+  --card-w: calc(25vw - var(--gutter));
+  --card-h: min(calc(50vh - clamp(56px, 15.6vh, 112px)), 344px);
+  --edge-y: clamp(16px, 5.6vh, 40px);     /* top cards from the top, bottom cards from the bottom */
+  --card-pad: clamp(14px, 3.9vh, 28px);
+  --icon-card: clamp(24px, 5vh, 36px);
   --scale: 1;
 
   color-scheme: light;
@@ -92,18 +98,19 @@
   --ink-focus: #E4E4E8;
   --on-ink: #1D1D1F;
   --on-ink-2: rgb(29 29 31 / 0.66);
-  --ink-2: #A1A1A6;
-  --ink-3: #8D8D92;
+  /* Light text on the dark orb: secondary 5.2:1 or more, ghosts 3.8:1 or more on its deepest ember. */
+  --ink-2: #C4C4CA;
+  --ink-3: #A8A8AE;
   --hairline: #3A3A3C;
   --accent: #F5F5F7;
   --destructive: #FF6B5E;
-  --select-line: #4A4A4E;
+  --select-line: #8E8A95;
   --report-hairline: #3A3A3F;
   /* On the dark canvas the word-in-progress glyphs need light group inks (cards use them too). */
-  --g1-text: #8CC2EA; --g2-text: #BBA6EE; --g3-text: #7FCCA4; --g4-text: #F0AE7E;
+  --g1-text: #A6D2F4; --g2-text: #D4C4F8; --g3-text: #9ADBB8; --g4-text: #F5C09A;
   --listening: #FF6B6B;
   --composing: #F28BC0;
-  --speaking: #5DD07A;
+  --speaking: #7ADB90;
   --speaking-face: #1C3323;
   color-scheme: dark;
 }
@@ -162,7 +169,7 @@ body {
   flex: none;
   border: 1px solid var(--glass-edge);
   border-radius: var(--radius-card);
-  padding: 28px 28px 30px;
+  padding: var(--card-pad) var(--card-pad) calc(var(--card-pad) + 2px);
   font: inherit;
   color: inherit;
   display: flex;
@@ -200,7 +207,10 @@ body {
 .card > .card-icon, .card > .card-body { transition: opacity var(--dur-phase) var(--ease-state); }
 .card-body { margin-top: auto; }
 .card[aria-disabled] { cursor: default; }
-.card[aria-disabled] > :not(.wash) { opacity: 0.32; }
+/* Unavailable content keeps 3:1 against its card (WCAG 1.4.11): 0.5 gives 3.2:1 light and 4.6:1 dark for
+   ink; the group inks are lighter, so letters keep 0.7 (3.2:1 or more on their tints). */
+.card[aria-disabled] > :not(.wash) { opacity: 0.5; }
+.card-group[aria-disabled] > :not(.wash) { opacity: 0.7; }
 
 /* The dwell: a white wash rising from the bottom edge (Tile.tsx), under the card's content. */
 .wash {
@@ -226,7 +236,7 @@ body {
 
 /* A plain icon, no ring (glass-tiles reference). */
 .card-icon { display: grid; flex: none; }
-.card-icon .icon { width: 36px; height: 36px; }
+.card-icon .icon { width: var(--icon-card); height: var(--icon-card); }
 .icon-destructive { color: var(--destructive); }
 
 [data-group='G1'] { --gi: var(--g1-ink); --gt: var(--g1-text); }
@@ -255,15 +265,20 @@ body {
 
 /* Card text */
 .card-label {
-  font-size: calc(min(var(--fs-label), calc(155cqi / var(--len, 6))) * var(--fit, 1));
+  /* Nothing on a gaze screen is below 20 px (the Clarte policy): the floor holds at every viewport and fit. */
+  font-size: max(20px, calc(min(var(--fs-label), calc(155cqi / var(--len, 6))) * var(--fit, 1)));
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: 0;
   overflow-wrap: normal; /* words never break; fit.ts shrinks the label instead */
   text-wrap: balance;
 }
-.card-label.is-word { font-size: calc(min(var(--fs-label), calc(150cqi / var(--len, 6))) * var(--fit, 1)); }
-.card-label.is-quote { font-size: calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1)); }
+.card-label.is-word { font-size: max(20px, calc(min(var(--fs-label), calc(150cqi / var(--len, 6))) * var(--fit, 1))); }
+.card-label.is-quote { font-size: max(20px, calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1))); }
+/* At the floor and still too long (a 22-letter word on a 128 px card): the word wraps inside itself, every letter visible, rather than shrink or be cut. */
+.card[data-overflow] :is(.card-label, .setting-value, .phrase) { overflow-wrap: anywhere; text-wrap: wrap; }
+.card-label.card-arrow { display: block; line-height: 0; }
+.card-label.card-arrow .icon { width: max(48px, min(30cqi, 96px)); height: max(48px, min(30cqi, 96px)); stroke-width: 1.5; }
 .card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
@@ -291,23 +306,30 @@ body {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: var(--edge-y) 40px var(--edge-y);
+  padding: var(--edge-y) clamp(16px, 2.8vw, 40px) var(--edge-y);
+  /* Whatever the window, the thread's text never crosses into the lower row (README: a look in the
+     row gutter is a look at Q5–Q8); its blocks shrink to the room, then clip. */
+  overflow: hidden;
 }
 /* Everything readable stays inside Q2–Q3, inset 40 px from the row boundary: the backend classifies
    where the eye is, not what is drawn, so text in the row gutter would be read as a look at Q5–Q8.
    Room is shared in priority order: the pill, then the live message (its type steps down), then
    whole lines of history. Large text reserves one history line and tightens the rule's margins. */
-:root[data-large] .history { min-height: calc(var(--fs-turn) * 1.35); margin-top: 8px; }
+/* Large text: the newest partner turn keeps two whole lines (round 4; it used to be clamped to one,
+   "Where would you…"). History type grows to 40 px at most, so two of its lines and one line of the
+   message at its floor still fit above the row boundary at 1280×720 and 200%. */
+:root[data-large] { --fs-turn: min(calc(26px * var(--scale)), 40px); }
+:root[data-large] .history { min-height: calc(var(--fs-turn) * 1.4 * 2 + 10px); margin-top: 8px; }
 :root[data-large] .rule { margin: 12px 0 8px; }
 .history[data-yield] { min-height: calc(var(--fs-turn) * 1.35); }
 .history[data-yield] + .rule { margin: 12px 0 8px; }
 .history[data-yield] ~ .now { flex-grow: 1; }
-.state-row { flex: none; height: 48px; display: flex; align-items: center; }
+.state-row { flex: none; height: clamp(32px, 6.7vh, 48px); display: flex; align-items: center; }
 .state {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  height: 48px;
+  height: clamp(32px, 6.7vh, 48px);
   padding: 0 22px 0 18px;
   border-radius: 999px;
   font-size: var(--fs-pill);
@@ -331,7 +353,7 @@ body {
 
 .history {
   flex: 1 1 0;
-  min-height: calc(var(--fs-turn) * 1.35 * 2 + 8px); /* two whole partner lines, reserved before the message */
+  min-height: min(calc(var(--fs-turn) * 1.35 * 2 + 8px), 20vh); /* two whole partner lines, reserved before the message */
   margin-top: 16px;
   overflow: hidden;
   display: flex;
@@ -378,7 +400,7 @@ body {
   /* A fixed basis of two lines, so typing never moves the thread; it shrinks only when the
      viewport leaves less room (large text on a small screen), and then the type steps down. */
   flex: 0 1 calc(var(--fs-message) * 1.12 * 2 + 12px);
-  min-height: calc(var(--fs-message) * 0.6 * 1.12 + 12px);
+  min-height: min(calc(var(--fs-message) * 0.6 * 1.12 + 12px), 14vh);
   position: relative;
   margin: 0;
   overflow: hidden;
@@ -391,8 +413,10 @@ body {
   color: var(--ink);
 }
 .now-text { display: block; padding-top: 4px; }
-/* At the type floor and still too long: keep the latest words in view. */
-.now[data-overflow] { justify-content: flex-end; mask-image: linear-gradient(to bottom, transparent 0, #000 28px); }
+/* At the type floor and still too long: keep the latest words in view, whole lines only. The room is
+   clipped at its top by the part of a line that would show cut (Thread.tsx `--now-clip`), so nothing
+   is half-erased. */
+.now[data-overflow] { justify-content: flex-end; clip-path: inset(var(--now-clip, 0px) 0 0 0); }
 .now-partner .now-text { font-size: calc(var(--fs-live) * var(--fit, 1)); font-weight: 450; letter-spacing: 0; line-height: 1.25; }
 .now-holder .now-text { color: var(--ink-3); }
 .now-leaving { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); pointer-events: none; @starting-style { opacity: 1; } }
@@ -404,8 +428,12 @@ body {
 
 /* The word in progress (BRIEF "The word in progress") */
 .word { white-space: nowrap; }
-/* A run of dots (no known word) may wrap, so a long unknown name never runs off the edge. */
-.word.in-progress.dots { white-space: normal; }
+/* A long word in progress stays on one line, so the message fit (Thread.tsx) sees it as too wide and
+   steps the type down, to 20 px at the least; past twelve groups its dots are drawn smaller, so even
+   fifty groups fit one line at that floor. Only past the floor may the dots wrap (line by line, so
+   the overflow keeps whole lines). */
+.word.in-progress.long .glyph.dot > span { width: 0.34em; height: 0.34em; margin: 0 0.04em; }
+.now[data-overflow] .word.in-progress:is(.dots, .tail) { white-space: normal; }
 .settle { transition: color var(--dur-settle) var(--ease-state); @starting-style { color: var(--gt); } }
 .keep-colour .settle { color: var(--gt); }
 .glyph { transition: color var(--dur-cue) var(--ease-state), opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
@@ -421,10 +449,11 @@ body {
 .page-title { margin: 0; font-size: var(--fs-message); font-weight: 600; line-height: 1.16; letter-spacing: 0; }
 .page-sub { margin: 8px 0 0; font-size: var(--fs-turn); font-weight: 500; color: var(--ink-2); }
 .setting-name { font-size: max(20px, calc(min(calc(20px * var(--scale)), calc(170cqi / var(--len, 8))) * var(--fit, 1))); font-weight: 500; color: var(--ink-2); text-wrap: balance; }
-.setting-value { font-size: calc(min(calc(36px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.1; text-wrap: balance; }
-.phrase { font-size: calc(min(calc(32px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.12; text-wrap: balance; }
+.setting-value { font-size: max(20px, calc(min(calc(36px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1))); font-weight: 600; letter-spacing: 0; line-height: 1.1; text-wrap: balance; }
+.phrase { font-size: max(20px, calc(min(calc(32px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1))); font-weight: 600; letter-spacing: 0; line-height: 1.12; text-wrap: balance; }
 .pager { display: flex; gap: 8px; }
-.pager i { display: block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.25; }
+/* The off dots keep 3:1 against the card (WCAG 1.4.11). */
+.pager i { display: block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.5; }
 .pager i[data-on] { opacity: 1; }
 
 /* Calibration (MOTION.md "The calibration sequence") */
@@ -470,6 +499,11 @@ body {
 }
 
 .calibration { position: absolute; inset: 0; grid-column: 1 / -1; grid-row: 1 / -1; }
+/* The way out of calibration (round 4): a short Back card in Q1, below the corner target and above
+   the middle-left one, so no target is ever covered; it stands down (no action, dimmed) while the
+   guide visits a Q1 target. */
+.cell-exit { padding-top: calc(var(--edge-y) + 88px); z-index: 3; }
+.cell-exit .card { height: clamp(104px, 17vh, 128px); padding: 18px 24px 18px; gap: 8px; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
@@ -505,6 +539,9 @@ body {
 .thread .rule { background: transparent; margin: 16px 0 8px; }
 .now { text-align: center; align-items: center; }
 .now .now-text { max-width: 100%; }
+/* Room for the selection box's outline and handles (0.1em + 6.25px past the word), which the fit
+   counts, so a word as wide as the line still shows both handles. */
+.now .now-text { padding-inline: calc(0.1em + 8px); }
 .turn-partner { color: var(--ink-2); }
 
 /* The branch: node-graph edges from the word in progress to Q1 and Q4. */
@@ -523,10 +560,16 @@ body {
 .branch-head { fill: var(--ink); }
 .branch-port { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5px; }
 
-/* The word in progress is the selected object, as in the editor reference: a hairline box with a
-   handle at each end. The box is an outline (no layout); the branch leaves from the handles. */
-.now .word.in-progress { position: relative; outline: 1.5px solid var(--select-line); outline-offset: 0.1em; border-radius: 3px; }
-.now .word.in-progress::before, .now .word.in-progress::after {
+/* The selected object, as in the editor reference: a hairline box with a handle at each end. The
+   word in progress is one; on the Other words page the word about to give way is one. The box is
+   an outline (no layout); the branch leaves from the handles. A handle reaches 0.1em + 11 px past
+   the word, so a selected word keeps that much clear on both sides: each handle sits in its own
+   gap, never on the space between two words ("I might", not "I•might"), and the right handle is
+   inside the line, so it is never clipped at the edge and the line wraps as if it were a letter. */
+.now :is(.word.in-progress, .word.selected) { position: relative; outline: 1.5px solid var(--select-line); outline-offset: 0.1em; border-radius: 3px; }
+.now :is(.word.in-progress, .word.selected) { margin-inline: 0.3em; }
+.now .now-text > span > .word.in-progress:first-child, .now span:first-child > .word.selected { margin-left: 0; }
+.now :is(.word.in-progress, .word.selected)::before, .now :is(.word.in-progress, .word.selected)::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -537,8 +580,10 @@ body {
   background: var(--ink);
   pointer-events: none;
 }
-.now .word.in-progress::before { left: calc(-0.1em - 6.25px); }
-.now .word.in-progress::after { right: calc(-0.1em - 6.25px); }
+.now :is(.word.in-progress, .word.selected)::before { left: calc(-0.1em - 6.25px); }
+.now :is(.word.in-progress, .word.selected)::after { right: calc(-0.1em - 6.25px); }
+/* A gaze-slip letter (Thread.tsx): its own group's colour and a dotted underline in that colour. */
+.glyph.slip > span { text-decoration: underline dotted; text-decoration-thickness: 0.06em; text-underline-offset: 0.12em; }
 
 /* The menu opens over the conversation: it stays where it was, blurred (glass-tiles reference). */
 .thread-behind { display: contents; }
@@ -552,7 +597,7 @@ body {
 @media (prefers-reduced-motion: reduce) { .thread-behind > .thread { transition-property: opacity; } }
 
 /* ── Setup reports ── */
-:root { --card-h-report: min(calc(50vh - 112px), 232px); }
+:root { --card-h-report: min(calc(50vh - clamp(56px, 15.6vh, 112px)), 232px); }
 .layer[data-surface='report'] .card { height: var(--card-h-report); padding: 22px 26px 24px; gap: 12px; }
 
 .report {
@@ -575,7 +620,7 @@ body {
 .report-counter { display: inline-flex; align-items: center; gap: 14px; }
 .report-counter b { font-weight: 700; }
 .report-bars { display: inline-flex; gap: 3px; }
-.report-bars i { display: block; width: 5px; height: 18px; border-radius: 1px; background: currentColor; opacity: 0.22; }
+.report-bars i { display: block; width: 5px; height: 18px; border-radius: 1px; background: currentColor; opacity: 0.5; }
 .report-bars i[data-on] { opacity: 1; }
 .report-where { font-weight: 700; padding-bottom: 6px; border-bottom: 1px solid var(--report-hairline); }
 .report-sample { font-weight: 450; color: var(--ink-2); }
@@ -589,7 +634,7 @@ body {
 .metric { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .metric-caption { font-size: calc(20px * var(--scale)); color: var(--ink-2); }
 .metric-value { font-size: calc(36px * var(--scale)); font-weight: 650; line-height: 1.1; white-space: nowrap; }
-.metric-value small, .figure-value small { font-size: 0.55em; font-weight: 500; color: var(--ink-2); margin-left: 0.25em; }
+.metric-value small, .figure-value small { font-size: max(20px, 0.55em); font-weight: 500; color: var(--ink-2); margin-left: 0.25em; }
 
 /* The thin progress line under a section, as in the report reference. */
 .rule-line { position: relative; height: 1px; margin-top: 32px; background: var(--report-hairline); flex: none; }
@@ -628,7 +673,7 @@ body {
 .strip-track i[data-other] { background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, transparent 2px 6px); }
 .strip-empty .strip-track { border-bottom: 1.5px dashed var(--report-hairline); }
 .strip-mark { position: absolute; top: 0; bottom: -8px; width: 0; border-left: 1.5px solid var(--ink); }
-.strip-mark span { position: absolute; top: 0; left: 8px; font-size: calc(18px * var(--scale)); color: var(--ink-2); white-space: nowrap; line-height: 1; }
+.strip-mark span { position: absolute; top: 0; left: 8px; font-size: calc(20px * var(--scale)); color: var(--ink-2); white-space: nowrap; line-height: 1; }
 
 /* A warning in the Q5 rest zone, as the report reference's corner warning. */
 .report-note {
@@ -668,7 +713,7 @@ body {
 :root[data-large] .figure-value { font-size: min(calc(96px * var(--scale)), 120px); }
 :root[data-large] .figure-caption { font-size: min(calc(22px * var(--scale)), 30px); }
 :root[data-large] .chart-caption { display: none; }
-:root[data-large] .strip-mark span { font-size: min(calc(18px * var(--scale)), 24px); }
+:root[data-large] .strip-mark span { font-size: min(calc(20px * var(--scale)), 26px); }
 :root[data-large] .rows li:nth-child(n + 2) { display: none; }
 :root[data-large] .rows li { font-size: min(calc(20px * var(--scale)), 28px); }
 :root[data-large] .report-note { font-size: min(calc(20px * var(--scale)), 26px); }
