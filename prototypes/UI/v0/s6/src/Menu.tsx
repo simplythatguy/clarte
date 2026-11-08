@@ -26,7 +26,7 @@ import { Again, Back, Blob, Bubble, Erase, Exchange, Flask, Mic, Next, Palette, 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
 /** A quiet glyph on each setting's card. */
-const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
+const SETTING_ICON: Record<SettingKey, () => ReactNode> = {
   letterDwell: Timer, controlDwell: Timer, textScale: TextSize, theme: Sun, sound: Speaker, mode: Target,
   wordColours: Palette, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob,
 };
@@ -40,15 +40,15 @@ const CYCLES = {
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
   theme: { key: 'theme', name: 'Theme', values: ['light', 'dark'], format: (v: string) => (v === 'light' ? 'Light' : 'Dark') },
   sound: { key: 'sound', name: 'Sounds', values: [true, false], format: onOff },
-  mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
+  mode: { key: 'mode', name: 'Selection', values: ['click', 'dwell', 'confirm'], format: (v: string) => (v === 'click' ? 'Click' : v === 'dwell' ? 'Dwell' : 'Confirm') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
   repeat: { key: 'repeat', name: 'Repeat', values: ['leave', 'redwell'], format: (v: string) => (v === 'leave' ? 'Look away' : 'Hold') },
   partner: { key: 'partner', name: 'Microphone', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'On' : 'Off') },
   orbMotion: { key: 'orbMotion', name: 'Orb motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
-} as { [K in keyof Settings]: Cycle<K> };
+} as { [K in SettingKey]: Cycle<K> };
 
-export type SettingKey = keyof Settings;
+export type SettingKey = Exclude<keyof Settings, 'modeChosen'>;
 
 export function nextValue<K extends SettingKey>(key: K, settings: Settings): Settings[K] {
   const { values } = CYCLES[key];

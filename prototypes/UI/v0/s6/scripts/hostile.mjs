@@ -177,7 +177,7 @@ const words = async () => (await look()).words;
 
 // ── Open ──
 
-await page.goto(`${APP}/?onboarding=off&engine=${encodeURIComponent(PROXY)}`, { waitUntil: 'load' });
+await page.goto(`${APP}/?onboarding=off&input=eyes&engine=${encodeURIComponent(PROXY)}`, { waitUntil: 'load' });
 await page.waitForFunction(() => Boolean(window.clarteDebug?.state));
 const up = await waitFor(() => !window.clarteDebug.engineDown(), null, 15000);
 if (!up) { console.error('the app did not find the engine through the proxy'); await browser.close(); proxy.close(); process.exit(2); }
@@ -852,7 +852,7 @@ await run('28 browser zoom 200% at 1280x720 (640x360 CSS px): the type floor and
   const ctx = await browser.newContext({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 2 });
   const p2 = await ctx.newPage();
   try {
-    await p2.goto(`${APP}/?onboarding=off&engine=${encodeURIComponent(PROXY)}`, { waitUntil: 'load' });
+    await p2.goto(`${APP}/?onboarding=off&input=eyes&engine=${encodeURIComponent(PROXY)}`, { waitUntil: 'load' });
     await p2.waitForFunction(() => Boolean(window.clarteDebug?.state));
     await p2.waitForFunction(() => !window.clarteDebug.engineDown(), null, { timeout: 10000 }).catch(() => {});
     await p2.evaluate(() => { window.clarteDebug.reset(); window.clarteDebug.settings({ textScale: 1, theme: 'light', partner: 'script' }); });

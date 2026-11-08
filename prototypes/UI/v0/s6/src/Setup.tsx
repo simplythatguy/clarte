@@ -169,7 +169,7 @@ function EyesReport({ settings, calibratedAt }: { settings: Settings; calibrated
         <header className="report-top"><Counter step="eyes" /><span className="report-where">Setup</span></header>
         <Heading name="Eyes" detail={calibratedAt ? 'Calibrated' : 'Tracking check'} />
         <div className="metrics">
-          <Metric caption="Selection" value={settings.mode === 'dwell' ? 'Dwell' : 'Confirm'} />
+          <Metric caption="Selection" value={settings.mode === 'click' ? 'Click' : settings.mode === 'dwell' ? 'Dwell' : 'Confirm'} />
           <Metric caption="Letter dwell" value={(settings.letterDwell / 1000).toFixed(1)} unit="s" />
           <Metric caption="Button dwell" value={(settings.controlDwell / 1000).toFixed(1)} unit="s" />
         </div>

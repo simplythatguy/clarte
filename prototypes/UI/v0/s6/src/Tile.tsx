@@ -17,7 +17,7 @@
  */
 import { isValidElement, useEffect, useRef, type ReactNode } from 'react';
 import type { GroupId } from '../../shared/decoder.ts';
-import { engine, intentDelay, isQuiet } from './gaze.ts';
+import { CLICK_ONLY_MS, engine, intentDelay, isQuiet } from './gaze.ts';
 import { Swap } from './Swap.tsx';
 
 /** A stable key per icon component, so an icon fades only when it actually changes. */
@@ -148,14 +148,14 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
       if (!disabled && s.action === action && !isQuiet(action, s)) {
         if (s.state === 'dwelling') {
           elapsed = s.progress * dwellMs;
-          next = elapsed < intentDelay(action) ? 'rest' : elapsed < start ? 'focus' : 'fill';
+          next = elapsed < intentDelay(action) ? 'rest' : elapsed < start || dwellMs >= CLICK_ONLY_MS ? 'focus' : 'fill';
         } else if (s.state === 'previewed') {
           next = 'preview'; // Confirm mode: a half-strength full wash, waiting; no accent edge yet
         } else if (s.state === 'selected') {
           next = 'done';
         }
       }
-      if (next !== phase) enter(next, Math.max(0, dwellMs - Math.max(elapsed, start)));
+      if (next !== phase) enter(next, Math.max(0, Math.min(dwellMs, 60_000) - Math.max(elapsed, start)));
       if (reducedMotion?.matches) {
         const span = Math.max(1, dwellMs - start);
         const nextStep = next === 'fill' ? Math.min(4, 1 + Math.floor(((elapsed - start) / span) * 4)) : next === 'done' || next === 'preview' ? 4 : 0;

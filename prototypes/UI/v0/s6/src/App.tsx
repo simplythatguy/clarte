@@ -20,7 +20,7 @@ import { trackActionables } from '../../shared/overlay.ts';
 import { GROUP_IDS, groupLetters, signatureOf, type GroupId } from '../../shared/decoder.ts';
 import { stopSpeaking } from '../../shared/speech.ts';
 import { quadrantAt, viewportOf, type QuadrantId } from '../../shared/quadrants.ts';
-import { attachPointerStream, engine, gazeOutside, guardQuadrant, isGuarded, markIgnored, noteKeyActivation, suppressMotionBriefly, resolveQuadrant, setDwellClasses, useLooked, validateNow } from './gaze.ts';
+import { CLICK_ONLY_MS, attachPointerStream, engine, gazeOutside, guardQuadrant, isGuarded, markIgnored, noteKeyActivation, suppressMotionBriefly, resolveQuadrant, setDwellClasses, useLooked, validateNow } from './gaze.ts';
 import {
   CHOOSER_PAGE,
   INITIAL_STATE,
@@ -37,6 +37,8 @@ import {
   type Screen,
   type Settings,
   type State,
+  inputSource,
+  withInputDefaults,
 } from './model.ts';
 import { primaryKey, secondaryKey, type PrimaryFn, type SecondaryFn } from './policy.ts';
 import type { Conflict } from './conflict.ts';
@@ -73,11 +75,12 @@ function loadStored(): State {
   const skip = new URLSearchParams(location.search).get('onboarding') === 'off';
   try {
     const raw = localStorage.getItem(STORE);
-    if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
+    const initial = { ...INITIAL_STATE, settings: withInputDefaults(INITIAL_STATE.settings, inputSource()) };
+    if (!raw) return skip ? { ...initial, screen: { kind: 'talk' } } : initial;
     const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean };
     return {
       ...INITIAL_STATE,
-      settings: { ...INITIAL_STATE.settings, ...saved.settings },
+      settings: withInputDefaults({ ...INITIAL_STATE.settings, ...saved.settings }, inputSource()),
       screen: saved.setupDone || skip ? { kind: 'talk' } : INITIAL_STATE.screen,
     };
   } catch {
@@ -333,8 +336,10 @@ export function App() {
 
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {
-    engine.configure({ mode: settings.mode, noiseSigma: settings.noise ? 0.06 : 0 });
-    setDwellClasses(settings.letterDwell, settings.controlDwell, screen.kind === 'talk', settings.repeat);
+    // Click: no dwell at all; a look (the pointer) only highlights, a click or a key selects.
+    const click = settings.mode === 'click';
+    engine.configure({ mode: settings.mode === 'confirm' ? 'confirm' : 'dwell', noiseSigma: settings.noise ? 0.06 : 0 });
+    setDwellClasses(click ? CLICK_ONLY_MS : settings.letterDwell, click ? CLICK_ONLY_MS : settings.controlDwell, screen.kind === 'talk', settings.repeat);
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
     applyTheme(settings.theme);
@@ -526,7 +531,7 @@ export function App() {
   const onSelect = useCallback((action: string) => {
     const s = stateRef.current;
     const go = (screen: State['screen']) => { dispatch({ type: 'screen', screen }); play('control'); };
-    const setting = (key: SettingKey) => { dispatch({ type: 'settings', patch: { [key]: nextValue(key, s.settings) } }); play('control'); };
+    const setting = (key: SettingKey) => { dispatch({ type: 'settings', patch: { [key]: nextValue(key, s.settings), ...(key === 'mode' ? { modeChosen: true } : {}) } }); play('control'); };
     if (s.screen.kind === 'calibration') {
       if (action === 'start') { play('control'); finishCalibration(); }
       else if (action === 'back') { play('control'); exitCalibration(); }

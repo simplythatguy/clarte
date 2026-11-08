@@ -11,6 +11,9 @@ import { actionIn, collectActionables, quadrantAt, validateLayout, viewportOf, t
 
 export const engine = new GazeEngine({ mode: 'dwell', dwellMs: 900 });
 
+/** Selection by click or key only (Settings: Selection Click): a dwell this long never completes. */
+export const CLICK_ONLY_MS = 1e9;
+
 export const GROUP_ACTIONS = new Set(['G1', 'G2', 'G3', 'G4']);
 
 /** Nothing is drawn for the first 150 ms on a letter group and 250 ms on a control (R-6 §3.1). */

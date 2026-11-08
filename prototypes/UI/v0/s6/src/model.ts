@@ -67,7 +67,14 @@ export type Settings = {
   textScale: number;
   theme: 'light' | 'dark';
   sound: boolean;
-  mode: 'dwell' | 'confirm';
+  /**
+   * How a look becomes a selection. `click`: no dwell, a click or a key selects (owner, 2026-11-08: the
+   * default with a mouse or keyboard, which are demo and development tools); `dwell` (the default with
+   * eye tracking) and `confirm` (dwell to preview, then confirm).
+   */
+  mode: 'dwell' | 'confirm' | 'click';
+  /** The person chose `mode` in Settings; until then it follows the input (inputDefaults). */
+  modeChosen?: boolean;
   wordColours: boolean;
   noise: boolean;
   repeat: 'leave' | 'redwell';
@@ -82,13 +89,25 @@ export const DEFAULT_SETTINGS: Settings = {
   textScale: 1,
   theme: 'light',
   sound: true,
-  mode: 'dwell',
+  mode: 'click',
   wordColours: false,
   noise: false,
   repeat: 'leave',
   partner: 'microphone',
   orbMotion: 'moving',
 };
+
+/** Where looks come from: the pointer (mouse, trackpad) unless `?input=eyes` says an eye tracker drives it. */
+export type InputSource = 'mouse' | 'eyes';
+
+export function inputSource(search = typeof location === 'undefined' ? '' : location.search): InputSource {
+  return new URLSearchParams(search).get('input') === 'eyes' ? 'eyes' : 'mouse';
+}
+
+/** Selection by input until the person chooses: dwell for eye tracking, click for a mouse or keyboard. */
+export function withInputDefaults(settings: Settings, input: InputSource): Settings {
+  return settings.modeChosen ? settings : { ...settings, mode: input === 'eyes' ? 'dwell' : 'click' };
+}
 
 export type State = {
   screen: Screen;
