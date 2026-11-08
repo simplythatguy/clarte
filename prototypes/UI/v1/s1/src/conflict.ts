@@ -12,8 +12,8 @@
  * p ∝ 1 / rank. A word the conversation already used gets the decoder's context boost and is
  * never in conflict with one it did not use.
  */
-import { decode, type Candidate } from '../../shared/decoder.ts';
-import type { Composition } from '../../shared/composer.ts';
+import { decode, type Candidate } from '../../../v0/shared/decoder.ts';
+import type { Composition } from '../../../v0/shared/composer.ts';
 
 export const CLOSE = 0.6;
 /**

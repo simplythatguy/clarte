@@ -9,12 +9,12 @@ import {
   messageText,
   reduce as reduceComposition,
   type Composition,
-} from '../../shared/composer.ts';
-import type { GroupId } from '../../shared/decoder.ts';
-import type { SoundLevel } from '../../shared/sound.ts';
+} from '../../../v0/shared/composer.ts';
+import type { GroupId } from '../../../v0/shared/decoder.ts';
+import type { SoundLevel } from '../../../v0/shared/sound.ts';
 import { suggestReply } from './suggest.ts';
 import { conflictFor, optionsFor, type Conflict } from './conflict.ts';
-import { candidates } from '../../shared/composer.ts';
+import { candidates } from '../../../v0/shared/composer.ts';
 import type { PartnerSource } from './voice.ts';
 
 export type Turn = {

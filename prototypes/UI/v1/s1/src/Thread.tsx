@@ -12,8 +12,8 @@
  * slides. Glyphs appear by opacity, accepted words settle from group ink to ink over 180 ms.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { pendingGlyphs, type Composition, type Glyph, type Word } from '../../shared/composer.ts';
-import { groupOf } from '../../shared/decoder.ts';
+import { pendingGlyphs, type Composition, type Glyph, type Word } from '../../../v0/shared/composer.ts';
+import { groupOf } from '../../../v0/shared/decoder.ts';
 import type { Live, Turn } from './model.ts';
 import { wordsOf } from './voice.ts';
 import { displayWord } from './text.ts';

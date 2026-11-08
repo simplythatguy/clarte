@@ -14,11 +14,11 @@
  * Enter on a focused tile) arrives as one engine `select` event and is routed by action id.
  */
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ReactNode } from 'react';
-import { attachKeyboard, startTicking } from '../../shared/gaze.ts';
-import { trackActionables } from '../../shared/overlay.ts';
-import { GROUP_IDS, groupLetters, type GroupId } from '../../shared/decoder.ts';
-import { messageText } from '../../shared/composer.ts';
-import { stopSpeaking } from '../../shared/speech.ts';
+import { attachKeyboard, startTicking } from '../../../v0/shared/gaze.ts';
+import { trackActionables } from '../../../v0/shared/overlay.ts';
+import { GROUP_IDS, groupLetters, type GroupId } from '../../../v0/shared/decoder.ts';
+import { messageText } from '../../../v0/shared/composer.ts';
+import { stopSpeaking } from '../../../v0/shared/speech.ts';
 import { attachPointerStream, engine, gazeOutside, guardQuadrant, isGuarded, markIgnored, noteKeyActivation, suppressMotionBriefly, resolveQuadrant, setDwellClasses, useLooked, validateNow } from './gaze.ts';
 import {
   INITIAL_STATE,
@@ -43,7 +43,7 @@ import { optionsFor } from './conflict.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
-import { configureSound, duck, play, unlockOnGesture } from '../../shared/sound.ts';
+import { configureSound, duck, play, unlockOnGesture } from '../../../v0/shared/sound.ts';
 import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';

@@ -1,10 +1,10 @@
 /**
  * The listening page for Clarte's sound system (NAT-24): every cue side by side, with the
- * settings that shape them. Open http://localhost:5108/sounds.html while style 8's dev server runs.
+ * settings that shape them. Open http://localhost:5201/sounds.html while this app's dev server runs.
  */
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 import './sounds.css';
-import { CUES, chordName, configureSound, duck, play, render, swell, unlockOnGesture, type SoundLevel } from '../../shared/sound.ts';
+import { CUES, chordName, configureSound, duck, play, render, swell, unlockOnGesture, type SoundLevel } from '../../../v0/shared/sound.ts';
 
 unlockOnGesture();
 

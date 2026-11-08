@@ -6,7 +6,7 @@
  * This wrapper keeps the shared contract (speak text, resolve when done) and adds `onWord`.
  * REPORT.md proposes moving `onWord` into shared.
  */
-import { DEMO_UTTERANCES, canListenLive, canSpeak, listen, type ListenSession } from '../../shared/speech.ts';
+import { DEMO_UTTERANCES, canListenLive, canSpeak, listen, type ListenSession } from '../../../v0/shared/speech.ts';
 
 export type Speech = { done: Promise<void>; cancel(): void };
 

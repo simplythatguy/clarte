@@ -2,7 +2,7 @@
 
 Clarte's sounds are calm, soft and quiet. They confirm what the eyes just did, and then they get out of the way. They should feel like a quiet studio, not a game: warm chords that swell in and fade out like a gradient, with an open, exploring feel. Tracked in Linear as NAT-24, project Sound system.
 
-The engine is [`shared/sound.ts`](shared/sound.ts). Every sound is generated with the Web Audio API, so there are no audio files. Style 8 uses it, and the listening page plays every cue side by side: run style 8 (`npm run dev` in `s8/`, or `node s_all/serve.mjs`) and open http://localhost:5108/sounds.html.
+The engine is [`shared/sound.ts`](shared/sound.ts). Every sound is generated with the Web Audio API, so there are no audio files. UI v1's s1 uses it (it began as style 8 here), and its listening page plays every cue side by side: run `npm run dev` in [`../v1/s1`](../v1/s1) and open http://localhost:5201/sounds.html.
 
 ## Rules
 

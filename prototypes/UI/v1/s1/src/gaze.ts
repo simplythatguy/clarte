@@ -6,8 +6,8 @@
  * allows through `configure`. The per-tile dwell rendering lives in `Tile.tsx`.
  */
 import { useEffect, useState } from 'react';
-import { GazeEngine, type GazeSnapshot } from '../../shared/gaze.ts';
-import { actionIn, collectActionables, validateLayout, viewportOf, type QuadrantId } from '../../shared/quadrants.ts';
+import { GazeEngine, type GazeSnapshot } from '../../../v0/shared/gaze.ts';
+import { actionIn, collectActionables, validateLayout, viewportOf, type QuadrantId } from '../../../v0/shared/quadrants.ts';
 
 export const engine = new GazeEngine({ mode: 'dwell', dwellMs: 900 });
 

@@ -3,8 +3,8 @@
  * `window.clarteDebug.setPhase(name)`. Seeds use real conversational content and the real
  * composer and decoder, never a hand-built message.
  */
-import { EMPTY_COMPOSITION, candidates, reduce, type Composition } from '../../shared/composer.ts';
-import { signatureOf } from '../../shared/decoder.ts';
+import { EMPTY_COMPOSITION, candidates, reduce, type Composition } from '../../../v0/shared/composer.ts';
+import { signatureOf } from '../../../v0/shared/decoder.ts';
 import { contextWords, type MenuPage, type State, type Turn } from './model.ts';
 
 export const PHASES = [

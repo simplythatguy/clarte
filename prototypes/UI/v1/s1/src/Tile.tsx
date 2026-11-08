@@ -20,7 +20,7 @@
  * reduced motion the line steps round in quarters and the commit is the fill fading out, without the circle growing.
  */
 import { isValidElement, useEffect, useRef, type ReactNode } from 'react';
-import type { GroupId } from '../../shared/decoder.ts';
+import type { GroupId } from '../../../v0/shared/decoder.ts';
 import { engine, intentDelay, isQuiet } from './gaze.ts';
 import { Swap } from './Swap.tsx';
 

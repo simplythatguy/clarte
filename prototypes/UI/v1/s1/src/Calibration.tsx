@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { CalibrationStep } from './model.ts';
-import { play } from '../../shared/sound.ts';
+import { play } from '../../../v0/shared/sound.ts';
 import { Tile } from './Tile.tsx';
 import { ArrowRight } from './icons.tsx';
 

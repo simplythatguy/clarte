@@ -1,8 +1,8 @@
-# Style 8 · Cloud, second pass
+# UI v1 · s1
 
-A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching v2. Everything not mentioned here is style 7's: the Cloud, its 20 faces, the Soft and Vibrant palettes, the thread and the branch. See [../s7/DESIGN.md](../s7/DESIGN.md), and [../s6/DESIGN.md](../s6/DESIGN.md) for what style 7 inherits.
+The first UI v1 prototype (owner, 2026-11-08). It began as UI v0's style 8 ("Cloud, second pass", itself a copy of style 7 · Cloud, PR #17) and moved here from `prototypes/UI/v0/s8`. The sections below record its decisions in the order they were made; where a later one replaces an earlier one, the later one says so. For what it inherits, see v0's [style 7](../../v0/s7/DESIGN.md) and [style 6](../../v0/s6/DESIGN.md).
 
-In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
+It still runs on UI v0's shared engine (`prototypes/UI/v0/shared`: gaze, decoder, composer, speech, sound, quadrants and the layout check). Run it with `npm install && npm run dev` in this folder, then open `http://localhost:5201/?onboarding=off`, or add `&palette=vibrant` for the Vibrant palette. `npm run check` walks every phase with the layout check while the dev server runs.
 
 ## The main card in Q4, Menu and Delete in Q1 (owner, 2026-11-08)
 
@@ -65,7 +65,7 @@ Earlier (owner, 2026-11-07): One moment and Phrases left the menu, and the Phras
 
 ## No dark theme (owner, 2026-11-07)
 
-Style 8 has no dark theme. The owner tried several dark looks and then asked for the whole theme to go: solid vibrant cards, tinted glass, a light peach Cloud, and an iridescent "dream" palette with white text. Removed with it:
+There is no dark theme. The owner tried several dark looks and then asked for the whole theme to go: solid vibrant cards, tinted glass, a light peach Cloud, and an iridescent "dream" palette with white text. Removed with it:
 
 - the Theme setting
 - every dark-theme style
@@ -75,7 +75,7 @@ The Cloud renders exactly as style 7's in the light theme.
 
 ## Sound (NAT-24)
 
-Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume share the **Sound** settings page: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
+This app plays the shared sound system ([UI v0's SOUND.md](../../v0/SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume share the **Sound** settings page: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
 
 ## The companion (owner, 2026-11-08)
 
@@ -85,7 +85,7 @@ The owner then asked for it to be a ball (2026-11-08). The clip is a circle, wit
 
 Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08) makes the eyes white. With `currentColor` they took Clarte's dark ink and sank into the gradient's navy; a white ring around ink eyes was tried and declined. On the original palette white eyes measured median 3.4:1 against the companion over 20 s; on the grey-white palette they measure median 1.8:1, worst 1.3:1, so they read by shape rather than contrast.
 
-To take the component as given, style 8 now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
+To take the component as given, the app now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
 
 Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse, `sentiment.ts`, `expressions.ts`, `SketchFace.tsx`, `Orb.tsx` and the `?gallery` page. The Orb motion setting is now **Motion**: Still, or the system's reduced-motion preference, stops the bob and the blink. The gradient keeps flowing, because the component has no way to stop it.
 
@@ -106,4 +106,4 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).

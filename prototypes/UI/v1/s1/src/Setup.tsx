@@ -14,7 +14,7 @@
  * `setup-voice-sample` shows sample data, and then the page says "Sample".
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import type { QuadrantId } from '../../shared/quadrants.ts';
+import type { QuadrantId } from '../../../v0/shared/quadrants.ts';
 import { engine } from './gaze.ts';
 import type { Settings, SetupStep } from './model.ts';
 import { SETUP_STEPS } from './model.ts';

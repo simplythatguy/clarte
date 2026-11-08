@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { mountOverlay } from '../../shared/overlay.ts';
+import { mountOverlay } from '../../../v0/shared/overlay.ts';
 import './variant.ts';
 import { App } from './App.tsx';
 import DemoOne from '@/components/ui/demo';
