@@ -1,0 +1,7 @@
+# v1 runs in ../v0/.venv (see ../v0/requirements.txt: torch 2.9.1, transformers 4.57.3, numpy 2.3.5).
+# One addition, installed into that venv:
+wordfreq==3.1.1
+# Round 2: the GPU rescorer. pip pulls transformers 5 as an mlx-lm dependency, which breaks v0;
+# install, then pin back: pip install mlx==0.32.4 mlx-lm==0.32.2 && pip install transformers==4.57.3 tokenizers==0.22.2 huggingface-hub==0.36.0
+mlx==0.32.4
+mlx-lm==0.32.2
