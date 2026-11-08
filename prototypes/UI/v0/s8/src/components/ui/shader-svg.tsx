@@ -71,18 +71,32 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
       }}
       style={{ transformOrigin: "top center" }}
     >
-      <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" width="231" height="289" viewBox="0 0 231 289" className="w-full h-auto">
+      <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" className="w-full h-auto">
         <defs>
           <clipPath id="shapeClip">
-            <path d="M230.809 115.385V249.411C230.809 269.923 214.985 287.282 194.495 288.411C184.544 288.949 175.364 285.718 168.26 280C159.746 273.154 147.769 273.461 139.178 280.23C132.638 285.384 124.381 288.462 115.379 288.462C106.377 288.462 98.1451 285.384 91.6055 280.23C82.912 273.385 70.9353 273.385 62.2415 280.23C55.7532 285.334 47.598 288.411 38.7246 288.462C17.4132 288.615 0 270.667 0 249.359V115.385C0 51.6667 51.6756 0 115.404 0C179.134 0 230.809 51.6667 230.809 115.385Z" />
+            <circle cx="120" cy="120" r="120" />
           </clipPath>
+          {/* Lit from the upper left (owner, 2026-11-08: a ball, its lighting barely noticeable). The
+              shadow lies on the ball's own edge all round, a little deeper at the lower right where
+              the sphere turns furthest from the light. */}
+          <radialGradient id="ballShade" cx="0.46" cy="0.43" r="0.58">
+            <stop offset="0.72" stopColor="#101830" stopOpacity="0" />
+            <stop offset="0.92" stopColor="#101830" stopOpacity="0.08" />
+            <stop offset="1" stopColor="#101830" stopOpacity="0.16" />
+          </radialGradient>
+          <radialGradient id="ballLight" cx="0.34" cy="0.26" r="0.42">
+            <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.22" />
+            <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+          </radialGradient>
         </defs>
 
-        <foreignObject width="231" height="289" clipPath="url(#shapeClip)">
+        <foreignObject width="240" height="240" clipPath="url(#shapeClip)">
           <div className="w-full h-full">
             <MeshGradient colors={colors} className="w-full h-full" speed={1} />
           </div>
         </foreignObject>
+        <circle cx="120" cy="120" r="120" fill="url(#ballShade)" />
+        <circle cx="120" cy="120" r="120" fill="url(#ballLight)" />
 
         <motion.g
           animate={{ scaleY: squint ? 0.72 : 1 }}
@@ -95,8 +109,8 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
             fill="#FFFFFF"
             className="animate-blink"
             animate={{
-              cx: 80 + eyes.x,
-              cy: 120 + eyes.y,
+              cx: 85 + eyes.x,
+              cy: 108 + eyes.y,
             }}
             transition={{ type: "spring", stiffness: 150, damping: 15 }}
           />
@@ -106,8 +120,8 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
             fill="#FFFFFF"
             className="animate-blink"
             animate={{
-              cx: 150 + eyes.x,
-              cy: 120 + eyes.y,
+              cx: 155 + eyes.x,
+              cy: 108 + eyes.y,
             }}
             transition={{ type: "spring", stiffness: 150, damping: 15 }}
           />

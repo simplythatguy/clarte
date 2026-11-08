@@ -1,6 +1,6 @@
 /**
- * The companion (owner, 2026-11-08): the mesh-gradient ghost (components/ui/shader-svg.tsx). While
- * the middle is blank it floats at the centre of the rest zone. When text arrives there (words heard,
+ * The companion (owner, 2026-11-08): the mesh-gradient ball (components/ui/shader-svg.tsx). While
+ * the middle holds no text it floats at the centre of the rest zone. When text arrives there (words heard,
  * the message typed, the sentence spoken, a menu title) it flies to the top-left of Q2 and docks as
  * a small mark beside the state pill, and when the middle clears it flies back.
  *
@@ -36,7 +36,7 @@ const FLIGHT: Record<Pose, { duration: number; ease: [number, number, number, nu
 
 /**
  * The landing look-around, then rest. The eyes reach well past their pointer range (1) so the glance
- * still reads when the ghost is docked at 44 px.
+ * still reads when the ball is docked at 44 px.
  */
 const LANDING: { face: Face; ms: number }[] = [
   { face: { look: { x: -2.6, y: -1.7 }, squint: false }, ms: 260 },
@@ -45,16 +45,16 @@ const LANDING: { face: Face; ms: number }[] = [
 /** In flight the eyes look along the way it is heading, further than the pointer would take them. */
 const LEAD_REACH = 1.6;
 
-/** Docked, the ghost is as tall as the state pill (48 px) less 2 px each side, 40 px into Q2. */
+/** Docked, the ball is as tall as the state pill (48 px) less 2 px each side, 40 px into Q2. */
 const DOCK = { inset: 40, height: 44, pill: 48 };
-const ASPECT = 231 / 289;
+const ASPECT = 1;
 
 type Geometry = { dx: number; dy: number; scale: number };
 
-function measure(root: HTMLElement, body: HTMLElement, ghost: HTMLElement): Geometry {
+function measure(root: HTMLElement, body: HTMLElement, ball: HTMLElement): Geometry {
   const r = root.getBoundingClientRect();
   const b = body.getBoundingClientRect();
-  const pad = parseFloat(getComputedStyle(ghost).paddingLeft) || 0;
+  const pad = parseFloat(getComputedStyle(ball).paddingLeft) || 0;
   const svgHeight = (b.width - 2 * pad) / ASPECT;
   const edgeY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge-y')) || 40;
   const home = { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2 };
@@ -104,9 +104,9 @@ export function Companion({ visible, still }: Props) {
   useLayoutEffect(() => {
     const root = rootRef.current;
     const body = bodyRef.current;
-    const ghost = flightRef.current?.firstElementChild as HTMLElement | null;
-    if (!root || !body || !ghost) return;
-    const remeasure = () => { flight.current.geometry = measure(root, body, ghost); apply(); };
+    const ball = flightRef.current?.firstElementChild as HTMLElement | null;
+    if (!root || !body || !ball) return;
+    const remeasure = () => { flight.current.geometry = measure(root, body, ball); apply(); };
     remeasure();
     const ro = new ResizeObserver(remeasure);
     ro.observe(root);

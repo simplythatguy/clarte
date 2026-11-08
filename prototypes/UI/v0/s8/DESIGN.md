@@ -36,9 +36,11 @@ Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of st
 
 ## The companion (owner, 2026-11-08)
 
-The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, and two grey-whites, #DADDE3 and #ECEEF1, in place of the reference's dark blue-grey and very dark blue at the owner's request, 2026-11-08), with two ink eyes that follow the pointer and blink every 3 s, bobbing every 2.8 s. `?demo` shows it alone.
+The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, and two grey-whites, #DADDE3 and #ECEEF1, in place of the reference's dark blue-grey and very dark blue at the owner's request, 2026-11-08), with two eyes that follow the pointer and blink every 3 s, bobbing every 2.8 s. `?demo` shows it alone.
 
-Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08) makes the eyes white. With `currentColor` they took Clarte's dark ink and sank into the gradient's navy; a white ring around ink eyes was tried and declined. On the original palette white eyes measured median 3.4:1 against the ghost over 20 s; on the grey-white palette they measure median 1.8:1, worst 1.3:1, so they read by shape rather than contrast.
+The owner then asked for it to be a ball (2026-11-08). The clip is a circle, with the eyes a little above its centre. Lighting comes from the upper left: a soft highlight there (22% white at most), and a shadow on the ball's own edge all round, deepest at the lower right (16% at most). Both are meant to go unnoticed and only make it read as a sphere. A floor shadow under it was tried and removed at the owner's request.
+
+Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08) makes the eyes white. With `currentColor` they took Clarte's dark ink and sank into the gradient's navy; a white ring around ink eyes was tried and declined. On the original palette white eyes measured median 3.4:1 against the companion over 20 s; on the grey-white palette they measure median 1.8:1, worst 1.3:1, so they read by shape rather than contrast.
 
 To take the component as given, style 8 now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
 
@@ -46,13 +48,13 @@ Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse,
 
 ### Docking (owner, 2026-11-08)
 
-While the middle is blank the ghost floats at its centre. When text arrives there (words heard, the message typed, the sentence spoken, a menu title) it flies to the top-left of Q2 and docks as a 44 px mark beside the state pill, which steps 48 px right to make room. When the middle clears it flies back. The history alone does not count as text, or the ghost would almost never be at the centre.
+The ball floats at the centre only while the middle holds no text at all. Any text there sends it to the top-left of Q2, where it docks as a 44 px mark beside the state pill, which steps 48 px right to make room. That includes the conversation history (owner, 2026-11-08: "even for this"), as well as words heard, the message typed, the sentence spoken and a menu title. In practice it sits at the centre at the start of a conversation and flies back only when the middle is empty again.
 
 - **Path.** One curve that rises first and then drifts left along the top. It clears the new words instead of crossing them, and stays 40 px inside Q2, away from Q1. Going home it retraces the same curve.
 - **Timing.** Leaving makes room for words being read, so it launches at once and glides in over 620 ms (`--ease-state`). Coming home, nothing is waiting on it, so it eases out and in over 680 ms (`--ease-move`). It shrinks early on the way out and grows late on the way back.
 - **Body.** It leans up to 9° into the turn and stretches up to 6% along the way. It squashes 10% as it lands, and recovers over 320 ms.
 - **Face.** The eyes go first, 90 ms before the body, looking where it is heading and narrowing as if into the wind. On landing, momentum carries them further up-left (260 ms), they glance up-right (520 ms), and then they return to following the pointer. The landing glances reach about 2.5 times the pointer's range so they still read at 44 px.
-- **Interruption.** Position, size, lean and stretch all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ghost turns round from where it is.
+- **Interruption.** Position, size, lean and stretch all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ball turns round from where it is.
 - **Still or reduced motion.** No flight. It fades out (150 ms), moves, and fades in at the other place, with the face at rest.
 
 ## Open questions for the owner
@@ -61,4 +63,4 @@ While the middle is blank the ghost floats at its centre. When text arrives ther
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `idle` (Soft), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening).

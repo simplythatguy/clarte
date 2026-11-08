@@ -502,11 +502,12 @@ export function App() {
     rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} context={contextWords(state)} wordColours={settings.wordColours} />;
   }
 
-  // The companion (owner, 2026-11-08) is there only while the middle is blank: it leaves as soon
-  // as text appears there (words heard, the message typed, the sentence spoken, a menu title).
+  // The companion (owner, 2026-11-08) floats at the centre only while the middle holds no text at
+  // all: no history, no words heard, no message typed, nothing spoken, no menu title. Any text sends
+  // it to dock at Q2's top-left.
   const composing = state.composition.words.length > 0 || state.composition.pending.length > 0;
   const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || live.kind === 'speaking' || composing;
-  const blank = screen.kind === 'talk' && !liveText;
+  const blank = screen.kind === 'talk' && !liveText && state.turns.length === 0;
   const still = settings.orbMotion === 'still';
 
   return (
