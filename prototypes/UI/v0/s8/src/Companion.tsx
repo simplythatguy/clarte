@@ -28,7 +28,6 @@ type Props = {
   mood: OrbMood;
   pulse: number;
   still: boolean;
-  theme: 'light' | 'dark';
 };
 
 /** The reaction to show now: a new turn's reaction for REACTION_HOLD_MS, then none. */
@@ -43,15 +42,17 @@ function useHeldReaction(reaction: ShownReaction | null): ReactionKind | null {
   return reaction && !expired.has(reaction.key) ? reaction.kind : null;
 }
 
-export function Companion({ visible, listening, reaction, mood, pulse, still, theme }: Props) {
+export function Companion({ visible, listening, reaction, mood, pulse, still }: Props) {
   const held = useHeldReaction(reaction);
   const kind: ExpressionKind = held ?? (listening ? 'listening' : 'neutral');
   // While text holds the middle, keep the last face so it leaves wearing it.
   const shownKind = useRef(kind);
   if (visible) shownKind.current = kind;
   return (
-    <Orb mood={mood} pulse={pulse} still={still} theme={theme} palette={PALETTE} visible={visible}>
-      <SketchFace kind={visible ? kind : shownKind.current} visible={visible} enterDelay={260} alive={!still} />
+    <Orb mood={mood} pulse={pulse} still={still} palette={PALETTE} visible={visible}>
+      {/* Style 8: while Clarte speaks the sentence sits on the Cloud, so the face steps aside and the
+          green, livelier orb alone shows that it is speaking. */}
+      <SketchFace kind={visible ? kind : shownKind.current} visible={visible && mood !== 'speaking'} enterDelay={260} alive={!still} />
     </Orb>
   );
 }

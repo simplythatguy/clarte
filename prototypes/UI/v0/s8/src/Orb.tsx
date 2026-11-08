@@ -43,27 +43,16 @@ export type OrbMood = 'idle' | 'listening' | 'composing' | 'speaking';
 type Palette = [string, string, string, string];
 
 /**
- * Four colour points per mood, from light orange to near white. Light theme: the deepest orange
- * at relative luminance 0.57 or more. Dark: embers, matched.
+ * Four colour points per mood, from light orange to near white: the deepest orange at relative
+ * luminance 0.57 or more. Style 8 has no dark theme (owner, 2026-11-07).
  */
-const PALETTES: Record<'light' | 'dark', Record<OrbMood, Palette>> = {
-  light: {
+const LIGHT: Record<OrbMood, Palette> = {
     // Light orange on white (owner, 2026-11-07): the moods stay within it.
     idle: ['#FFC49C', '#FFE4D0', '#FFD5B6', '#FFF7F0'],
     listening: ['#FFB9A0', '#FFDDD0', '#FFCDBA', '#FFF6F2'],
     composing: ['#FFCB8E', '#FFE8C8', '#FFDBAE', '#FFF9EE'],
     // Speaking turns green (owner, 2026-11-07), matched in lightness to the oranges.
     speaking: ['#BCEBCA', '#E0F6E7', '#CDF0D7', '#F7FDF9'],
-  },
-  // The dark theme's Glow Cloud (style 8, owner 2026-11-07: "make it look like" the light theme's
-  // Cloud): the light palette eased a fifth of the way to white, at full strength, so it reads as the
-  // same peach on the dark page.
-  dark: {
-    idle: ['#FFD0B0', '#FFE9D9', '#FFDDC5', '#FFF9F3'],
-    listening: ['#FFC7B3', '#FFE4D9', '#FFD7C8', '#FFF8F5'],
-    composing: ['#FFD5A5', '#FFEDD3', '#FFE2BE', '#FFFAF1'],
-    speaking: ['#C9EFD5', '#E6F8EC', '#D7F3DF', '#F9FDFA'],
-  },
 };
 
 /**
@@ -78,35 +67,9 @@ const VIBRANT: Record<OrbMood, Palette> = {
   speaking: ['#3DD27A', '#9BE8B8', '#6BDD97', '#E2F9EA'],
 };
 
-/**
- * Style 8's dark-theme Clouds, to compare (`?cloud=`, owner 2026-11-07): Glow (warm sunrise peach),
- * Moon (cool silver-lavender) and Aurora (soft teal). Each is drawn light and screen-blended onto
- * the dark page, so its halo reads as light rather than a grey ring.
- */
-export type DarkCloud = 'glow' | 'moon' | 'aurora';
-const DARK_CLOUDS: Record<DarkCloud, Record<OrbMood, Palette>> = {
-  glow: PALETTES.dark,
-  moon: {
-    idle: ['#B9B4FF', '#E3E1FF', '#CFCBFF', '#F7F6FF'],
-    listening: ['#D4B0FF', '#EEDDFF', '#E1C6FF', '#FAF5FF'],
-    composing: ['#A9C4FF', '#DCE7FF', '#C3D5FF', '#F4F8FF'],
-    speaking: ['#9FE6C4', '#D9F7E9', '#BDEFD7', '#F3FDF8'],
-  },
-  aurora: {
-    idle: ['#6FD6D0', '#C2F0EC', '#97E3DD', '#EDFBFA'],
-    listening: ['#7FC8F2', '#CBE9FA', '#A6D9F6', '#F0F9FE'],
-    composing: ['#8FDDB0', '#D2F4E0', '#B0EBC8', '#F1FCF5'],
-    speaking: ['#7EE3A8', '#CFF7DF', '#A8EEC4', '#F1FDF6'],
-  },
-};
-const requestedCloud = new URLSearchParams(location.search).get('cloud');
-export const DARK_CLOUD: DarkCloud = requestedCloud === 'moon' || requestedCloud === 'aurora' ? requestedCloud : 'glow';
-document.documentElement.dataset.cloud = DARK_CLOUD;
-
-/** The four colour points for a mood, theme and palette. */
-export function orbPalette(mood: OrbMood, theme: 'light' | 'dark', palette: PaletteKind): Palette {
-  if (theme === 'dark') return DARK_CLOUDS[DARK_CLOUD][mood];
-  return palette === 'vibrant' ? VIBRANT[mood] : PALETTES.light[mood];
+/** The four colour points for a mood and palette. */
+export function orbPalette(mood: OrbMood, palette: PaletteKind): Palette {
+  return palette === 'vibrant' ? VIBRANT[mood] : LIGHT[mood];
 }
 
 function rgb(hex: string): [number, number, number] {
@@ -130,7 +93,6 @@ uniform vec3 u_c0;
 uniform vec3 u_c1;
 uniform vec3 u_c2;
 uniform vec3 u_c3;
-uniform float u_dark;
 uniform vec2 u_lean;
 uniform float u_energy;
 varying vec2 v_uv;
@@ -170,21 +132,14 @@ void main() {
   // A lighter rim towards the lower left, as if lit from there.
   vec2 dir = p / max(length(p), 1e-4);
   float rim = smoothstep(0.55, 1.0, d) * (0.5 + 0.5 * dot(dir, normalize(vec2(-0.75, -0.55))));
-  // On the dark page (u_dark) the rim stays the orb's own colour: lifted to white it reads as a
-  // pale border there.
-  col = mix(col, vec3(1.0), clamp(rim, 0.0, 1.0) * 0.55 * (1.0 - u_dark));
+  col = mix(col, vec3(1.0), clamp(rim, 0.0, 1.0) * 0.55);
   // A slightly deeper core, so the orb has depth rather than reading as a flat disc.
   col = mix(col, col * 0.94, (1.0 - smoothstep(0.0, 0.7, d)) * 0.5);
 
   // A soft but defined edge, and a faint halo in the orb's own colour (never white, which would
   // read as a smudge on the light canvas).
-  // A soft edge; on the dark page a tighter one (owner, 2026-11-07: less glow on the edges there).
-  float body = 1.0 - smoothstep(mix(0.9, 0.95, u_dark), 1.0, d);
-  // No wide halo on the dark page: any faint peach over black reads as a smoky brown ring there.
-  float halo = (1.0 - smoothstep(1.0, 1.35, d)) * 0.22 * (1.0 - u_dark);
-  // On the dark page the feathered edge and halo fade through the orb's deepest peach (u_c0), not
-  // its near-white middle: a near-white fading over black reads as grey, a peach reads as a glow.
-  col = mix(col, u_c0, smoothstep(0.85, 1.05, d) * 0.5 * u_dark);
+  float body = 1.0 - smoothstep(0.9, 1.0, d);
+  float halo = (1.0 - smoothstep(1.0, 1.35, d)) * 0.22;
   float alpha = max(body, halo);
   col += (hash(frag + fract(t)) - 0.5) / 255.0; // dither against banding
   gl_FragColor = vec4(col * alpha, alpha);
@@ -201,7 +156,6 @@ type Props = {
   pulse: number;
   /** Orb motion "Still": never drift or pulse. */
   still: boolean;
-  theme: 'light' | 'dark';
   palette: PaletteKind;
   /** Style 7: the Cloud shows only while the live line is empty; it fades out when text appears. */
   visible: boolean;
@@ -211,16 +165,16 @@ type Props = {
 
 /** The face's box as a share of the orb's radius, and how far it rides the lean (shader: 0.16). */
 const FACE_SIZE = 0.8;
-/** The orb's radius as a share of half its canvas. Style 8 (owner, 2026-11-07): 0.8 × style 7's 0.62. */
-const ORB_RADIUS = 0.62 * 0.8;
+/** The orb's radius as a share of half its canvas: style 7's size (a 0.8× trial was undone). */
+const ORB_RADIUS = 0.62;
 const FACE_LEAN = 0.2;
 /** The face sits a little below the orb's centre, clear of the history, well inside the body. */
 const FACE_DROP = 0.3;
 
-export function Orb({ mood, pulse, still, theme, palette, visible, children }: Props) {
+export function Orb({ mood, pulse, still, palette, visible, children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const faceRef = useRef<HTMLDivElement>(null);
-  const api = useRef<{ setMood(p: Palette, instant: boolean): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void; setDark(v: boolean): void } | null>(null);
+  const api = useRef<{ setMood(p: Palette, instant: boolean): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -246,7 +200,7 @@ export function Orb({ mood, pulse, still, theme, palette, visible, children }: P
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     const u = (name: string) => gl.getUniformLocation(prog, name);
-    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uDark = u('u_dark'), uLean = u('u_lean'), uEnergy = u('u_energy');
+    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uLean = u('u_lean'), uEnergy = u('u_energy');
     const uCols = [u('u_c0'), u('u_c1'), u('u_c2'), u('u_c3')];
 
     // Live values. `time` advances by `speed` (1 while moving, 0 when Still). `lean` follows
@@ -258,9 +212,8 @@ export function Orb({ mood, pulse, still, theme, palette, visible, children }: P
     let swell = 0;
     // 0 at rest, 1 while speaking: faster, deeper motion and bigger word swells.
     let energy = 0;
-    let dark = 0;
     let stillMode = false;
-    let colours = flat(PALETTES.light.idle);
+    let colours = flat(LIGHT.idle);
     let from = colours;
     let to = colours;
     let mix = 1;
@@ -298,7 +251,6 @@ export function Orb({ mood, pulse, still, theme, palette, visible, children }: P
       gl.uniform1f(uTime, time);
       gl.uniform1f(uSwell, swell);
       gl.uniform1f(uRadius, ORB_RADIUS);
-      gl.uniform1f(uDark, dark);
       gl.uniform2f(uLean, lean[0], lean[1]);
       gl.uniform1f(uEnergy, frozen() ? 0 : energy);
       uCols.forEach((loc, i) => gl.uniform3f(loc, colours[i * 3], colours[i * 3 + 1], colours[i * 3 + 2]));
@@ -380,7 +332,6 @@ export function Orb({ mood, pulse, still, theme, palette, visible, children }: P
         if (frozen()) { speedAnim?.stop(); speed = 0; leanTarget = [0, 0]; wake(); }
         else { setSpeed(1, 0.8); aimAt(lookedAt); }
       },
-      setDark(v) { dark = v ? 1 : 0; wake(); },
     };
 
     const ro = new ResizeObserver(resize);
@@ -404,12 +355,10 @@ export function Orb({ mood, pulse, still, theme, palette, visible, children }: P
 
   const first = useRef(true);
   useEffect(() => {
-    // The dark theme's orb is light too (style 8): u_dark keeps its rim in its own colour and feathers its edge.
-    api.current?.setDark(theme === 'dark');
-    api.current?.setMood(orbPalette(mood, theme, palette), first.current);
+    api.current?.setMood(orbPalette(mood, palette), first.current);
     api.current?.setEnergy(mood === 'speaking' ? 1 : 0);
     first.current = false;
-  }, [mood, theme, palette]);
+  }, [mood, palette]);
   useEffect(() => { api.current?.setStill(still); }, [still]);
   const lastPulse = useRef(pulse);
   useEffect(() => {

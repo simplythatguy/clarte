@@ -37,7 +37,7 @@ export function Gallery() {
       <div className="gallery-main">
         <div className="gallery-stage">
           <div className="gallery-cloud">
-            <Orb mood="idle" pulse={0} still={false} theme="light" palette={PALETTE} visible={visible}>
+            <Orb mood="idle" pulse={0} still={false} palette={PALETTE} visible={visible}>
               <SketchFace kind={kind} visible={visible} enterDelay={260} />
             </Orb>
           </div>

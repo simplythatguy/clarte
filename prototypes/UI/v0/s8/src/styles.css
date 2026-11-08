@@ -78,36 +78,6 @@
   color-scheme: light;
 }
 
-:root[data-theme='dark'] {
-  --canvas: #161617;
-  --orb-opacity: 1;
-  --orb-opacity-speaking: 1;
-  --surface: #2E2E31;
-  --surface-focus: #2E2E31;
-  --glass: rgb(255 255 255 / 0.06);
-  --glass-focus: rgb(255 255 255 / 0.09);
-  --glass-edge: rgb(255 255 255 / 0.08);
-  --glass-edge-focus: rgb(255 255 255 / 0.22);
-  --ink: #F5F5F7;
-  --ink-focus: #E4E4E8;
-  --on-ink: #1D1D1F;
-  --on-ink-2: rgb(29 29 31 / 0.66);
-  --ink-2: #A1A1A6;
-  --ink-3: #8D8D92;
-  --hairline: #3A3A3C;
-  --accent: #F5F5F7;
-  --destructive: #FF6B5E;
-  --select-line: #4A4A4E;
-  --report-hairline: #3A3A3F;
-  /* On the dark canvas the word-in-progress glyphs need light group inks (cards use them too). */
-  --g1-text: #8CC2EA; --g2-text: #BBA6EE; --g3-text: #7FCCA4; --g4-text: #F0AE7E;
-  --listening: #FF6B6B;
-  --composing: #F28BC0;
-  --speaking: #5DD07A;
-  --speaking-face: #1C3323;
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 html { background: var(--canvas); }
@@ -192,8 +162,6 @@ body {
    edge in the same hue; the look still fills it with white. */
 .card-group { --tint: color-mix(in oklab, var(--gi) 8%, #FFFFFF); background: var(--tint); border-color: color-mix(in oklab, var(--gi) 14%, transparent); }
 .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 4%, #FFFFFF); border-color: color-mix(in oklab, var(--gi) 32%, transparent); }
-:root[data-theme='dark'] .card-group { --tint: color-mix(in oklab, var(--gt) 9%, var(--canvas)); border-color: color-mix(in oklab, var(--gt) 18%, transparent); }
-:root[data-theme='dark'] .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gt) 13%, var(--canvas)); border-color: color-mix(in oklab, var(--gt) 36%, transparent); }
 .card-ink:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
 /* A selection: solid white with the accent edge while gaze remains. */
 .card[data-gaze='done'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -214,7 +182,6 @@ body {
   pointer-events: none;
 }
 .card-ink .wash { background: rgb(255 255 255 / 0.16); }
-:root[data-theme='dark'] .card-ink .wash { background: rgb(31 26 23 / 0.14); }
 .card[data-gaze='preview'] .wash { opacity: 0.55 !important; }
 @media (prefers-reduced-motion: reduce) {
   .card .wash { transform: scaleY(0) !important; }
@@ -267,7 +234,6 @@ body {
 .card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
-:root[data-theme='dark'] .card-ink .card-label.is-quote { color: rgb(29 29 31 / 0.86); }
 
 /* Letter groups: the letters are the label, then the count glyph. */
 .letters {
@@ -322,7 +288,6 @@ body {
   backdrop-filter: blur(16px);
   transition: opacity var(--dur-enter) var(--ease-out);
 }
-:root[data-theme='dark'] .state { background: var(--glass-focus); }
 .state[data-state='idle'] { opacity: 0; }
 .state i { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--state-dot); transition: background-color var(--dur-phase) var(--ease-state); }
 .state[data-state='listening'] { --state-dot: var(--listening); }
@@ -678,8 +643,6 @@ body {
   :root[data-large] .report-heading { font-size: min(calc(30px * var(--scale)), 38px); }
   :root[data-large] .metric-value { font-size: min(calc(36px * var(--scale)), 44px); }
 }
-/* Dark theme: letters use the light group inks. */
-:root[data-theme='dark'] .card-group { color: var(--gt); }
 
 /* ═════════════════════ Style 7 · Cloud (owner, 2026-11-07) ═════════════════════ */
 
@@ -704,14 +667,6 @@ body {
 .orb-face[data-mood='composing'] { --sketch-ink: #6B4219; }
 .orb-face[data-mood='speaking'] { --sketch-ink: #24573A; }
 :root[data-palette='vibrant'] .orb-face { --sketch-ink: #4A2412; }
-/* Dark theme: the orb is a deep ember, so the face is a warm glowing line in the mood's own hue,
-   drawn normally (not blended) with a faint glow, like light coming through. About 5:1 or more on
-   each mood's deepest point. */
-:root[data-theme='dark'] .orb-face { mix-blend-mode: normal; --sketch-ink: #FFB48A; }
-:root[data-theme='dark'] .orb-face[data-mood='listening'] { --sketch-ink: #FFA592; }
-:root[data-theme='dark'] .orb-face[data-mood='composing'] { --sketch-ink: #FFC783; }
-:root[data-theme='dark'] .orb-face[data-mood='speaking'] { --sketch-ink: #8FE3AE; }
-:root[data-theme='dark'] .orb-face .sketch { filter: drop-shadow(0 0 5px color-mix(in oklab, var(--sketch-ink) 55%, transparent)); }
 .orb-face-body {
   position: absolute;
   left: 50%;
@@ -857,7 +812,6 @@ body {
 :root[data-palette='vibrant'] .card-group[data-gaze='done'] { border-color: var(--ink); box-shadow: inset 0 0 0 2px #FFFFFF, 0 0 0 2px var(--ink); }
 /* Unavailable (listening, speaking): back to a pale tint with coloured letters, so it reads as off. */
 :root[data-palette='vibrant'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 10%, #FFFFFF); color: var(--gi); }
-:root[data-theme='dark'][data-palette='vibrant'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 18%, var(--canvas)); color: var(--gt); }
 
 /* ── `?gallery`: every face for review ── */
 .gallery { height: 100vh; overflow: auto; padding: 40px 56px 64px; background: var(--canvas); color: var(--ink); }
@@ -880,60 +834,3 @@ body {
 .gallery-thumb-cloud { background: radial-gradient(circle at 38% 32%, #FFF7F0, #FFE4D0 45%, #FFD5B6 80%, #FFC49C); --sketch-ink: #6E3B22; }
 .gallery-thumb-cloud .sketch { width: 78%; height: 78%; }
 :root[data-palette='vibrant'] .gallery-thumb-cloud { background: radial-gradient(circle at 38% 32%, #FFE9D8, #FFC79E 45%, #FFAE70 80%, #FF9A52); --sketch-ink: #4A2412; }
-
-/* ═════════════════════ Style 8 · Even grid (owner, 2026-11-07) ═════════════════════
-   "Make them all equal size; it looks weird with spaces in between." The conversation's six cards
-   are one size and fill their quadrants, with one even gap between every card and round the
-   screen's edge. The gap straddles each backend quadrant boundary (8 px either side at 16 px), so
-   every card stays inside its own backend quadrant. Setup keeps style 7's report cards. */
-:root { --grid-gap: 16px; }
-.layer { padding: var(--grid-gap); gap: var(--grid-gap); }
-.layer[data-surface='talk'] .cell { padding: 0; align-items: stretch; }
-.layer[data-surface='talk'] .card { width: 100%; height: 100%; }
-/* Owner, 2026-11-07: the letter row is 0.75 of its height, resting on the bottom edge, so the middle
-   has more room. The top cards stay above the backend row boundary (they cannot grow past it
-   without crossing into Q5–Q8), so the freed height becomes space between the rows. */
-.layer[data-surface='talk'] :is(.cell-q5, .cell-q6, .cell-q7, .cell-q8) { align-items: flex-end; }
-.layer[data-surface='talk'] :is(.cell-q5, .cell-q6, .cell-q7, .cell-q8) > .card { height: 75%; }
-/* Owner, 2026-11-07, having seen the trade-off: Listen/Q1 and Menu/Q4 grow down to the letter row,
-   so the gap between the rows equals the grid gap (the letter row's freed quarter goes to them).
-   Their lower part (about 107 px at 1440×900) crosses the backend row boundary into Q5 and Q8, which
-   already hold A–F and T–Z: check-layout reports this as a violation, and a look there selects the
-   letter card below. Accepted for this visual experiment only. */
-.layer[data-surface='talk'] :is(.cell-q1, .cell-q4) > .card { height: 125%; }
-
-/* ── Dark theme (owner, 2026-11-07, second round: "too vibrant … make them lighter or glassy") ──
-   1. Letter cards are tinted glass: a translucent wash of the group colour (34% fading to 16%),
-      an edge in the same hue, a thin highlight along the top, and pastel letters. Looking at a
-      card brightens the glass and a soft light rises over the dwell.
-   2. The Cloud is light and screen-blended, so it glows (Orb.tsx, DARK_CLOUDS; `?cloud=glow|moon|
-      aurora`). Its face is a deep ink of the cloud's own hue, multiplied into the gradient.
-   3. History that passes over the Cloud carries a soft dark halo in the page's own colour. */
-:root[data-theme='dark'] {
-  --g1-ink: #3B82F6; --g2-ink: #8B5CF6; --g3-ink: #22C55E; --g4-ink: #F97316;
-  --orb-opacity: 1;
-  --orb-opacity-speaking: 1;
-}
-:root[data-theme='dark'] .card-group {
-  background: linear-gradient(160deg, color-mix(in oklab, var(--gi) 34%, transparent), color-mix(in oklab, var(--gi) 16%, transparent));
-  border-color: color-mix(in oklab, var(--gi) 50%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
-  color: color-mix(in oklab, var(--gi) 38%, #FFFFFF);
-}
-:root[data-theme='dark'] .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) {
-  background: linear-gradient(160deg, color-mix(in oklab, var(--gi) 46%, transparent), color-mix(in oklab, var(--gi) 24%, transparent));
-  border-color: color-mix(in oklab, var(--gi) 75%, #FFFFFF);
-}
-:root[data-theme='dark'] .card-group .wash { background: linear-gradient(to top, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.08)); }
-:root[data-theme='dark'] .card-group[data-gaze='done'] { border-color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFFFFF; }
-:root[data-theme='dark'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 10%, transparent); color: color-mix(in oklab, var(--gi) 38%, #FFFFFF); }
-:root[data-theme='dark'] .orb { mix-blend-mode: screen; }
-:root[data-theme='dark'] .orb-face { mix-blend-mode: normal; --sketch-ink: #6E3B22; }
-:root[data-theme='dark'][data-cloud='moon'] .orb-face { --sketch-ink: #2F2A6E; }
-:root[data-theme='dark'][data-cloud='aurora'] .orb-face { --sketch-ink: #134E4A; }
-:root[data-theme='dark'] .orb-face:is([data-mood='listening'], [data-mood='composing']) { --sketch-ink: #6E3B22; }
-:root[data-theme='dark'][data-cloud='moon'] .orb-face:is([data-mood='idle'], [data-mood='listening'], [data-mood='composing']) { --sketch-ink: #2F2A6E; }
-:root[data-theme='dark'][data-cloud='aurora'] .orb-face:is([data-mood='idle'], [data-mood='listening'], [data-mood='composing']) { --sketch-ink: #134E4A; }
-:root[data-theme='dark'] .orb-face[data-mood='speaking'] { --sketch-ink: #1F5A3A; }
-:root[data-theme='dark'] .orb-face .sketch { filter: none; }
-:root[data-theme='dark'] .history .turn { text-shadow: 0 0 2px rgb(22 22 23 / 0.95), 0 0 6px rgb(22 22 23 / 0.9), 0 0 14px rgb(22 22 23 / 0.75); }
