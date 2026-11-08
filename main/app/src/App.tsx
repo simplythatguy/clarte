@@ -56,6 +56,7 @@ import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
 import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
 import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
+import { TeachSound, type TeachStep } from './TeachSound.tsx';
 import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
@@ -312,6 +313,8 @@ export function App() {
     startSoundSelect(onSound, enabled).then((s) => { if (stopped) s.stop(); else sound = s; }, () => {});
     return () => { stopped = true; sound?.stop(); };
   }, []);
+  const [teachStep, setTeachStep] = useState<TeachStep>('room');
+  const [teachRun, setTeachRun] = useState(0);
 
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {
@@ -637,6 +640,11 @@ export function App() {
       else if (action === 'keyboard-mouse') chooseKeyboardAndMouse();
       return;
     }
+    if (s.screen.kind === 'teach') {
+      if (action === 'back' || action === 'teach-done') page('settings');
+      else if (action === 'teach-retry') { play('control'); setTeachStep('room'); setTeachRun((n) => n + 1); }
+      return;
+    }
     if (s.screen.kind === 'voice') { voiceAction(action); return; }
     if (s.screen.kind === 'options') {
       if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
@@ -684,6 +692,7 @@ export function App() {
         return;
       }
       if (action === 'recalibrate') { play('control'); mouseOnly.current = false; dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } }); return; }
+      if (action === 'teach-sound') { play('control'); setTeachStep('room'); setTeachRun((n) => n + 1); dispatch({ type: 'screen', screen: { kind: 'teach' } }); return; }
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
@@ -770,6 +779,24 @@ export function App() {
     } : {};
     restKey = calibrationFailure ? 'calibration-failure' : 'calibration';
     rest = <Calibration failure={calibrationFailure} />;
+  } else if (screen.kind === 'teach') {
+    // One prompt at a time in the menu's title place; Back in Q1, and Done once the sound is in use.
+    slotViews = {
+      q1: backCard('Settings'),
+      ...(teachStep === 'ready' ? { q4: tallCard('teach-done', 'Done', <Check />) } : teachStep === 'failed' ? { q4: tallCard('teach-retry', 'Try again', <ArrowRight />) } : {}),
+    };
+    restKey = 'teach';
+    rest = (
+      <>
+        <div className="thread-behind" inert aria-hidden="true">
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />
+        </div>
+        <section className="thread thread-title" aria-label="My sound">
+          <p className="page-trail">{[...trailOf('settings'), 'My sound'].join(' › ')}</p>
+          <TeachSound key={teachRun} onStep={setTeachStep} />
+        </section>
+      </>
+    );
   } else if (screen.kind === 'welcome') {
     slotViews = welcomeSlots(autoStart);
     restKey = 'onboarding-welcome';

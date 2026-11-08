@@ -31,12 +31,12 @@ await writeFile(file, wav);
 
 const failures = [];
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` (${detail})` : ''}`); if (!ok) failures.push(name); };
-const browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-audio-capture=${file}%noloop`, '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-audio-capture=${file}%noloop`, '--autoplay-policy=no-user-gesture-required'] });
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['microphone'] })).newPage();
 const read = () => page.evaluate(() => ({ phase: window.clarteDebug.phase(), state: window.clarteDebug.engine.snapshot.state, action: window.clarteDebug.engine.snapshot.action }));
 try {
   const started = Date.now();
-  await page.goto(`${ORIGIN}/?input=mouse&onboarding=off`);
+  await page.goto(`${ORIGIN}/?onboarding=off`);
   await page.waitForTimeout(1200);
   await page.mouse.move(540, 650); // the G2 card, bottom row
   await page.waitForTimeout(2500);
@@ -44,9 +44,11 @@ try {
   check('a look arms the card and waits', armed.state === 'previewed' && armed.action === 'G2' && armed.phase === 'idle', JSON.stringify(armed));
   await page.waitForTimeout(1500);
   check('steady background noise does not select', (await read()).phase === 'idle');
+  // The file plays from when the microphone opens; the "ah" is 6 s in.
+  const micTime = () => page.evaluate(() => (window.clarteMic ? (performance.now() - window.clarteMic.startedAt) / 1000 : -1));
   let after = await read();
-  while (Date.now() - started < 10000 && after.phase === 'idle') { await page.waitForTimeout(100); after = await read(); }
-  check('a short "ah" selects it', after.phase === 'composing-pending', JSON.stringify(after));
+  while (Date.now() - started < 20000 && (await micTime()) < 7.5 && after.phase === 'idle') { await page.waitForTimeout(100); after = await read(); }
+  check('a short "ah" selects it', after.phase.startsWith('composing'), JSON.stringify(after));
 } catch (error) {
   failures.push(String(error));
   console.error(error);

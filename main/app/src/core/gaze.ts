@@ -9,6 +9,13 @@
  *  - 'dwell': a steady look at an action for `dwellMs` selects it.
  *  - 'confirm': a steady look previews the action; `confirm()` (blink, key, switch) selects it.
  *
+ * Switching cards. The card the engine is on changes only when the eyes have settled on another
+ * one: over the last `holdMs`, the new card (or rest zone) must hold at least `holdShare` of the
+ * time. A clean look moves after holdShare × holdMs; a noisy one takes longer, and a look that
+ * keeps straying to a neighbour never moves there. The card it is on still needs the eyes: a dwell
+ * or preview starts only while the latest sample is on it, and ends when they have been off it for
+ * `graceMs`, so the line never runs on a card the eyes have left.
+ *
  * After a selection the action stays `selected` (latched) until gaze has been off it for
  * `rearmMs`, so one long look never fires twice.
  */
@@ -20,15 +27,20 @@ export type GazeSettings = {
   mode: SelectionMode;
   /** Steady look needed to select (dwell) or preview (confirm). */
   dwellMs: number;
-  /** A new quadrant must hold this long before it replaces the current one. */
+  /**
+   * The window over which another card must win before the engine moves to it. 0 moves at the
+   * first sample.
+   */
   holdMs: number;
+  /** The share of the last `holdMs` the other card must hold (0..1). */
+  holdShare: number;
   /** Gaze must stay off a selected action this long before it can fire again. */
   rearmMs: number;
   /** No samples for this long counts as lost gaze. */
   staleMs: number;
   /**
-   * A dwell survives gaze leaving its action for up to this long (micro-saccades, a glance at a
-   * neighbouring gutter). Longer exits cancel it.
+   * A dwell or preview survives the eyes leaving its action for up to this long (micro-saccades,
+   * a stray sample, a glance at a neighbouring gutter). Longer exits cancel it.
    */
   graceMs: number;
   /** Missing samples (closed eyes, lost face) shorter than this never change the quadrant. */
@@ -54,10 +66,14 @@ export type GazeSettings = {
 export const DEFAULT_GAZE_SETTINGS: GazeSettings = {
   mode: 'dwell',
   dwellMs: 900,
-  holdMs: 150,
+  // Tuned on recorded webcam gaze (Gaze Lab Test-1, 12 posture blocks): against the old 150 ms
+  // hold, lines started on the wrong card 13 times instead of 37 and wrong cards were selected 10
+  // times instead of 19. A clean look moves after 650 ms.
+  holdMs: 1000,
+  holdShare: 0.65,
   rearmMs: 300,
   staleMs: 600,
-  graceMs: 150,
+  graceMs: 300,
   blinkGraceMs: 200,
   noiseSigma: 0,
   smoothing: 0.5,
@@ -90,7 +106,7 @@ export type GazeListener = (snapshot: GazeSnapshot, event?: GazeEvent) => void;
 type Internal =
   | { kind: 'idle' }
   | { kind: 'dwelling'; action: string; since: number; awaySince: number | null }
-  | { kind: 'previewed'; action: string }
+  | { kind: 'previewed'; action: string; awaySince: number | null }
   | { kind: 'selected'; action: string; at: number; offSince: number | null };
 
 function gaussian(): number {
@@ -107,7 +123,10 @@ export class GazeEngine {
   private point: { x: number; y: number } | null = null;
   private lastSampleAt = -Infinity;
   private currentQuadrant: QuadrantId | null = null;
-  private candidate: { quadrant: QuadrantId | null; since: number } | null = null;
+  /** Where the latest sample landed, before any hold: the eyes right now. */
+  private rawQuadrant: QuadrantId | null = null;
+  /** Recent samples' quadrants for the hold vote; null for a sample that votes for nothing. */
+  private history: { at: number; quadrant: QuadrantId | null }[] = [];
   private internal: Internal = { kind: 'idle' };
   private now = 0;
   private lostSince: number | null = null;
@@ -169,8 +188,9 @@ export class GazeEngine {
       if (this.lostSince === null) this.lostSince = at;
       if (at - this.lostSince >= this.settings.blinkGraceMs) {
         this.point = null;
-        this.setQuadrant(null, at);
+        this.loseQuadrant();
       }
+      this.vote(at, null);
       this.resolve(at);
       return;
     }
@@ -183,7 +203,10 @@ export class GazeEngine {
       ? { x: this.point.x + (nx - this.point.x) * smoothing, y: this.point.y + (ny - this.point.y) * smoothing }
       : { x: nx, y: ny };
     this.lastSampleAt = at;
-    if (!this.inDeadBand(this.point.x, this.point.y)) this.setQuadrant(quadrantAt(this.point.x, this.point.y, this.viewport), at);
+    // Inside the dead band a sample keeps where the eyes were and votes for nothing.
+    const quadrant = this.inDeadBand(this.point.x, this.point.y) ? null : quadrantAt(this.point.x, this.point.y, this.viewport);
+    if (quadrant) this.rawQuadrant = quadrant;
+    this.vote(at, quadrant);
     this.resolve(at);
   }
 
@@ -203,7 +226,7 @@ export class GazeEngine {
     this.now = Math.max(this.now, at);
     if (at - this.lastSampleAt > this.settings.staleMs && this.point !== null) {
       this.point = null;
-      this.setQuadrant(null, at);
+      this.loseQuadrant();
     }
     this.resolve(at);
   }
@@ -234,14 +257,44 @@ export class GazeEngine {
     return quadrant ? actionIn(quadrant, this.actionables, this.viewport) : null;
   }
 
-  private setQuadrant(quadrant: QuadrantId | null, at: number): void {
-    if (quadrant === this.currentQuadrant) { this.candidate = null; return; }
-    if (!this.candidate || this.candidate.quadrant !== quadrant) this.candidate = { quadrant, since: at };
-    const hold = quadrant === null ? 0 : this.settings.holdMs;
-    if (at - this.candidate.since >= hold) {
-      this.currentQuadrant = quadrant;
-      this.candidate = null;
+  /** What a quadrant shows: its action, or the rest zone itself. A wide card is one target. */
+  private targetOf(quadrant: QuadrantId): string {
+    return this.actionFor(quadrant)?.id ?? `rest:${quadrant}`;
+  }
+
+  /** The eyes are gone (past the blink grace, or no samples): no quadrant, at once. */
+  private loseQuadrant(): void {
+    this.currentQuadrant = null;
+    this.rawQuadrant = null;
+    this.history = [];
+  }
+
+  private vote(at: number, quadrant: QuadrantId | null): void {
+    this.history.push({ at, quadrant });
+    const from = at - this.settings.holdMs;
+    while (this.history.length > 1 && this.history[1].at <= from) this.history.shift();
+  }
+
+  /**
+   * Move to the target the eyes have settled on. Inside the current target (another quadrant of a
+   * wide card) the quadrant follows the eyes at once; another target must hold `holdShare` of the
+   * last `holdMs`, each sample counting until the next one (at most `staleMs`).
+   */
+  private settle(at: number): void {
+    const raw = this.rawQuadrant;
+    if (!raw) return;
+    const current = this.currentQuadrant ? this.targetOf(this.currentQuadrant) : null;
+    const rawTarget = this.targetOf(raw);
+    if (rawTarget === current || this.settings.holdMs <= 0) { this.currentQuadrant = raw; return; }
+    const from = at - this.settings.holdMs;
+    let held = 0;
+    for (let i = 0; i < this.history.length; i++) {
+      const s = this.history[i];
+      if (!s.quadrant || this.targetOf(s.quadrant) !== rawTarget) continue;
+      const end = Math.min(i + 1 < this.history.length ? this.history[i + 1].at : at, s.at + this.settings.staleMs);
+      held += Math.max(0, end - Math.max(s.at, from));
     }
+    if (held >= this.settings.holdShare * this.settings.holdMs) this.currentQuadrant = raw;
   }
 
   private select(actionId: string, at: number): void {
@@ -250,11 +303,10 @@ export class GazeEngine {
   }
 
   private resolve(at: number): void {
-    if (this.candidate && this.candidate.quadrant !== null && at - this.candidate.since >= this.settings.holdMs) {
-      this.currentQuadrant = this.candidate.quadrant;
-      this.candidate = null;
-    }
+    this.settle(at);
     const looked = this.actionFor(this.currentQuadrant)?.id ?? null;
+    /** The action under the eyes right now; a dwell runs only while it is the one looked at. */
+    const under = this.actionFor(this.rawQuadrant)?.id ?? null;
     const s = this.internal;
     let event: GazeEvent | undefined;
 
@@ -268,29 +320,35 @@ export class GazeEngine {
     }
 
     if (this.internal.kind === 'idle') {
-      if (looked) this.internal = { kind: 'dwelling', action: looked, since: at, awaySince: null };
+      if (looked && under === looked) this.internal = { kind: 'dwelling', action: looked, since: at, awaySince: null };
     } else if (this.internal.kind === 'dwelling') {
       const d = this.internal;
-      if (looked !== d.action) {
+      if (looked !== d.action || under !== d.action) {
         const awaySince = d.awaySince ?? at;
         if (at - awaySince < this.settings.graceMs) {
           this.internal = { ...d, awaySince };
         } else {
-          this.internal = looked ? { kind: 'dwelling', action: looked, since: at, awaySince: null } : { kind: 'idle' };
+          this.internal = looked && under === looked ? { kind: 'dwelling', action: looked, since: at, awaySince: null } : { kind: 'idle' };
           event = { type: 'cancel', action: d.action, at };
         }
       } else if (d.awaySince !== null) {
         this.internal = { ...d, awaySince: null };
       } else if (at - d.since >= this.settings.dwellMs) {
         if (this.settings.mode === 'dwell') { this.select(d.action, at); return; }
-        this.internal = { kind: 'previewed', action: d.action };
+        this.internal = { kind: 'previewed', action: d.action, awaySince: null };
         event = { type: 'preview', action: d.action, at };
       }
     } else if (this.internal.kind === 'previewed') {
       const p = this.internal;
       if (looked !== p.action) {
-        this.internal = looked ? { kind: 'dwelling', action: looked, since: at, awaySince: null } : { kind: 'idle' };
+        this.internal = looked && under === looked ? { kind: 'dwelling', action: looked, since: at, awaySince: null } : { kind: 'idle' };
         event = { type: 'cancel', action: p.action, at };
+      } else if (under !== p.action) {
+        const awaySince = p.awaySince ?? at;
+        if (at - awaySince < this.settings.graceMs) this.internal = { ...p, awaySince };
+        else { this.internal = { kind: 'idle' }; event = { type: 'cancel', action: p.action, at }; }
+      } else if (p.awaySince !== null) {
+        this.internal = { ...p, awaySince: null };
       }
     }
     this.emit(event);

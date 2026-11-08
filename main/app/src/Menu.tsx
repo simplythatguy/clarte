@@ -13,6 +13,7 @@ import { pageList, type Paged } from './Pager.tsx';
 import { longest } from './text.ts';
 import { Again, Back, Blob, Check, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave, Waveform } from './icons.tsx';
 import { readyVoices, voiceName } from './myvoice/voices.ts';
+import { hasProfile } from './listen/store.ts';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
@@ -48,12 +49,13 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
   return values[(i + 1) % values.length];
 }
 
-/** What a menu page offers: a setting to cycle, a page to open, Recalibrate, or another command. */
+/** What a menu page offers: a setting to cycle, a page to open, Recalibrate, another command, or teaching the sound. */
 type Entry =
   | { kind: 'setting'; key: SettingKey }
   | { kind: 'page'; page: MenuPage; glyph: () => ReactNode }
   | { kind: 'recalibrate' }
-  | { kind: 'command'; action: string; label: string; glyph: () => ReactNode };
+  | { kind: 'command'; action: string; label: string; glyph: () => ReactNode }
+  | { kind: 'teach' };
 
 type Page = { title: string; parent: MenuPage | null; entries: Entry[] };
 
@@ -80,7 +82,7 @@ const PAGES: Record<MenuPage, Page> = {
   settings: {
     title: 'Settings',
     parent: 'main',
-    entries: [open('appearance', Palette), setting('suggestions'), open('sound', Speaker), open('dev-tools', Flask)],
+    entries: [open('appearance', Palette), setting('suggestions'), open('sound', Speaker), { kind: 'teach' }, open('dev-tools', Flask)],
   },
   appearance: { title: 'Appearance', parent: 'settings', entries: [setting('textScale'), setting('orbMotion'), setting('wordColours')] },
   sound: { title: 'Sound', parent: 'settings', entries: [setting('sound'), setting('volume')] },
@@ -140,6 +142,14 @@ export function menuSlots(page: MenuPage, settings: Settings, at = 0): Paged {
       case 'page': return card(`open-${e.page}`, PAGES[e.page].title, e.glyph(), span);
       case 'recalibrate': return card('recalibrate', 'Recalibrate', <Target />, span);
       case 'command': return card(e.action, e.label, e.glyph(), span);
+      case 'teach': {
+        // Shown like a setting: its name, and whether the person has taught their sound yet.
+        const value = hasProfile() ? 'Teach again' : 'Teach';
+        return {
+          action: 'teach-sound', tone: 'surface', icon: <Wave />, bodyKey: `teach:${value}`,
+          body: <><span className="setting-name" style={longest('My sound')}>My sound</span><span key={value} className="setting-value" style={longest(value)}>{value}</span></>,
+        };
+      }
     }
   };
   const { entries } = PAGES[page];

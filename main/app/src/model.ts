@@ -41,7 +41,9 @@ export type Screen =
    * Making the person's voice (VoiceSetup.tsx): on the first run after calibration, or from
    * Menu › My voice. `source` is today's recordings or files from before; `from` is where leaving goes.
    */
-  | { kind: 'voice'; step: VoiceStep; source: Source; from: 'first-run' | 'menu' };
+  | { kind: 'voice'; step: VoiceStep; source: Source; from: 'first-run' | 'menu' }
+  /** Teaching Clarté the person's sound (TeachSound.tsx), opened from Menu › Settings › My sound. */
+  | { kind: 'teach' };
 
 /** The voice pages, in order: what to make it from, consent, recording or files, making, the result. */
 export type VoiceStep = 'intro' | 'consent' | 'record' | 'files' | 'making' | 'ready' | 'need-more' | 'error';
@@ -233,7 +235,7 @@ export function secondKey(fn: SecondFn): string {
 export function phaseOf(state: State, words: Words): string {
   const { screen } = state;
   if (screen.kind === 'voice') return screen.step === 'intro' ? 'voice' : `voice-${screen.step}`;
-  if (screen.kind === 'welcome' || screen.kind === 'calibration') return screen.kind;
+  if (screen.kind === 'welcome' || screen.kind === 'calibration' || screen.kind === 'teach') return screen.kind;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'options') return 'options';
   const { primary } = slotsFor(state, words);
