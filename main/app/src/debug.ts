@@ -1,0 +1,128 @@
+/**
+ * Seeds for every distinct screen state, so `check-layout.mjs` can walk them all through
+ * `window.clarteDebug.setPhase(name)`. Seeds use real conversational content and the real
+ * composer and decoder, never a hand-built message.
+ */
+import { EMPTY_COMPOSITION, acceptWord, reduce, type Composition } from './core/composer.ts';
+import { signatureOf } from './core/decoder.ts';
+import { type MenuPage, type State, type Turn } from './model.ts';
+
+export const PHASES = [
+  'idle',
+  'listening',
+  'suggested',
+  'composing-pending',
+  'composing-reopened',
+  'composing-options',
+  'composing-options-b',
+  'composing-nomatch',
+  'composing-ready',
+  'speaking',
+  'spoken',
+  'menu',
+  'menu-settings',
+  'menu-dwell',
+  'menu-appearance',
+  'menu-sound',
+  'menu-dev-tools',
+  'options',
+  'options-many',
+  'options-many-end',
+  'worst-case',
+  'worst-nomatch',
+  'welcome',
+  'voice',
+] as const;
+
+export type PhaseName = (typeof PHASES)[number];
+
+const HISTORY: Omit<Turn, 'id'>[] = [
+  { who: 'partner', text: 'Hey, how are you feeling this morning?' },
+  { who: 'me', text: "I'm okay, thanks" },
+  { who: 'partner', text: 'Did you sleep at all?' },
+  { who: 'me', text: 'Not much. My back hurts' },
+];
+/** break-ui: the longest realistic content the screen must hold. */
+const WORST: Omit<Turn, 'id'>[] = [
+  { who: 'partner', text: 'Hm?' },
+  { who: 'me', text: 'Ok' },
+  { who: 'partner', text: 'So the physiotherapist called again this morning and said your appointment moved from Tuesday to Thursday afternoon, and your grandmother wants to come with us too, is that alright with you or would you rather I tell her another time when you are feeling more comfortable?' },
+];
+
+const OUTSIDE: Omit<Turn, 'id'> = { who: 'partner', text: 'Do you want to go outside for a bit? It is sunny.' };
+
+function withTurns(base: State, turns: Omit<Turn, 'id'>[]): State {
+  return { ...base, turns: turns.map((t, i) => ({ ...t, id: i + 1 })), nextId: turns.length + 1 };
+}
+
+/** Type a word through the four groups and accept it. */
+function typeWord(c: Composition, word: string): Composition {
+  return acceptWord(typeGroupsOf(c, word), word, 0);
+}
+
+function typeGroupsOf(c: Composition, word: string): Composition {
+  let next = c;
+  for (const g of signatureOf(word)) next = reduce(next, { type: 'group', group: g });
+  return next;
+}
+
+export function seedFor(name: PhaseName, base: State): State {
+  const clean: State = { ...base, screen: { kind: 'talk' }, live: { kind: 'quiet' }, composition: EMPTY_COMPOSITION, dismissed: null };
+  const talk = withTurns(clean, [...HISTORY, OUTSIDE]);
+  const message = (words: string[]) => words.reduce((c, w) => typeWord(c, w), EMPTY_COMPOSITION);
+  switch (name) {
+    case 'idle':
+      return withTurns(clean, HISTORY);
+    case 'listening':
+      return { ...withTurns(clean, HISTORY), live: { kind: 'listening', transcript: 'Do you want to go outside for a bit? It is', token: 0 } };
+    case 'suggested':
+      return talk;
+    case 'composing-pending':
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i', 'would', 'love', 'to', 'go']), 'outs') };
+    case 'composing-reopened':
+      return { ...talk, dismissed: talk.nextId - 1, composition: reduce(message(['i', 'would', 'love', 'to', 'go']), { type: 'delete' }) };
+    case 'composing-options':
+      // "I might": might, night, light and limit fit the same groups, the first two about equally well.
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'might') };
+    case 'composing-options-b':
+      // "I good": good, more, lose and hope fit the same groups.
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'good') };
+    case 'options':
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['in', 'how']), 'been'), screen: { kind: 'options', at: 0 } };
+    case 'options-many':
+    case 'options-many-end':
+      // "game": seven whole words (make, game, hand, half, name, land, lend), so the list pages.
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['lets', 'play', 'a']), 'game'), screen: { kind: 'options', at: name === 'options-many' ? 0 : 99 } };
+    case 'composing-nomatch':
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['ask']), 'suzy') };
+    case 'composing-ready':
+      return { ...talk, dismissed: talk.nextId - 1, composition: message(['i', 'would', 'love', 'to', 'go']) };
+    case 'speaking':
+      return { ...talk, dismissed: talk.nextId - 1, live: { kind: 'speaking', text: 'I would love to go', word: 2, turnId: null, holder: false, token: 0, draft: message(['i', 'would', 'love', 'to', 'go']) } };
+    case 'spoken': {
+      const spoken = withTurns(clean, [...HISTORY, OUTSIDE, { who: 'me', text: 'I would love to go' }]);
+      return { ...spoken, live: { kind: 'spoken', turnId: spoken.nextId - 1 } };
+    }
+    case 'menu':
+      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'main' } };
+    case 'menu-settings':
+    case 'menu-dwell':
+    case 'menu-appearance':
+    case 'menu-sound':
+    case 'menu-dev-tools':
+      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: name.slice(5) as MenuPage } };
+    case 'worst-case': {
+      const worst = withTurns(clean, WORST);
+      const words = ['really', 'uncomfortable', 'physiotherapist', 'everything', 'temperature'].reduce((c, w) => typeWord(c, w), EMPTY_COMPOSITION);
+      return { ...worst, dismissed: worst.nextId - 1, composition: typeGroupsOf(words, 'disappointed') };
+    }
+    case 'worst-nomatch': {
+      const worst = withTurns(clean, WORST);
+      return { ...worst, dismissed: worst.nextId - 1, composition: typeGroupsOf(typeWord(EMPTY_COMPOSITION, 'ask'), 'wojciechowski') };
+    }
+    case 'welcome':
+      return { ...clean, screen: { kind: 'welcome' } };
+    case 'voice':
+      return { ...clean, screen: { kind: 'voice' } };
+  }
+}

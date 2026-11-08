@@ -1,0 +1,571 @@
+/*
+ * Style 6 · Orb, glass edition (owner references, 2026-11-07), on style 5's grid. A plain white
+ * page (owner: "back to white; only the gradient is light orange"), soft grey glass cards that turn
+ * white while they are looked at, plain icons, one light-orange orb in the rest zone, and Atkinson
+ * Hyperlegible Next for every word. The orb is the only orange; other colour is the letter groups,
+ * the state dot and the delete icon (red, as in the editor reference).
+ */
+@property --scale { syntax: '<number>'; inherits: true; initial-value: 1; }
+
+:root {
+  /* White page (owner, 2026-11-07): no frame, no wash. The orb is the only orange. */
+  --canvas: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-focus: #FFFFFF;
+  /* Glass: a soft neutral grey veil (about #F3F3F4 on white) with a hairline edge. */
+  --glass: rgb(20 20 40 / 0.045);
+  --glass-focus: rgb(20 20 40 / 0.02);
+  --glass-edge: rgb(20 20 40 / 0.06);
+  --glass-edge-focus: rgb(20 20 40 / 0.16);
+  --ink: #1D1B1F;
+  --ink-focus: #333036;
+  --on-ink: #FFFFFF;
+  --on-ink-2: rgb(255 255 255 / 0.7);
+  /* Secondary text sits on the orb: at least 4.5:1 on its deepest orange. */
+  --ink-2: #4A4650;
+  /* Ghost letters: at least 3:1 on the orb's deepest orange, clearly lighter than ink. */
+  --ink-3: #69646F;
+  --hairline: #E4E2E8;
+  /* The selection edge and keyboard focus: ink, so the orb stays the only orange. */
+  --accent: #1D1B1F;
+  --destructive: #D42A1E;
+  /* The selection box around the word in progress (editor reference). */
+  --select-line: #C9C6CF;
+  /* Letter groups (owner palette, 2026-11-08): vibrant letters on the same grey glass as every other
+     card, Q5–Q8. The palette's yellow (#FFBE0B, 1.5:1 on the grey) could not be read, so the same
+     palette's purple takes its place (owner's pick of the options). On the grey: purple 5.2:1,
+     orange 3.0:1, pink 3.5:1, blue 3.2:1 (3:1 is the bar for large text; the letters are 36 px
+     semibold). */
+  --g1-ink: #8338EC;
+  --g2-ink: #FB5607;
+  --g3-ink: #FF006E;
+  --g4-ink: #3A86FF;
+  /* Group inks for glyphs set on the canvas (the word in progress) */
+  --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
+  /* The spoken word's highlight while Clarté speaks. */
+  --speaking: #1F7A38;
+  --speaking-face: #E3F2E7;
+
+  /* Motion tokens (MOTION.md) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-state: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 120ms;
+  --dur-cue: 150ms;
+  --dur-settle: 180ms;
+  --dur-enter: 200ms;
+  --dur-phase: 300ms;
+
+  /* Type */
+  /* Atkinson Hyperlegible Next (Braille Institute): distinct I l 1, open counters, large x-height. */
+  --font: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --fs-message: calc(52px * var(--scale));
+  --fs-live: calc(40px * var(--scale));
+  --fs-turn: calc(26px * var(--scale));
+  --fs-letters: calc(36px * var(--scale));
+  --fs-label: calc(44px * var(--scale));
+  --fs-hint: calc(20px * var(--scale));
+
+  /* Geometry (owner, 2026-11-08): one space everywhere. The screen edge to a card, and a card to
+     the next card across or down, are all --space. Each card stays inside its own quadrant
+     (README rule 1): four columns share five spaces, two rows share three. */
+  --radius-card: 40px;
+  --space: 32px;
+  --card-w: calc(25vw - var(--space) * 5 / 4);
+  --card-h: calc(50vh - var(--space) * 3 / 2);
+  --edge-y: var(--space);                 /* page content from the top and bottom of the screen */
+  --scale: 1;
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+html { background: var(--canvas); }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 450;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* The 2 × 4 backend grid. Each layer is one screen; a screen change cross-fades layers. */
+.stage { position: fixed; inset: 0; isolation: isolate; }
+.layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  background: var(--canvas);
+  mix-blend-mode: plus-lighter;
+  transition: opacity var(--dur-phase) var(--ease-state);
+  @starting-style { opacity: 0; }
+}
+/* Calibration ↔ app: both layers paint the canvas and add (plus-lighter) at the same duration
+   and easing, so the blend is exactly linear and luminance never dips (MOTION 5, BRIEF). */
+.layer.layer-leaving { opacity: 0; pointer-events: none; @starting-style { opacity: 1; } }
+
+/* Talk ↔ menu: the cards persist; only the rest zone's text cross-fades. */
+.rest-entering, .rest-leaving { display: contents; }
+.rest-entering > * { transition: opacity var(--dur-phase) var(--ease-state) 100ms; @starting-style { opacity: 0; } }
+.rest-leaving > * { opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); pointer-events: none; @starting-style { opacity: 1; } }
+.rest-leaving > .thread { z-index: 0; }
+.card-gone { opacity: 0; pointer-events: none; }
+
+/* A card in column c (0–3) sits --space × (1 − c/4) into its quadrant, and in row r (0–1)
+   --space × (1 − r/2) down, which puts exactly --space between every card and at every edge. */
+.cell {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--space) * (1 - var(--row) / 2)) 0 0 calc(var(--space) * (1 - var(--col) / 4));
+}
+.cell-q1 { grid-area: 1 / 1; --col: 0; --row: 0; }
+.cell-q4 { grid-area: 1 / 4; --col: 3; --row: 0; }
+.cell-q5 { grid-area: 2 / 1; --col: 0; --row: 1; }
+.cell-q6 { grid-area: 2 / 2; --col: 1; --row: 1; }
+.cell-q7 { grid-area: 2 / 3; --col: 2; --row: 1; }
+.cell-q8 { grid-area: 2 / 4; --col: 3; --row: 1; }
+/* A wide card spans its quadrant and the next (Menu: Recalibrate Q5–Q6, Settings Q7–Q8): two card
+   widths and the space between them, drawn above the neighbour it covers. */
+.card.card-span { width: calc(var(--card-w) * 2 + var(--space)); }
+.cell:has(> .card-span) { z-index: 3; }
+/* A tall card spans its quadrant and the one below it (the voice page's Continue, Q4–Q8). */
+.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); transition-property: background-color, border-color, opacity, translate; transition-duration: var(--dur-cue), var(--dur-cue), var(--dur-phase), 520ms; transition-timing-function: var(--ease-state), var(--ease-state), var(--ease-state), cubic-bezier(0.32, 0.72, 0, 1); }
+.cell:has(> .card-tall) { z-index: 3; }
+/* Leaving, the tall card slides off the right edge instead of fading (calibration, owner 2026-11-08), and slides back when it returns. */
+.card.card-tall.card-gone { opacity: 1; translate: calc(100% + var(--space) + 8px) 0; }
+@media (prefers-reduced-motion: reduce) { .card.card-tall { transition-property: background-color, border-color, opacity; } .card.card-tall.card-gone { opacity: 0; translate: none; } }
+/* A list longer than five cards pages two at a time over Q5–Q6 (Pager.tsx): a strip clipped to the
+   two cards' own box, so a sliding card never crosses into the arrows' quadrants. One arrow press
+   slides the row one card (--ease-move, 320 ms); under reduced motion it moves at once. */
+.pager { grid-area: 2 / 1 / 3 / 3; z-index: 3; padding: calc(var(--space) / 2) 0 0 var(--space); pointer-events: none; }
+.pager-view { width: calc(var(--card-w) * 2 + var(--space)); height: var(--card-h); overflow: hidden; pointer-events: auto; }
+.pager-track { display: flex; gap: var(--space); transform: translateX(calc(var(--at) * -1 * (var(--card-w) + var(--space)))); transition: transform 320ms var(--ease-move); }
+.pager-slot { flex: none; }
+@media (prefers-reduced-motion: reduce) { .pager-track { transition: none; } }
+/* An arrow card is just its arrow, centred; at the end of the list it fades like any unavailable card. */
+.card.card-arrow { justify-content: center; align-items: center; }
+.card-arrow .card-body { margin: 0; justify-items: center; align-content: center; }
+.card-arrow .card-swap { align-items: center; }
+.arrow-glyph { display: grid; place-items: center; }
+.arrow-glyph svg { width: 64px; height: 64px; }
+
+/* The card a wide one or the paged row covers vanishes at once: through the glass, its fade would show as a ghost. */
+.layer:has(> .pager) :is(.cell-q5, .cell-q6) > .card { opacity: 0; transition: none; }
+.cell:has(> .card-span) + .cell > .card { opacity: 0; transition: none; }
+
+/* Cards: frosted glass tiles, icon top left, words bottom left (glass-tiles reference). */
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: var(--card-w);
+  height: var(--card-h);
+  flex: none;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-card);
+  padding: 28px 28px 30px;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  text-align: left;
+  cursor: pointer;
+  container-type: inline-size;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  backdrop-filter: blur(24px) saturate(1.3);
+  transition-property: background-color, border-color, opacity;
+  transition-duration: var(--dur-cue), var(--dur-cue), var(--dur-phase);
+  transition-timing-function: var(--ease-state);
+}
+/* A card whose content does not fit first gives back icon-to-text space, then shrinks text (fit.ts). */
+.card[data-tight] { gap: 12px; }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+.card-surface, .card-group { background: var(--glass); color: var(--ink); }
+.card-group { color: var(--gi); }
+.card-ink { background: var(--ink); color: var(--on-ink); border-color: transparent; }
+/* The Menu card steps back (owner, 2026-11-08): the page's own white, no shadow, and secondary ink,
+   so it leaves the centre of attention. A 10% edge keeps it findable as a card on the white page,
+   and it darkens to full ink while it is looked at. */
+.card-white { background: var(--canvas); color: var(--ink-2); border-color: rgb(20 20 40 / 0.1); transition-property: background-color, border-color, opacity, color; }
+.card-white:is([data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); color: var(--ink); }
+/* Focus cue: the glass clears a step and its edge turns white. */
+.card:is(.card-surface, .card-group):is([data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
+.card-ink:is([data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
+.card > .card-icon, .card > .card-body { transition: opacity var(--dur-phase) var(--ease-state); }
+.card-body { margin-top: auto; }
+.card[aria-disabled] { cursor: default; }
+.card[aria-disabled] > :not(.trace) { opacity: 0.32; }
+
+/* The dwell (owner, 2026-11-08; Tile.tsx): a line runs clockwise round the card's edge from the
+   top left and closes as the dwell completes; on a selection a solid circle of the same colour
+   grows from the centre over the card and fades, and under it the words take --on-trace. Ink on
+   grey and white cards, the group's colour on letters, white on dark cards. */
+.card { --trace: var(--ink); --on-trace: #FFFFFF; }
+.card-group { --trace: var(--gi); --on-trace: #FFFFFF; }
+.card-ink { --trace: #FFFFFF; --on-trace: var(--ink); }
+.trace { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; pointer-events: none; }
+.trace-line { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: calc(var(--radius-card) - 2.5px); fill: none; stroke: var(--trace); stroke-width: 3px; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
+/* The fill lays out exactly like the card (inherited flex and padding), so its copy of the words
+   sits on the originals; only the colour differs. */
+.trace-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: inherit;
+  flex-direction: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  padding: inherit;
+  background: var(--trace);
+  opacity: 0;
+  pointer-events: none;
+}
+.trace-fill, .trace-fill * { color: var(--on-trace) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .card[data-step='1'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.75 !important; }
+  .card[data-step='2'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.5 !important; }
+  .card[data-step='3'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.25 !important; }
+  .card[data-step='4'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0 !important; }
+}
+
+/* A plain icon, no ring (glass-tiles reference). */
+.card-icon { display: grid; flex: none; }
+.card-icon .icon { width: 36px; height: 36px; }
+.icon-destructive { color: var(--destructive); }
+
+[data-group='G1'] { --gi: var(--g1-ink); --gt: var(--g1-text); }
+[data-group='G2'] { --gi: var(--g2-ink); --gt: var(--g2-text); }
+[data-group='G3'] { --gi: var(--g3-ink); --gt: var(--g3-text); }
+[data-group='G4'] { --gi: var(--g4-ink); --gt: var(--g4-text); }
+
+.card-body { display: grid; justify-items: start; align-content: end; min-width: 0; max-width: 100%; --gap: 8px; }
+/* One content box per face, stacked in one grid cell: MOTION's page change, in place. The old face
+   (a frozen clone, Swap.tsx) fades out over 150 ms; the new one fades in over 300 ms from 100 ms,
+   so the two never read as doubled text. The outgoing face takes no height. */
+.card-swap { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--gap); min-width: 0; max-width: 100%;
+  transition: opacity var(--dur-phase) var(--ease-state) 100ms; @starting-style { opacity: 0; } }
+.card-leaving { height: 0; align-self: start; width: max-content; max-width: 100cqi; opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 1; } }
+
+/* The icon fades with its face (Swap.tsx), on the same timing as the card's text. */
+.glyph-swap { grid-area: 1 / 1; display: flex; transition: opacity var(--dur-phase) var(--ease-state) 100ms; @starting-style { opacity: 0; } }
+.glyph-leaving { opacity: 0; pointer-events: none; transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 1; } }
+/* A change within one screen (the candidate while typing) is frequent: MOTION's 150 ms label
+   cross-fade, no entrance delay; the old face clears in 100 ms. */
+:is(.card-swap, .glyph-swap)[data-fast] { transition: opacity var(--dur-cue) var(--ease-out); }
+:is(.card-leaving, .glyph-leaving)[data-fast] { transition-duration: 100ms; }
+.icon { width: 28px; height: 28px; flex: none; }
+.icon * { vector-effect: non-scaling-stroke; }
+
+/* Card text */
+.card-label {
+  font-size: calc(min(var(--fs-label), calc(155cqi / var(--len, 6))) * var(--fit, 1));
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: 0;
+  overflow-wrap: normal; /* words never break; fit.ts shrinks the label instead */
+  text-wrap: balance;
+}
+.card-label.is-word { font-size: calc(min(var(--fs-label), calc(150cqi / var(--len, 6))) * var(--fit, 1)); }
+.card-label.is-quote { font-size: calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1)); }
+/* The Options card (owner, 2026-11-08): "Options" at the bottom, the three most likely words above
+   it a little smaller, each dimmer than the one below, and ⋯ on top when there are more. */
+.options-face { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.options-word { font-size: min(calc(36px * var(--scale)), calc(140cqi / var(--len, 6))); font-weight: 600; line-height: 1.1; }
+/* A word that dropped out of the top three, drawn where it was while it slides off (OptionsFace.tsx). */
+.options-leaving { position: absolute; left: 0; pointer-events: none; }
+.options-more { font-size: calc(28px * var(--scale)); line-height: 0.6; letter-spacing: 0.08em; opacity: 0; transition: opacity var(--dur-phase) var(--ease-state); }
+.options-more[data-on] { opacity: 0.22; }
+.options-face > .card-label { margin-top: 6px; }
+/* Short windows: the preview words give up size and spacing first, so "Options" keeps its size. */
+@media (max-height: 820px) {
+  .options-face { gap: 3px; }
+  .options-word { font-size: min(calc(26px * var(--scale)), calc(120cqi / var(--len, 6))); }
+  .options-face > .card-label { margin-top: 4px; }
+  .options-more { font-size: calc(22px * var(--scale)); }
+}
+.card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
+/* Where Back goes (owner, 2026-11-08): the page's name, small and faded, above "Back". */
+.crumb { font-size: max(16px, min(calc(17px * var(--scale)), 9cqi)); font-weight: 500; line-height: 1.25; color: currentColor; opacity: 0.5; }
+.card-ink .card-hint { color: var(--on-ink-2); }
+.card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
+
+/* Letter groups: the letters are the label, then the count glyph. */
+.letters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  font-size: max(24px, min(var(--fs-letters), 15cqi));
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: 0.1em;
+  margin-right: -0.1em; /* optical centring: tracking adds space after the last letter */
+}
+/* Above 100% text the row may break into two rows of four rather than shrink (BRIEF). */
+:root[data-large] .letters { font-size: max(24px, min(var(--fs-letters), 28cqi)); line-height: 1.05; }
+.card-group .card-body { --gap: 12px; }
+
+/* Thread: the rest zone Q2–Q3 */
+.thread {
+  grid-area: 1 / 2 / 2 / 4;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--edge-y) 40px 40px;
+}
+/* Everything readable stays inside Q2–Q3, inset 40 px from the row boundary: the backend classifies
+   where the eye is, not what is drawn, so text in the row gutter would be read as a look at Q5–Q8.
+   Room is shared in priority order: the top row (the docked companion), then the live message (its type steps down), then
+   whole lines of history. Large text reserves one history line and tightens the rule's margins. */
+:root[data-large] .history { min-height: calc(var(--fs-turn) * 1.35); margin-top: 8px; }
+:root[data-large] .rule { margin: 12px 0 8px; }
+.history[data-yield] { min-height: calc(var(--fs-turn) * 1.35); }
+.history[data-yield] + .rule { margin: 12px 0 8px; }
+.history[data-yield] ~ .now { flex-grow: 1; }
+.state-row { flex: none; height: 48px; }
+
+.history {
+  flex: 1 1 0;
+  min-height: calc(var(--fs-turn) * 1.35 * 2 + 8px); /* two whole partner lines, reserved before the message */
+  margin-top: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.turn[data-cut] { visibility: hidden; }
+.turn-text.clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.turn {
+  margin: 0;
+  max-width: calc(86% + 1.5em); /* the icon and its gap take 1.5em */
+  font-size: var(--fs-turn);
+  font-weight: 450;
+  line-height: 1.4;
+  text-wrap: pretty;
+  transition: opacity var(--dur-phase) var(--ease-state) 100ms;
+  @starting-style { opacity: 0; }
+}
+.history[data-newest-first] { justify-content: flex-start; }
+.history[data-newest-first] > .turn:not(:last-child) { display: none; }
+/* Turns never shrink (the history clips whole lines); a lone clamped turn drops its speaker-change margin. */
+.history > .turn { flex-shrink: 0; }
+.history[data-newest-first] > .turn { margin-top: 0; }
+.turn-partner { align-self: flex-start; color: var(--ink-2); }
+.turn-me { align-self: flex-end; text-align: right; color: var(--ink); }
+.turn-holder { color: var(--ink-3); }
+/* Who said it (owner, 2026-11-07): a microphone left of each heard turn, a speaker right of each
+   spoken reply. A turn is an icon and a text block; only the text is clamped, so a long turn's
+   ellipsis never runs into the icon and the icon is never clipped (the icon floats beside it). */
+.turn-icon { display: flex; margin-top: 0.2em; color: var(--ink-3); }
+.turn-partner > .turn-icon { float: left; margin-right: 0.5em; }
+.turn-me > .turn-icon { float: right; margin-left: 0.5em; }
+/* The text is its own block beside the floated icon, so a clamp keeps its ellipsis. */
+.turn-text { display: flow-root; }
+/* Chrome draws no ellipsis on right-aligned clamped text; a clamped line is full anyway. */
+.turn-me > .turn-text.clamped { text-align: left; }
+.turn-icon .icon { width: 1em; height: 1em; }
+.turn-partner + .turn-me, .turn-me + .turn-partner { margin-top: 8px; }
+.rule { flex: none; height: 1px; margin: 24px 0 16px; background: var(--hairline); }
+
+/* The live line: what is happening now. Fixed room, so nothing above it ever shifts. */
+.now {
+  /* A fixed basis of two lines, so typing never moves the thread; it shrinks only when the
+     viewport leaves less room (large text on a small screen), and then the type steps down. */
+  flex: 0 1 calc(var(--fs-message) * 1.12 * 2 + 12px);
+  min-height: calc(var(--fs-message) * 0.6 * 1.12 + 12px);
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: calc(var(--fs-message) * var(--fit, 1));
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.now-text { display: block; padding-top: 4px; }
+/* At the type floor and still too long: keep the latest words in view. */
+.now[data-overflow] { justify-content: flex-end; mask-image: linear-gradient(to bottom, transparent 0, #000 28px); }
+.now-partner .now-text { font-size: calc(var(--fs-live) * var(--fit, 1)); font-weight: 450; letter-spacing: 0; line-height: 1.25; }
+.now-holder .now-text { color: var(--ink-3); }
+.now-leaving { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); pointer-events: none; @starting-style { opacity: 1; } }
+.now-text { transition: opacity var(--dur-phase) var(--ease-state) 100ms; @starting-style { opacity: 0; } }
+
+/* Spoken word: one pill highlight, swapped instantly on the speech boundary. */
+.w { border-radius: 999px; box-decoration-break: clone; -webkit-box-decoration-break: clone; padding: 0 0.16em; margin: 0 -0.16em; }
+.w[data-spoken] { background: color-mix(in oklab, var(--speaking-face) 45%, transparent); color: var(--speaking); }
+
+/* The word in progress (BRIEF "The word in progress") */
+.word { white-space: nowrap; }
+/* A run of dots (no known word) may wrap, so a long unknown name never runs off the edge. */
+.word.in-progress.dots { white-space: normal; }
+.settle { transition: color var(--dur-settle) var(--ease-state); @starting-style { color: var(--gt); } }
+.keep-colour .settle { color: var(--gt); }
+.glyph { transition: color var(--dur-cue) var(--ease-state), opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
+.glyph.typed { color: var(--gt); }
+.glyph.ghost { color: var(--ink-3); }
+.glyph.leaving { opacity: 0; transition-duration: var(--dur-press); }
+.glyph > span { display: inline-block; transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
+.glyph.dot > span { width: 0.5em; height: 0.5em; margin: 0 0.06em; border-radius: 50%; background: var(--gt); vertical-align: 0.06em; }
+.word-unresolved { color: var(--ink-3); }
+
+/* Menu and calibration titles sit where the live line sits. */
+.thread-title { justify-content: flex-end; }
+.page-title { margin: 0; font-size: var(--fs-message); font-weight: 600; line-height: 1.16; letter-spacing: 0; }
+/* The menu path above the page title (owner, 2026-11-08): small and quiet. */
+.page-trail { margin: 0 0 6px; font-size: calc(20px * var(--scale)); font-weight: 500; line-height: 1.3; color: var(--ink-3); }
+.page-sub { margin: 8px 0 0; font-size: var(--fs-turn); font-weight: 500; color: var(--ink-2); }
+.setting-name { font-size: max(20px, calc(min(calc(20px * var(--scale)), calc(170cqi / var(--len, 8))) * var(--fit, 1))); font-weight: 500; color: var(--ink-2); text-wrap: balance; }
+.setting-value { font-size: calc(min(calc(36px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.1; text-wrap: balance; }
+.phrase { font-size: calc(min(calc(32px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.12; text-wrap: balance; }
+
+.caret { display: inline-block; width: 1px; height: 1.05em; margin-left: 1px; vertical-align: -0.15em; background: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .layer, .turn, .now-text, .glyph, .glyph > span, .card-swap, .glyph-swap { transition-property: opacity; }
+}
+
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* Keyboard-triggered actions get no motion (MOTION.md, review-animations). */
+:root[data-instant] *, :root[data-instant] *::before, :root[data-instant] *::after { transition: none !important; }
+
+/* ───────────────────────── Style 6 · Orb ───────────────────────── */
+
+/* A plain white page (owner, 2026-11-07): no frame, no panel, no wash. */
+.cell { z-index: 2; }
+.thread { position: relative; z-index: 1; }
+
+/* The companion (Companion.tsx) sits behind the thread in the top rest zone (Q2–Q3). It is light,
+   not a target: nothing actionable is drawn there. When text arrives it flies to Q2's top-left
+   (Companion.tsx sets the transform on .companion-flight). */
+.companion {
+  position: absolute;
+  z-index: 0;
+  left: 25%;
+  width: 50%;
+  top: 0;
+  height: 50%;
+  pointer-events: none;
+  color: var(--ink);
+}
+/* Centred on the top row (owner, 2026-11-08): halfway between the top of the screen and 50%. Its
+   float rises 8 px, so it rests 4 px low and floats ±4 px about the exact centre. */
+.companion-body {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 4px);
+  width: min(232px, 17vw);
+  translate: -50% -50%;
+  transition: opacity 500ms var(--ease-out);
+  @starting-style { opacity: 0; }
+}
+.companion-flight { transform-origin: 50% 50%; will-change: transform; }
+/* Block, so no line box adds space under the ball and its box centre is the ball's centre. */
+.companion-flight svg { display: block; }
+.companion[data-still] .animate-blink { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .companion .animate-blink { animation: none; }
+}
+
+/* `?demo`: the companion alone, as shadcn's demo shows it. */
+.demo { min-height: 100vh; display: grid; place-items: center; background: var(--canvas); color: var(--ink); }
+
+/* On the orb, the thread loses its hairline (the orb is the frame), and the live line is centred
+   on the orb like the jewel in the owner's reference. */
+.thread .rule { background: transparent; margin: 16px 0 8px; }
+.now { text-align: center; align-items: center; }
+.now .now-text { max-width: 100%; }
+.turn-partner { color: var(--ink-2); }
+
+
+/* The word in progress is the selected object, as in the editor reference: a hairline box with a
+   handle at each end. The box is an outline (no layout). */
+.now .word.in-progress { position: relative; outline: 1.5px solid var(--select-line); outline-offset: 0.1em; border-radius: 3px; }
+.now .word.in-progress::before, .now .word.in-progress::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--ink);
+  pointer-events: none;
+}
+.now .word.in-progress::before { left: calc(-0.1em - 6.25px); }
+.now .word.in-progress::after { right: calc(-0.1em - 6.25px); }
+
+/* The menu opens over the conversation: it stays where it was, blurred (glass-tiles reference). */
+.thread-behind { display: contents; }
+.thread-behind > .thread {
+  filter: blur(14px);
+  opacity: 0.45;
+  transition: filter var(--dur-phase) var(--ease-out), opacity var(--dur-phase) var(--ease-out);
+  @starting-style { filter: blur(0); opacity: 1; }
+}
+.thread-behind + .thread-title { z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .thread-behind > .thread { transition-property: opacity; } }
+
+/* ── First run ── */
+/* The greeting and the voice note are centred between the left edge and the right edge of Q3–Q7, beside the tall card in Q4–Q8. */
+.onboarding { position: absolute; inset: 0; grid-column: 1 / 4; grid-row: 1 / -1; display: grid; place-items: center; text-align: center; pointer-events: none; }
+/* Room above the text for the orb (132 px, GuideOrb.tsx) and a 40 px gap: the margin box is what is centred, so orb and text are centred as one. */
+.onboarding > * { margin: calc(132px + 40px) 0 0; }
+/* The voice placeholder (owner, 2026-11-08): one line of ordinary text, not a title. */
+.onboarding-note { font-size: var(--fs-turn); font-weight: 500; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+/* The onboarding orb (GuideOrb.tsx): placed by its centre (--x, --y) at --size, gliding between
+   places at the calibration's move time. As a target it does not float, so its centre is exact. */
+.guide-orb {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  width: var(--size, 132px);
+  height: var(--size, 132px);
+  translate: calc(var(--x, 50vw) - var(--size, 132px) / 2) calc(var(--y, 50vh) - var(--size, 132px) / 2);
+  transition: translate var(--move) cubic-bezier(0.23, 1, 0.32, 1), width 400ms var(--ease-out), height 400ms var(--ease-out);
+  pointer-events: none;
+  @starting-style { opacity: 0; }
+}
+.guide-orb > div { padding: 0 !important; max-width: none !important; }
+.guide-orb > div > svg { display: block; }
+.guide-orb[data-target] > div { transform: none !important; }
+/* The ring sits --gap outside the orb, so white shows between them; it fills clockwise. */
+.guide-ring { position: absolute; inset: calc(-1 * (var(--gap) + var(--line))); width: calc(100% + 2 * (var(--gap) + var(--line))); height: calc(100% + 2 * (var(--gap) + var(--line))); overflow: visible; }
+.guide-ring circle { fill: none; stroke: #2F6FEB; stroke-width: var(--line); stroke-linecap: round; vector-effect: non-scaling-stroke; }
+@media (prefers-reduced-motion: reduce) { .guide-orb { transition: none; } }
+/* The camera feeds the tracker only; it is never shown. */
+.camera-feed { display: none !important; }
+.cal-message { text-wrap: balance; }
+
+:root[data-palette='vibrant'] {
+  /* White letters on solid group colours: the deeper inks keep their contrast. */
+  --g1-ink: #1E5A82;
+  --g2-ink: #59409A;
+  --g3-ink: #2B6A4C;
+  --g4-ink: #8A4A22;
+}
+:root[data-palette='vibrant'] .card-group { background: var(--gi); border-color: transparent; color: #FFFFFF; }
+/* The look deepens the colour, so white letters only gain contrast. */
+:root[data-palette='vibrant'] .card-group:is([data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 92%, #000); border-color: transparent; }
+:root[data-palette='vibrant'] .card-group { --trace: #FFFFFF; --on-trace: var(--gi); }
+/* Unavailable (listening, speaking): back to a pale tint with coloured letters, so it reads as off. */
+:root[data-palette='vibrant'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 10%, #FFFFFF); color: var(--gi); }

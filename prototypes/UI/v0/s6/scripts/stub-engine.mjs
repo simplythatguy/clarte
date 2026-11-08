@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * A stand-in for the prediction engine that speaks the v1 contract (`Word Prediction/CONTRACT.md`,
+ * A stand-in for the prediction engine that speaks the v1 contract (`main/engine/CONTRACT.md`,
  * rounds 1–3) from the local decoder (`src/local.ts`), with a chosen latency, for driving the s6 UI
  * when the real engine is busy (the GPU benchmarks) or absent. Not a model: its words are the
  * fallback's. What it lets the UI tests exercise is everything that depends on the engine's timing

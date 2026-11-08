@@ -92,13 +92,13 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 
 Style 8 moved on to become UI v1's first prototype: [`../v1/s1`](../v1/s1/DESIGN.md) (2026-11-08).
 
-Run everything with one command from the repository root: `./clarte ui` (Windows: `clarte ui`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
+Run everything with one command from the repository root: `./clarte ui-v0` (Windows: `clarte ui-v0`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
 
 ```sh
 node prototypes/UI/v0/s_all/serve.mjs
 ```
 
-The engine is `prototypes/Word Prediction` (the always-on contract in its `CONTRACT.md`; `s_all` starts it when its `server.py` exists, else the v0 prototype). Both reuse v0's `.venv`, native build and models: set them up once, as the v0 README describes. `s_all` checks `GET /api/v1/health` rather than the port: if 8765 is held by something else it starts the engine on the next free port and tells S6 through `/engine.json` (S0 still expects 8765). Until the engine is up, S0 shows "Engine offline" and S6 decodes with its local fallback (`s6/src/lexicon.json` and `s6/src/bigrams.json`, generated from the engine's vocabulary and 4-gram by `s6/scripts/build-lexicon.mjs` and `build-bigrams.mjs`), switching to the engine as soon as it answers. Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the eight ports after it.
+The engine is `main/engine` (the always-on contract in its `CONTRACT.md`; `s_all` starts it when its `server.py` exists, else the v0 prototype). Both reuse v0's `.venv`, native build and models: set them up once, as the v0 README describes. `s_all` checks `GET /api/v1/health` rather than the port: if 8765 is held by something else it starts the engine on the next free port and tells S6 through `/engine.json` (S0 still expects 8765). Until the engine is up, S0 shows "Engine offline" and S6 decodes with its local fallback (`s6/src/lexicon.json` and `s6/src/bigrams.json`, generated from the engine's vocabulary and 4-gram by `s6/scripts/build-lexicon.mjs` and `build-bigrams.mjs`), switching to the engine as soon as it answers. Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the eight ports after it.
 
 Then open http://localhost:5100. Each of `s1`–`s7` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
 

@@ -1,5 +1,5 @@
 /**
- * The prediction client (`prototypes/Word Prediction/CONTRACT.md`).
+ * The prediction client (`main/engine/CONTRACT.md`).
  *
  * Finding the engine. An engine is a server whose `GET /api/v1/health` answers `{ ok: true,
  * vocabulary: n }`; an open port is not enough (the owner's research server also sits on 8765).

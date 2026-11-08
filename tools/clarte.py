@@ -27,7 +27,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / ".tools"
 PROTOTYPES = ROOT / "prototypes"
-ENGINE = PROTOTYPES / "Word Prediction"
+MAIN = ROOT / "main"
+ENGINE = MAIN / "engine"
+APP = MAIN / "app"
 UI = PROTOTYPES / "UI" / "v0"
 VOICE = PROTOTYPES / "Voice"
 EYES = PROTOTYPES / "Eye Tracking"
@@ -327,10 +329,15 @@ def provision_voice(env):
 UI_STYLES = 6  # s1..s6; serve.mjs starts each on the port PORT + n
 
 
-def provision_ui(env):
+def provision_ui_v0(env):
     provision_engine(env)
     for n in range(1, UI_STYLES + 1):
         ensure_npm_ci(UI / f"s{n}", env)
+
+
+def provision_app(env):
+    provision_engine(env)
+    ensure_npm_ci(APP, env)
 
 
 def provision_eyes(env):
@@ -474,7 +481,24 @@ def start_predict(env, log_dir, procs):
     return [port], [f"http://127.0.0.1:{port}/"], lambda: (expect_json(f"http://127.0.0.1:{port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0]), expect_model(procs[0], ENGINE_MODEL))
 
 
-def start_ui(env, log_dir, procs):
+def start_app(env, log_dir, procs):
+    port = pick_port(5200)
+    if port != 5200:
+        log("the saved calibration and first-run state belong to http://localhost:5200; on this port the app starts fresh")
+    engine_port = start_engine(env, log_dir, procs)
+    # The app probes 8765 to 8769 for an engine; any other port has to be named in the URL.
+    query = "" if engine_port == 8765 else f"?engine=http://127.0.0.1:{engine_port}"
+    home = ensure_node()
+    procs.append(Proc("app", [node_exe(home), APP / "node_modules" / "vite" / "bin" / "vite.js", "--port", port, "--strictPort"], APP, env, log_dir))
+
+    def smoke():
+        expect_200(f"http://localhost:{port}/")
+        expect_200(f"http://localhost:{port}/vendor/webeyetrack/worker.js")
+        expect_json(f"http://127.0.0.1:{engine_port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0])
+    return [port, engine_port], [f"http://localhost:{port}/{query}"], smoke
+
+
+def start_ui_v0(env, log_dir, procs):
     base = pick_port(5100, count=UI_STYLES + 1)  # switcher, then one port per style after it
     ports = list(range(base, base + UI_STYLES + 1))
     engine_port = start_engine(env, log_dir, procs)
@@ -521,7 +545,8 @@ def start_eyes(env, log_dir, procs):
 
 # name -> (description, provision, start). start returns (ports to wait for, URLs, smoke test).
 APPS = {
-    "ui": ("UI v0 switcher with S0-S6 and the prediction engine", provision_ui, start_ui),
+    "ui": ("Clarte (main/): the v1 conversation screen, eye calibration and the prediction engine", provision_app, start_app),
+    "ui-v0": ("UI v0 switcher with S0-S6 and the prediction engine", provision_ui_v0, start_ui_v0),
     "predict": ("Word Prediction engine and its test page", provision_engine, start_predict),
     "voice": ("Voice cloning page and service (needs ELEVENLABS_API_KEY in .env)", provision_voice, start_voice),
     "eyes": ("Eye Tracking calibration app", provision_eyes, start_eyes),

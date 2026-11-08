@@ -27,7 +27,7 @@ Precedence when rules collide, highest first:
 | Conversation UI (listen, compose, speak) | `prototypes/UI/v0/` (`s0` to `s6`, `shared/`) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
 | Eye tracking and calibration | `prototypes/Eye Tracking/` | webcam gaze: a steady look, then blinks to preview and confirm; mouse, touch and keys as alternates | the person; testers recording sessions |
 | Making a voice | `prototypes/Voice/` | pointer, touch and keyboard (Space records) | the person or someone helping them; designed for tremor, fatigue and low vision |
-| Prediction engine | `prototypes/Word Prediction/` (word prediction and autocomplete in one) | HTTP API and a plain test page | developers |
+| Prediction engine | `main/engine/` (word prediction and autocomplete in one) | HTTP API and a plain test page | developers |
 
 A rule written for one input model does not transfer to another by default. Gaze surfaces have no hover and no press. The voice surface does have both, but it serves hands with tremor.
 
