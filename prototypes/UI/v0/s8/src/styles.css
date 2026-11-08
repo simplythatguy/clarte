@@ -166,10 +166,11 @@ body {
 .card-surface, .card-group { background: var(--glass); color: var(--ink); }
 .card-group { color: var(--gi); }
 .card-ink { background: var(--ink); color: var(--on-ink); border-color: transparent; }
-/* The Menu card is white (owner, 2026-11-08). On the white page a firmer edge and a faint shadow
-   keep it reading as a card. */
-.card-white { background: var(--canvas); color: var(--ink); border-color: rgb(20 20 40 / 0.1); box-shadow: 0 1px 2px rgb(20 20 40 / 0.04), 0 8px 24px rgb(20 20 40 / 0.06); }
-.card-white:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); }
+/* The Menu card steps back (owner, 2026-11-08): the page's own white, no shadow, and secondary ink,
+   so it leaves the centre of attention. A 10% edge keeps it findable as a card on the white page,
+   and it darkens to full ink while it is looked at. */
+.card-white { background: var(--canvas); color: var(--ink-2); border-color: rgb(20 20 40 / 0.1); transition-property: background-color, border-color, opacity, color; }
+.card-white:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); color: var(--ink); }
 /* Focus cue: the glass clears a step and its edge turns white. */
 .card:is(.card-surface, .card-group):is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
 .card-ink:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
