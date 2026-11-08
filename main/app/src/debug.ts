@@ -38,7 +38,6 @@ export const PHASES = [
   'spoken',
   'menu',
   'menu-settings',
-  'menu-dwell',
   'menu-appearance',
   'menu-sound',
   'menu-dev-tools',
@@ -132,7 +131,6 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'menu':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'main' } };
     case 'menu-settings':
-    case 'menu-dwell':
     case 'menu-appearance':
     case 'menu-sound':
     case 'menu-dev-tools':

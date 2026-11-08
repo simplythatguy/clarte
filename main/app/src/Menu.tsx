@@ -1,7 +1,7 @@
 /**
  * Menu pages (owner, 2026-11-08). The menu replaces the conversation screen and keeps its geometry:
  * Q1 goes back one level and names where it goes (Home, Menu, Settings), and Q2–Q3 stay a rest zone
- * that shows the page name with its path above it (Menu › Settings › Dwell). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
+ * that shows the page name with its path above it (Menu › Settings › Sound). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
  * Settings (Q7–Q8), and My voice top right (Q4, NAT-32). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
  * and a fifth top right (Q4); more than five page two at a time with arrows (Pager.tsx). Settings show their current value and advance to the next value on
  * selection, so every change is one look.
@@ -18,21 +18,17 @@ type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[
 
 /** A quiet glyph inside each setting's dwell ring, so the ring never reads as an empty radio button. */
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
-  letterDwell: Timer, controlDwell: Timer, textScale: TextSize, sound: Speaker, mode: Target,
+  textScale: TextSize, sound: Speaker,
   wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob, volume: Speaker,
   voiceId: Waveform, pacing: Timer,
 };
 
-const seconds = (ms: number) => `${+(ms / 1000).toFixed(2)} s`;
 const onOff = (v: boolean) => (v ? 'On' : 'Off');
 
 const CYCLES = {
-  letterDwell: { key: 'letterDwell', name: 'Letter dwell', values: [300, 450, 600, 800, 1000, 1500, 2000], format: seconds },
-  controlDwell: { key: 'controlDwell', name: 'Button dwell', values: [300, 600, 900, 1200, 1500, 2000], format: seconds },
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
   sound: { key: 'sound', name: 'Sounds', values: ['all', 'fewer', 'off'], format: (v: string) => ({ all: 'All', fewer: 'Fewer', off: 'Off' })[v] ?? v },
   volume: { key: 'volume', name: 'Volume', values: [0.25, 0.5, 0.75, 1], format: (v: number) => `${Math.round(v * 100)}%` },
-  mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
   suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
@@ -84,9 +80,8 @@ const PAGES: Record<MenuPage, Page> = {
   settings: {
     title: 'Settings',
     parent: 'main',
-    entries: [open('dwell', Timer), open('appearance', Palette), setting('suggestions'), open('sound', Speaker), open('dev-tools', Flask)],
+    entries: [open('appearance', Palette), setting('suggestions'), open('sound', Speaker), open('dev-tools', Flask)],
   },
-  dwell: { title: 'Dwell', parent: 'settings', entries: [setting('mode'), setting('letterDwell'), setting('controlDwell')] },
   appearance: { title: 'Appearance', parent: 'settings', entries: [setting('textScale'), setting('orbMotion'), setting('wordColours')] },
   sound: { title: 'Sound', parent: 'settings', entries: [setting('sound'), setting('volume')] },
   'dev-tools': { title: 'Dev Tools', parent: 'settings', entries: [setting('noise'), setting('repeat'), setting('partner')] },

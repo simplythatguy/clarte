@@ -6,7 +6,7 @@
  * tracker (eyes/session.ts); with keyboard and mouse (`?input=mouse`, or chosen) clicks and keys select.
  *
  * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
- * the conversation thread, Q5–Q8 the letter groups. Every activation (dwell, digit key, click,
+ * the conversation thread, Q5–Q8 the letter groups. Every activation (a confirmed look, digit key, click,
  * Enter on a focused tile) arrives as one engine `select` event and is routed by action id.
  */
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ReactNode } from 'react';
@@ -90,7 +90,9 @@ function loadStored(): State {
 }
 
 /** Settings saved before NAT-24 stored `sound` as on/off. */
-function migrate(settings: Settings): Settings {
+function migrate(saved: Settings): Settings {
+  // Only today's settings carry over: the dwell settings (mode, letterDwell, controlDwell) are gone.
+  const settings = Object.fromEntries(Object.keys(INITIAL_STATE.settings).map((k) => [k, saved[k as keyof Settings]])) as Settings;
   const sound = settings.sound as Settings['sound'] | boolean;
   if (sound === true) return { ...settings, sound: 'all' };
   if (sound === false) return { ...settings, sound: 'off' };
@@ -186,6 +188,12 @@ function halves(letters: string): string[] {
 }
 
 const AUTO_START_S = 20;
+
+/**
+ * No dwell (owner, 2026-11-08): a look never selects. A steady look this long closes the line round a
+ * card and waits; Space or Enter, a click or a switch selects it. Not a setting any more.
+ */
+const LOOK_MS = { letter: 600, control: 900 };
 
 /**
  * Seconds left before `onDone` runs by itself, counting down while `active`; null once a key, a
@@ -287,8 +295,8 @@ export function App() {
 
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {
-    engine.configure({ mode: settings.mode, noiseSigma: settings.noise ? 0.06 : 0 });
-    setDwellClasses(settings.letterDwell, settings.controlDwell, screen.kind === 'talk', settings.repeat);
+    engine.configure({ mode: 'confirm', noiseSigma: settings.noise ? 0.06 : 0 });
+    setDwellClasses(LOOK_MS.letter, LOOK_MS.control, screen.kind === 'talk', settings.repeat);
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
     configureSound({ level: settings.sound, volume: settings.volume });

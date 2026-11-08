@@ -27,7 +27,7 @@ export type Turn = {
   holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'voice' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
+export type MenuPage = 'main' | 'voice' | 'settings' | 'appearance' | 'sound' | 'dev-tools';
 
 export type Screen =
   | { kind: 'talk' }
@@ -55,14 +55,11 @@ export type Live =
   | { kind: 'spoken'; turnId: number };
 
 export type Settings = {
-  letterDwell: number;
-  controlDwell: number;
   textScale: number;
   /** Which cues play (SOUND.md): all of them, the fewer important ones, or none. */
   sound: SoundLevel;
   /** Cue volume, 0–1. */
   volume: number;
-  mode: 'dwell' | 'confirm';
   wordColours: boolean;
   suggestions: boolean;
   noise: boolean;
@@ -77,12 +74,9 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  letterDwell: 600,
-  controlDwell: 900,
   textScale: 1,
   sound: 'all',
   volume: 0.75,
-  mode: 'dwell',
   wordColours: false,
   suggestions: true,
   noise: false,

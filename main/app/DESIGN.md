@@ -52,9 +52,9 @@ The Cloud turns green and livelier while Clarté speaks, as in style 6. Style 7 
 
 - **The Cloud is style 7's size again.** A 0.8× Cloud was tried and undone at the owner's request.
 
-## Dwell feedback (owner, 2026-11-08)
+## Look feedback (owner, 2026-11-08)
 
-Looking at a card draws a line round its edge: it starts at the top left, runs clockwise at an even pace, and closes the loop exactly when the dwell completes, so the line's length is the time left. It starts after the existing intent delay (150 ms for letters, 250 ms for buttons), so a glance that passes over a card shows nothing. Leaving early retracts it in 150 ms, once the engine's blink grace (about 300 ms) has passed. The colour follows the card: ink on grey and white cards, the group's ink on letter cards, white on dark cards.
+Looking at a card draws a line round its edge: it starts at the top left, runs clockwise at an even pace, and closes the loop when the look has lasted long enough (0.6 s on letters, 0.9 s on buttons). A closed loop waits: since 2026-11-08 a look never selects (owner: no dwell), and Space or Enter, a click or a switch selects the card the loop is closed round. It starts after the existing intent delay (150 ms for letters, 250 ms for buttons), so a glance that passes over a card shows nothing. Leaving early retracts it in 150 ms, once the engine's blink grace (about 300 ms) has passed. The colour follows the card: ink on grey and white cards, the group's ink on letter cards, white on dark cards.
 
 A selection fills the card (owner, 2026-11-08): a solid circle in the card's own vivid colour (the group colour on letter cards, ink on grey and white cards, white on dark cards) grows from the centre until it covers the card (260 ms, `--ease-state`) and holds a beat (120 ms). Then the filled card, its line and its words fade out together as one piece to the card as it was (280 ms). Nothing runs backwards (owner, 2026-11-08). A selection that turns the card into a different button, as on any screen change (Settings giving way to Sound, Menu becoming Back), drops the fill at once: the new button appears clean, with no exit animation carried over (owner, 2026-11-08). Before, the old button's fill played out on the new one. The fill also keeps the colours it started with, and it hands over without an exit if the card under it already has the fill's colour. The card's words and icon change colour exactly as far as the circle has reached: white on colour and ink, ink on white. This is done with a copy of the card's content in that colour, laid out exactly like the card and clipped to the same circle. The copy refreshes two frames in, so a selection that changes the card's words (Listen to Stop) inverts the new words. The card is back at rest about two thirds of a second after the selection, even while gaze stays on it, and its words are readable throughout, so nothing waits for it. Tried and rejected first: a soft blurred oval tint, then a sharp wavy water line with a ripple. Under reduced motion the line steps round in quarters and a selection shows the fill fading out, without the circle growing.
 
@@ -65,13 +65,12 @@ The menu is a small tree, kept in one table in `Menu.tsx` (title, parent, entrie
 | Page | Cards |
 | -- | -- |
 | Menu | Recalibrate (Q5–Q6), Settings (Q7–Q8): two wide cards |
-| Settings | Dwell (Q4), Appearance (Q5), Suggested replies (Q6), Sound (Q7), Dev Tools (Q8) |
-| Dwell | Selection, Letter dwell, Button dwell |
+| Settings | Appearance (Q5), Suggested replies (Q6), Sound (Q7), Dev Tools (Q8) |
 | Appearance | Text size, Motion, Word colours |
 | Sound | Sounds, Volume |
 | Dev Tools (was Demo) | Gaze noise, Repeat, Partner voice |
 
-A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. A page with more than five entries would page two at a time with ← in Q7 and → in Q8 (see Options), but the grouping keeps every page at five or fewer. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Dwell) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
+A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. A page with more than five entries would page two at a time with ← in Q7 and → in Q8 (see Options), but the grouping keeps every page at five or fewer. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Sound) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
 
 Earlier (owner, 2026-11-07): One moment and Phrases left the menu, and the Phrases page went with them. One moment stays on the conversation screen while listening, renamed **Wait!**. Selecting it says "Wait! I'm answering."
 
@@ -118,7 +117,7 @@ Each launch opens on Welcome, then eye calibration, not only the first. The save
 
 On Welcome, **Get started** is the tall ink card over Q4 and Q8 (still with "Starts in 20 s"), and the orb and the words are centred in the three columns to its left. **Keyboard and mouse** is not a card (owner, 2026-11-08): it is quiet text in secondary ink at hint size, one line, centred at the foot of Q6 under the words, so the eye goes to Get started and people try calibration. It is still a target in its own quadrant: a click or key 6 selects it, and it darkens under the pointer. As calibration starts, Get started slides off to the right (520 ms) and Keyboard and mouse fades. Get started keeps one body key with or without its hint: the press that stops the countdown would otherwise swap the body under the pointer, and the click would never fire.
 
-**Keyboard and mouse** skips calibration and starts no camera, the same as Use the mouse after a camera failure. With keyboard and mouse nothing selects by dwell (owner's standing rule): a click or keys 1–8 select, and hovering never does. So the pointer no longer feeds the gaze engine in a keyboard-and-mouse session, and it never does on Welcome or calibration, where the eyes cannot select yet and only a mouse could dwell. Elsewhere, without a calibrated tracker (`?onboarding=off`), the pointer still stands in for the eyes. Dwell stays the default for the eyes.
+**Keyboard and mouse** skips calibration and starts no camera, the same as Use the mouse after a camera failure. With keyboard and mouse a click or keys 1–8 select, and hovering never does (owner's standing rule). So the pointer no longer feeds the gaze engine in a keyboard-and-mouse session, and it never does on Welcome or calibration, where the eyes cannot select yet and only a mouse could dwell. Elsewhere, without a calibrated tracker (`?onboarding=off`), the pointer still stands in for the eyes, and like the eyes it only previews.
 
 ## Open questions for the owner
 
@@ -126,4 +125,4 @@ On Welcome, **Get started** is the tall ink card over Q4 and Q8 (still with "Sta
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarté speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarté speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu` and `menu-settings` (the menu tree; `menu-dwell` is from before the Dwell page was removed), `composing` (the word in progress in group colours).

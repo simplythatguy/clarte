@@ -28,14 +28,14 @@ Every launch starts the same way (owner, 2026-11-08):
 3. **Making your voice**, until the person has finished these pages once, by **Continue** after making a voice or by **Not now**. Later launches go from calibration straight to the conversation. **Menu › My voice** opens the voice pages at any time. The voice made and the voice chosen stay across launches.
 4. **The conversation screen.**
 
-**Keyboard and mouse** skips calibration. No camera starts, and the session runs on the keyboard and the mouse, as **Use the mouse** does after a camera failure. Nothing selects by dwell then: a click or keys 1 to 8 select, and hovering never does.
+**Keyboard and mouse** skips calibration. No camera starts, and the session runs on the keyboard and the mouse, as **Use the mouse** does after a camera failure. A click or keys 1 to 8 select, and hovering never does.
 
 **Menu › Recalibrate** runs a new calibration in a fresh tracker worker. The new calibration replaces the saved one only once it has trained. Escape keeps the calibration in use, and so does **Keep the old one** after a run that did not train. If the camera fails during the conversation, or the calibration no longer fits the camera or the window, the calibration screen opens.
 
 ## Input
 
-- **Eyes**, by default. Looks come from the webcam tracker and select by dwell. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration, where nothing selects by dwell.
-- **Keyboard and mouse.** **Keyboard and mouse** on Welcome, `?input=mouse`, or **Use the mouse** after a camera failure: no camera, and no selection by dwell. A click or keys 1 to 8 select; hovering never does.
+- **Eyes**, by default. Looks come from the webcam tracker. A look never selects (owner, 2026-11-08: no dwell): a steady look closes the line round a card and waits, and Space or Enter, a click or a switch selects it. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration.
+- **Keyboard and mouse.** **Keyboard and mouse** on Welcome, `?input=mouse`, or **Use the mouse** after a camera failure: no camera. A click or keys 1 to 8 select; hovering never does.
 - **Keys and clicks**, always. Keys 1 to 8 select the quadrant with that number, and a click selects a card.
 
 Other URL options: `?reset` forgets everything the app saved on this browser (first-run state, settings, the calibration) and starts the first run again, `?onboarding=off` opens straight into the conversation with no camera, `&palette=vibrant` uses the vibrant letter colours, and `#phase=<name>` opens a debug phase (`window.clarteDebug.phases` lists them).
