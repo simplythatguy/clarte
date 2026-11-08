@@ -147,7 +147,7 @@ export function VoicePage({ step, source, maker, service, note }: VoiceView) {
       break;
   }
   return (
-    <section className={`onboarding voice-page${split ? ' voice-split' : ''}`} aria-label={label}>
+    <section className={`onboarding voice-page${split ? ' onboarding-split' : ''}`} aria-label={label}>
       <div className="voice-text">{body}</div>
     </section>
   );

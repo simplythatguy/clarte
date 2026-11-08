@@ -137,13 +137,21 @@ body {
 .card.card-span { width: calc(var(--card-w) * 2 + var(--space)); }
 .cell:has(> .card-span) { z-index: 3; }
 /* A tall card spans its quadrant and the one below it (the voice page's Continue, Q4–Q8). */
-.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); }
+.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); transition-property: background-color, border-color, opacity, translate; transition-duration: var(--dur-cue), var(--dur-cue), var(--dur-phase), 520ms; transition-timing-function: var(--ease-state), var(--ease-state), var(--ease-state), cubic-bezier(0.32, 0.72, 0, 1); }
 .cell:has(> .card-tall) { z-index: 3; }
-/* Leaving, the tall card and Welcome's Get started (Q7–Q8, `card-slide`) slide off the right edge
-   instead of fading (calibration, owner 2026-11-08), and the tall card slides back when it returns. */
-.card:is(.card-tall, .card-slide) { transition-property: background-color, border-color, opacity, translate; transition-duration: var(--dur-cue), var(--dur-cue), var(--dur-phase), 520ms; transition-timing-function: var(--ease-state), var(--ease-state), var(--ease-state), cubic-bezier(0.32, 0.72, 0, 1); }
-.card:is(.card-tall, .card-slide).card-gone { opacity: 1; translate: calc(100% + var(--space) + 8px) 0; }
-@media (prefers-reduced-motion: reduce) { .card:is(.card-tall, .card-slide) { transition-property: background-color, border-color, opacity; } .card:is(.card-tall, .card-slide).card-gone { opacity: 0; translate: none; } }
+/* Leaving, the tall card slides off the right edge instead of fading (calibration, owner 2026-11-08), and slides back when it returns. */
+.card.card-tall.card-gone { opacity: 1; translate: calc(100% + var(--space) + 8px) 0; }
+@media (prefers-reduced-motion: reduce) { .card.card-tall { transition-property: background-color, border-color, opacity; } .card.card-tall.card-gone { opacity: 0; translate: none; } }
+/* Welcome's Keyboard and mouse (owner, 2026-11-08): quiet text, not a card, so the eye goes to Get
+   started. Secondary ink at hint size, centred at the foot of Q6, under the welcome words. It is
+   still a target in its own quadrant: a click or key 6 selects it, and it darkens under the pointer. */
+.cell:has(> .card-quiet) { justify-content: center; align-items: flex-end; padding: 0 0 var(--space); }
+.card.card-quiet { width: auto; height: auto; padding: 12px 16px; display: block; container-type: normal; border: 0; border-radius: 12px; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--ink-2); transition-property: color, opacity; }
+.card.card-quiet:hover { color: var(--ink); }
+/* One line, wrapping only at large text sizes, so it never leaves Q6. */
+.card.card-quiet { max-width: calc(25vw - var(--space)); }
+.card-quiet .card-label { font-size: var(--fs-hint); font-weight: 500; line-height: 1.2; text-wrap: balance; }
+.card-quiet :is(.trace, .trace-fill) { display: none; }
 /* A list longer than five cards pages two at a time over Q5–Q6 (Pager.tsx): a strip clipped to the
    two cards' own box, so a sliding card never crosses into the arrows' quadrants. One arrow press
    slides the row one card (--ease-move, 320 ms); under reduced motion it moves at once. */
@@ -560,8 +568,6 @@ body {
 /* `1 / 2`, not `1`: an absolutely placed grid item's `auto` end line is the container's edge, so
    `grid-row: 1` spanned the whole screen and the words sat behind the bottom row's cards. */
 .onboarding.voice-page { grid-column: 2 / 4; grid-row: 1 / 2; padding: 0 24px; }
-/* Welcome: its two cards share the bottom row, so the words and the orb are centred in the whole top row (owner, 2026-11-08). */
-.onboarding.welcome-page { grid-column: 1 / -1; grid-row: 1 / 2; padding: 0 24px; }
 .onboarding.voice-page > * { margin: calc(88px + 24px) 0 0; }
 .voice-text { display: grid; gap: 14px; justify-items: center; max-width: 100%; }
 .voice-page .page-title { font-size: min(var(--fs-message), 44px); text-wrap: balance; }
@@ -573,11 +579,12 @@ body {
 /* Recording: a red dot beside the word, so the state never rests on colour alone. */
 .voice-dot { width: 12px; height: 12px; border-radius: 50%; background: #D93036; }
 :root[data-large] .onboarding.voice-page > * { margin-top: calc(64px + 16px); }
-/* A voice page with the top row to itself (owner, 2026-11-08): the orb rests centred over Q1–Q2
-   (GuideOrb.tsx) and the words sit centred over Q3–Q4 as one left-aligned block. */
-.onboarding.voice-page.voice-split { grid-column: 3 / 5; padding: 0 32px; }
-.onboarding.voice-page.voice-split > *, :root[data-large] .onboarding.voice-page.voice-split > * { margin: 0; }
-.voice-split .voice-text { justify-items: start; text-align: left; }
+/* A page whose cards all sit in the bottom row has the top row to itself (owner, 2026-11-08):
+   the two-button voice pages. The orb rests centred over Q1–Q2 (GuideOrb.tsx) and the
+   words sit centred over Q3–Q4 as one left-aligned block. */
+.onboarding.onboarding-split { grid-column: 3 / 5; grid-row: 1 / 2; padding: 0 32px; text-align: left; }
+.onboarding.onboarding-split > *, :root[data-large] .onboarding.onboarding-split > * { margin: 0; }
+.onboarding-split .voice-text { justify-items: start; }
 /* The onboarding orb (GuideOrb.tsx): placed by its centre (--x, --y) at --size, gliding between
    places at the calibration's move time. As a target it does not float, so its centre is exact. */
 .guide-orb {

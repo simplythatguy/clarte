@@ -3,11 +3,11 @@
  * first run also makes the person's voice (VoiceSetup.tsx, NAT-32) after calibration, until the
  * person has finished those pages once (App: `voiceDone`).
  *
- * Backend quadrants (owner, 2026-11-08): Welcome is a two-button page like the voice pages. Its two
- * cards share the bottom row as wide cards: Keyboard and mouse over Q5–Q6, and Get started, in ink,
- * over Q7–Q8. The words and the orb are centred in the top row, a rest zone. When calibration starts,
- * Get started slides off to the right and Keyboard and mouse fades. The calibration page's Try again
- * is a tall ink card over Q4 and Q8.
+ * Backend quadrants (owner, 2026-11-08): Get started is a tall ink card over Q4 and Q8, so a look
+ * at either selects it, and the words and the orb are centred in the three columns to its left.
+ * During calibration the card slides off to the right; the calibration page's Try again slides back
+ * in its place. Keyboard and mouse is quiet text, not a card, at the foot of Q6 under the words: the
+ * people who use it point and click, and the page should lead everyone else to try calibration.
  *
  * Before calibration the eyes cannot select yet, so Get started counts down from 20 s and selects
  * itself, unless a key, a click or a mouse movement shows the person can select another way (App:
@@ -17,31 +17,32 @@
 import type { ReactNode } from 'react';
 import type { Slots, SlotView } from './Tile.tsx';
 import { longest } from './text.ts';
-import { ArrowRight, Keyboard } from './icons.tsx';
+import { ArrowRight } from './icons.tsx';
 
 const face = (label: string, hint?: string) =>
   <><span className="card-label" style={longest(label)}>{label}</span>{hint && <span className="card-hint">{hint}</span>}</>;
 
-/** A page's one action: a tall ink card over Q4 and Q8, so a look at either selects it. */
+/**
+ * A page's one action: a tall ink card over Q4 and Q8, so a look at either selects it. The body is
+ * keyed by its label alone, so a hint that comes or goes (Get started's countdown) updates in place:
+ * the press that stops the countdown must not swap the body under the pointer, or the click is lost.
+ */
 export const tallCard = (action: string, label: string, icon: ReactNode, hint?: string): SlotView => ({
-  action, tone: 'ink', icon, bodyKey: `${action}:${label}:${hint ? 'hint' : ''}`, className: 'card-tall', body: face(label, hint),
+  action, tone: 'ink', icon, bodyKey: `${action}:${label}`, className: 'card-tall', body: face(label, hint),
 });
 
 /** `autoStart`: seconds before Get started selects itself, or null when it will not. */
 export function welcomeSlots(autoStart: number | null): Slots {
-  const hint = autoStart === null ? undefined : `Starts in ${autoStart} s`;
   return {
-    q5: { action: 'keyboard-mouse', tone: 'surface', icon: <Keyboard />, span: 2, bodyKey: 'keyboard-mouse', body: face('Keyboard and mouse') },
-    // `card-slide`: it slides off to the right as calibration starts, as the tall card did. One body
-    // key with or without the hint: a press stops the countdown, and swapping the body under the
-    // pointer then would detach the pressed node, so the click would never fire.
-    q7: { action: 'get-started', tone: 'ink', icon: <ArrowRight />, span: 2, className: 'card-slide', bodyKey: 'get-started', body: face('Get started', hint) },
+    q4: tallCard('get-started', 'Get started', <ArrowRight />, autoStart === null ? undefined : `Starts in ${autoStart} s`),
+    // Owner, 2026-11-08: not a button, and subtle, so the eye goes to Get started.
+    q6: { action: 'keyboard-mouse', tone: 'surface', className: 'card-quiet', bodyKey: 'keyboard-mouse', body: <span className="card-label">Keyboard and mouse</span> },
   };
 }
 
 export function WelcomePage() {
   return (
-    <section className="onboarding welcome-page" aria-label="Welcome">
+    <section className="onboarding" aria-label="Welcome">
       <h1 className="page-title">Welcome to Clarté</h1>
     </section>
   );
