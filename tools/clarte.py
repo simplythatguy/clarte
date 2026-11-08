@@ -483,9 +483,11 @@ def start_predict(env, log_dir, procs):
 
 def start_app(env, log_dir, procs):
     port = pick_port(5200)
+    if port != 5200:
+        log("the saved calibration and first-run state belong to http://localhost:5200; on this port the app starts fresh")
     engine_port = start_engine(env, log_dir, procs)
-    if engine_port != 8765:
-        log(f"the engine is on {engine_port}; the app finds it on 8765 to 8769")
+    # The app probes 8765 to 8769 for an engine; any other port has to be named in the URL.
+    query = "" if engine_port == 8765 else f"?engine=http://127.0.0.1:{engine_port}"
     home = ensure_node()
     procs.append(Proc("app", [node_exe(home), APP / "node_modules" / "vite" / "bin" / "vite.js", "--port", port, "--strictPort"], APP, env, log_dir))
 
@@ -493,7 +495,7 @@ def start_app(env, log_dir, procs):
         expect_200(f"http://localhost:{port}/")
         expect_200(f"http://localhost:{port}/vendor/webeyetrack/worker.js")
         expect_json(f"http://127.0.0.1:{engine_port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0])
-    return [port, engine_port], [f"http://localhost:{port}/"], smoke
+    return [port, engine_port], [f"http://localhost:{port}/{query}"], smoke
 
 
 def start_ui_v0(env, log_dir, procs):

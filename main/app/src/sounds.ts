@@ -1,5 +1,5 @@
 /**
- * The listening page for Clarte's sound system (NAT-24): every cue side by side, with the
+ * The listening page for Clarté's sound system (NAT-24): every cue side by side, with the
  * settings that shape them. Open http://localhost:5201/sounds.html while this app's dev server runs.
  */
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
@@ -58,7 +58,7 @@ root.append(
   el('header', { class: 'top' },
     el('div', {},
       el('h1', {}, 'Sounds'),
-      el('p', { class: 'lede' }, 'Calm cues for Clarte. Soft starts, long fades, one key. Click a card to hear it.'),
+      el('p', { class: 'lede' }, 'Calm cues for Clarté. Soft starts, long fades, one key. Click a card to hear it.'),
     ),
     chord,
   ),
@@ -70,7 +70,7 @@ root.append(
         document.body.dataset.level = level;
       })),
     el('label', { class: 'control' }, el('span', { class: 'caption' }, 'Volume'), el('span', { class: 'range' }, volumeInput, volumeValue)),
-    el('div', { class: 'control' }, el('span', { class: 'caption' }, 'Clarte speaking'), voiceToggle),
+    el('div', { class: 'control' }, el('span', { class: 'caption' }, 'Clarté speaking'), voiceToggle),
   ),
 );
 document.body.dataset.level = level;

@@ -63,18 +63,45 @@ try {
   const gaze = await page.evaluate(() => window.clarteDebug?.engine.snapshot);
   console.log('the photo\'s gaze is on', gaze?.quadrant, gaze?.looked);
   if ((await phase()) === 'voice') await page.getByRole('button', { name: 'Continue' }).click();
-  await until('the conversation', async () => !['voice', 'welcome', 'calibration'].includes(await phase()), 10_000);
-  check('Continue opens the conversation', true, await phase());
+  const reached = await until('the conversation', async () => { const p = await phase(); return !['voice', 'welcome', 'calibration'].includes(p) && p; }, 10_000).catch(() => null);
+  check('Continue opens the conversation', Boolean(reached), await phase());
+  await page.mouse.move(-1, -1);
   await page.waitForTimeout(1500);
   const samples = await page.evaluate(() => window.clarteDebug?.engine.snapshot);
-  check('the tracker drives the gaze engine', samples && (samples.quadrant !== null || samples.state !== undefined), JSON.stringify({ quadrant: samples?.quadrant, looked: samples?.looked }));
+  // The pointer has left the page, so a point here can only have come from the tracker.
+  check('the tracker drives the gaze engine', Boolean(samples?.point), JSON.stringify({ point: samples?.point, quadrant: samples?.quadrant }));
   await shot('5-conversation');
 
+  // Every status after the reload is recorded: a restore that silently failed would show a calibration run.
+  const firstSaved = JSON.parse(await page.evaluate((key) => localStorage.getItem(key), CALIBRATION_KEY)).savedAt;
   await page.reload();
   await until('the app', () => page.evaluate(() => Boolean(window.clarteDebug)), 10_000);
+  await page.evaluate(() => { const seen = (window.__eyes = []); setInterval(() => { const e = window.clarteDebug?.eyes(); const k = e && (e.reason ? `${e.kind}(${e.reason})` : e.kind); if (k && seen.at(-1) !== k) seen.push(k); }, 50); });
   check('a returning person goes straight to the conversation', !['voice', 'welcome', 'calibration'].includes(await phase()), await phase());
   await until('the restored calibration', async () => (await eyes())?.kind === 'tracking', 120_000);
-  check('the saved calibration is restored at launch', (await eyes()).kind === 'tracking');
+  const afterReload = await page.evaluate(() => window.__eyes);
+  const restored = await eyes();
+  check('the saved calibration is restored at launch, with no new run', restored.calibratedAt === firstSaved && !afterReload.includes('calibrating'), afterReload.join(' → '));
+
+  // Menu › Recalibrate over a restored calibration: a fresh run collects labels, trains and replaces the saved one.
+  const menuButton = page.getByRole('button', { name: 'Menu' });
+  if (await menuButton.count()) await menuButton.first().click(); else await page.keyboard.press('1');
+  await page.getByRole('button', { name: 'Recalibrate' }).click();
+  await until('the recalibration dots', async () => (await eyes())?.kind === 'calibrating' && (await eyes()).labels > 10, 60_000);
+  check('Recalibrate collects labels over a restored calibration', (await eyes()).labels > 10, JSON.stringify(await eyes()));
+  await until('the new calibration', async () => (await eyes())?.kind === 'tracking', 180_000);
+  const second = await eyes();
+  const secondSaved = JSON.parse(await page.evaluate((key) => localStorage.getItem(key), CALIBRATION_KEY)).savedAt;
+  check('the new calibration replaces the saved one', second.calibratedAt !== firstSaved && secondSaved === second.calibratedAt, `${firstSaved} → ${secondSaved}`);
+  await until('the conversation after recalibrating', async () => (await phase()) !== 'calibration', 10_000);
+
+  // Escape during a recalibration keeps the calibration in use.
+  if (await menuButton.count()) await menuButton.first().click(); else await page.keyboard.press('1');
+  await page.getByRole('button', { name: 'Recalibrate' }).click();
+  await until('the dots', async () => (await eyes())?.kind === 'calibrating' && (await eyes()).startedAt !== null, 60_000);
+  await page.keyboard.press('Escape');
+  await until('the calibration in use', async () => (await eyes())?.kind === 'tracking', 60_000);
+  check('Escape keeps the calibration in use', (await eyes()).calibratedAt === secondSaved && (await phase()) !== 'calibration', JSON.stringify(await eyes()));
 
   // Typing, with the mouse standing in for the eyes so the photo's fixed gaze cannot select anything.
   await page.goto(`${ORIGIN}/?input=mouse`);
@@ -82,6 +109,8 @@ try {
   await page.mouse.move(720, 120); // the rest zone between the two top cards
   await until('the engine', () => page.evaluate(async () => { for (const p of [8765, 8766, 8767, 8768, 8769]) { try { const r = await fetch(`http://127.0.0.1:${p}/api/v1/health`); if (r.ok && (await r.json()).ok) return true; } catch {} } return false; }), 180_000);
   await page.waitForTimeout(2500); // the client's health probe runs every 2 s
+  // A cold engine can miss the client's 250 ms race, and then the local decoder's word stands; warm it first.
+  await page.evaluate(async () => { for (const groups of ['2', '21', '212', '2122', '21223']) for (const p of [8765, 8766]) await fetch(`http://127.0.0.1:${p}/api/v1/predict`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ history: [], message: [], groups, offset: 0 }) }).catch(() => {}); });
   for (const key of ['6', '5', '6', '6', '7']) { await page.keyboard.press(key); await page.waitForTimeout(400); } // h e l l o
   await page.waitForTimeout(800);
   const words = await page.evaluate(() => window.clarteDebug?.words());

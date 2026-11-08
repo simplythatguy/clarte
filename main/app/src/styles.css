@@ -42,7 +42,7 @@
   --g4-ink: #3A86FF;
   /* Group inks for glyphs set on the canvas (the word in progress) */
   --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
-  /* The spoken word's highlight while Clarte speaks. */
+  /* The spoken word's highlight while Clarté speaks. */
   --speaking: #1F7A38;
   --speaking-face: #E3F2E7;
 
@@ -137,8 +137,11 @@ body {
 .card.card-span { width: calc(var(--card-w) * 2 + var(--space)); }
 .cell:has(> .card-span) { z-index: 3; }
 /* A tall card spans its quadrant and the one below it (the voice page's Continue, Q4–Q8). */
-.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); }
+.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); transition-property: background-color, border-color, opacity, translate; transition-duration: var(--dur-cue), var(--dur-cue), var(--dur-phase), 520ms; transition-timing-function: var(--ease-state), var(--ease-state), var(--ease-state), cubic-bezier(0.32, 0.72, 0, 1); }
 .cell:has(> .card-tall) { z-index: 3; }
+/* Leaving, the tall card slides off the right edge instead of fading (calibration, owner 2026-11-08), and slides back when it returns. */
+.card.card-tall.card-gone { opacity: 1; translate: calc(100% + var(--space) + 8px) 0; }
+@media (prefers-reduced-motion: reduce) { .card.card-tall { transition-property: background-color, border-color, opacity; } .card.card-tall.card-gone { opacity: 0; translate: none; } }
 /* A list longer than five cards pages two at a time over Q5–Q6 (Pager.tsx): a strip clipped to the
    two cards' own box, so a sliding card never crosses into the arrows' quadrants. One arrow press
    slides the row one card (--ease-move, 320 ms); under reduced motion it moves at once. */
@@ -432,49 +435,12 @@ body {
 .setting-value { font-size: calc(min(calc(36px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.1; text-wrap: balance; }
 .phrase { font-size: calc(min(calc(32px * var(--scale)), calc(155cqi / var(--len, 6))) * var(--fit, 1)); font-weight: 600; letter-spacing: 0; line-height: 1.12; text-wrap: balance; }
 
-/* Calibration (MOTION.md "The calibration sequence") */
-.cal-target { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; overflow: visible; pointer-events: none; color: var(--ink); }
-.cal-target .cal-ring { fill: none; stroke: currentColor; stroke-width: 1.5px; stroke-opacity: 0.3; vector-effect: non-scaling-stroke; transition: stroke-opacity var(--dur-enter) var(--ease-out); }
-.cal-target .cal-arc { fill: none; stroke: var(--accent); stroke-width: 3px; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.cal-target .cal-dot { fill: currentColor; opacity: 0; transition: opacity var(--dur-enter) var(--ease-out); }
-.cal-target[data-state='active'] .cal-ring { stroke-opacity: 1; }
-.cal-target[data-state='active'] .cal-dot { opacity: 1; }
-.cal-targets { transition: opacity var(--dur-enter) var(--ease-out); @starting-style { opacity: 0; } }
-.cal-bloom { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; border: 3px solid var(--accent); opacity: 0; pointer-events: none; will-change: transform, opacity; }
-.cal-guide { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--ink); pointer-events: none; will-change: transform; }
-.cal-face { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); overflow: visible; }
-.cal-face circle { fill: var(--accent); fill-opacity: 0; stroke: var(--ink); stroke-opacity: 0.3; stroke-width: 1.5px; vector-effect: non-scaling-stroke; transition: stroke var(--dur-enter) var(--ease-out), stroke-opacity var(--dur-enter) var(--ease-out), fill-opacity var(--dur-enter) var(--ease-out); }
-.cal-face[data-found] circle { stroke: var(--accent); stroke-opacity: 1; fill-opacity: 0.12; }
-.caption {
-  position: absolute;
-  display: inline-flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--ink);
-  white-space: nowrap;
-  transition: opacity var(--dur-enter) var(--ease-out);
-  @starting-style { opacity: 0; }
-}
-.caption .done-line { color: var(--ink-2); }
-.caption mark { background: color-mix(in oklab, var(--accent) 14%, transparent); color: var(--accent); border-radius: 4px; padding: 0 2px; }
-.caption-line { display: grid; }
-.caption-reserve, .caption-typed { grid-area: 1 / 1; white-space: nowrap; }
-.caption-reserve { visibility: hidden; }
 .caret { display: inline-block; width: 1px; height: 1.05em; margin-left: 1px; vertical-align: -0.15em; background: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .layer, .turn, .now-text, .glyph, .glyph > span, .card-swap, .glyph-swap, .caption, .cal-targets { transition-property: opacity; }
-  .cal-guide { transition: none !important; }
+  .layer, .turn, .now-text, .glyph, .glyph > span, .card-swap, .glyph-swap { transition-property: opacity; }
 }
 
-.calibration { position: absolute; inset: 0; grid-column: 1 / -1; grid-row: 1 / -1; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
@@ -559,16 +525,35 @@ body {
 @media (prefers-reduced-motion: reduce) { .thread-behind > .thread { transition-property: opacity; } }
 
 /* ── First run ── */
-/* The greeting and the voice note sit at the centre of the screen: Q2, Q3, Q6 and Q7 are rest zones here. */
-.onboarding { position: absolute; inset: 0; grid-column: 1 / -1; grid-row: 1 / -1; display: grid; place-items: center; padding: 0 var(--card-w); text-align: center; pointer-events: none; }
-/* The voice note is centred between the left edge and the right edge of Q3–Q7, beside Continue. */
-.onboarding.onboarding-voice { grid-column: 1 / 4; padding: 0; }
+/* The greeting and the voice note are centred between the left edge and the right edge of Q3–Q7, beside the tall card in Q4–Q8. */
+.onboarding { position: absolute; inset: 0; grid-column: 1 / 4; grid-row: 1 / -1; display: grid; place-items: center; text-align: center; pointer-events: none; }
+/* Room above the text for the orb (132 px, GuideOrb.tsx) and a 40 px gap: the margin box is what is centred, so orb and text are centred as one. */
+.onboarding > * { margin: calc(132px + 40px) 0 0; }
 /* The voice placeholder (owner, 2026-11-08): one line of ordinary text, not a title. */
-.onboarding-note { margin: 0; font-size: var(--fs-turn); font-weight: 500; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+.onboarding-note { font-size: var(--fs-turn); font-weight: 500; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+/* The onboarding orb (GuideOrb.tsx): placed by its centre (--x, --y) at --size, gliding between
+   places at the calibration's move time. As a target it does not float, so its centre is exact. */
+.guide-orb {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  width: var(--size, 132px);
+  height: var(--size, 132px);
+  translate: calc(var(--x, 50vw) - var(--size, 132px) / 2) calc(var(--y, 50vh) - var(--size, 132px) / 2);
+  transition: translate var(--move) cubic-bezier(0.23, 1, 0.32, 1), width 400ms var(--ease-out), height 400ms var(--ease-out);
+  pointer-events: none;
+  @starting-style { opacity: 0; }
+}
+.guide-orb > div { padding: 0 !important; max-width: none !important; }
+.guide-orb > div > svg { display: block; }
+.guide-orb[data-target] > div { transform: none !important; }
+/* The ring sits --gap outside the orb, so white shows between them; it fills clockwise. */
+.guide-ring { position: absolute; inset: calc(-1 * (var(--gap) + var(--line))); width: calc(100% + 2 * (var(--gap) + var(--line))); height: calc(100% + 2 * (var(--gap) + var(--line))); overflow: visible; }
+.guide-ring circle { fill: none; stroke: #2F6FEB; stroke-width: var(--line); stroke-linecap: round; vector-effect: non-scaling-stroke; }
+@media (prefers-reduced-motion: reduce) { .guide-orb { transition: none; } }
 /* The camera feeds the tracker only; it is never shown. */
 .camera-feed { display: none !important; }
-.cal-caption { left: 50%; top: 50%; transform: translate(-50%, -50%); }
-.cal-caption[data-hidden='true'] { opacity: 0; }
 .cal-message { text-wrap: balance; }
 
 :root[data-palette='vibrant'] {

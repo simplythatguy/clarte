@@ -6,15 +6,19 @@
  * backend quadrant in snake order (top row left to right, bottom row right to left). Each dot moves
  * for 600 ms, waits 300 ms, and collects for 1 s: every fresh frame with a face and open eyes is a
  * label. About 20 s in all, then the worker trains. The learned head is saved on this browser and
- * restored at every launch, until the person recalibrates from the menu (a new run replaces it
- * only once it has trained) or the camera or window changes enough that the saved one no longer fits.
+ * restored at every launch, until the person recalibrates from the menu or the camera or window
+ * changes enough that the saved one no longer fits.
  *
- * Outside a calibration every frame feeds the gaze engine: the smoothed point, or no gaze when no
- * face is found or the eyes are closed (the engine's blink grace covers a blink).
+ * Every run starts in a fresh worker (`EyeTracker.reset`): a worker accepts labels only before it
+ * has trained or restored a calibration, and keeps a failed run's samples. The calibration in use
+ * is kept in memory, so leaving a run or a run that does not train puts it back.
+ *
+ * While a calibration drives looks, every frame feeds the gaze engine: the smoothed point, or no
+ * gaze when no face is found or the eyes are closed (the engine's blink grace covers a blink).
  */
 import { useEffect, useState } from 'react';
 import { EyeTracker, type EyeFrame } from './tracker.ts';
-import { SavedCalibrationStore, calibrationCompatibility, type CalibrationGeometry } from './core/saved-calibration';
+import { SavedCalibrationStore, calibrationCompatibility, type CalibrationGeometry, type LearnedCalibration } from './core/saved-calibration';
 import { quadrantRect, type QuadrantId, type Viewport } from '../core/quadrants.ts';
 import type { GazeEngine } from '../core/gaze.ts';
 
@@ -52,12 +56,17 @@ export function positionAt(elapsed: number, dots: readonly Dot[]): RunPosition |
 export type EyesStatus =
   | { kind: 'off' }
   | { kind: 'starting' }
-  /** Tracking with a calibration: looks drive the app. */
+  /** A calibration is in use: looks drive the app. */
   | { kind: 'tracking'; calibratedAt: number }
-  /** The camera runs but there is no usable calibration yet. */
+  /** The camera runs but no calibration is in use; `reason` says why a saved one was not used. */
   | { kind: 'uncalibrated'; reason: string | null }
+  /** A fresh worker is starting for a run. */
+  | { kind: 'preparing' }
   | { kind: 'calibrating'; startedAt: number | null; labels: number }
   | { kind: 'training' }
+  /** A run did not train. With `fallback`, the calibration in use before it is back and drives looks. */
+  | { kind: 'run-failed'; reason: string; fallback: boolean }
+  /** The camera or the tracker stopped. */
   | { kind: 'failed'; message: string };
 
 const store = new SavedCalibrationStore();
@@ -65,6 +74,8 @@ const tracker = new EyeTracker();
 let status: EyesStatus = { kind: 'off' };
 let target: GazeEngine | null = null;
 let run: { startedAt: number | null; dots: Dot[]; labels: number; viewport: Viewport } | null = null;
+/** The calibration the tracker is using, kept so a cancelled or failed run can put it back. */
+let inUse: { learned: LearnedCalibration; savedAt: number } | null = null;
 let faceSeen = false;
 const listeners = new Set<() => void>();
 
@@ -73,7 +84,15 @@ function set(next: EyesStatus): void {
   for (const fn of listeners) fn();
 }
 
+/** True when the camera or the tracker has failed since the caller last awaited. */
+const stopped = () => status.kind === 'failed';
+
 export function eyesStatus(): EyesStatus { return status; }
+
+/** Whether looks come from the eyes now (else the mouse stands in). */
+export function eyesDrive(): boolean {
+  return status.kind === 'tracking' || (status.kind === 'run-failed' && status.fallback);
+}
 
 export function useEyesStatus(): EyesStatus {
   const [, bump] = useState(0);
@@ -92,7 +111,7 @@ function geometryNow(): CalibrationGeometry | null {
 function onFrame({ at, face, frame }: EyeFrame): void {
   if (face !== faceSeen) { faceSeen = face; for (const fn of listeners) fn(); }
   if (run) { label(at, face); return; }
-  if (status.kind !== 'tracking' || !target) return;
+  if (!eyesDrive() || !target) return;
   if (frame.point) target.sample(frame.point.x, frame.point.y);
   else target.sample(null, null);
 }
@@ -101,8 +120,7 @@ function label(at: number, face: boolean): void {
   const r = run;
   if (!r || r.startedAt === null) return;
   const pos = positionAt(at - r.startedAt, r.dots);
-  if (!pos) return;
-  if (pos.phase !== 'collect' || !face) return;
+  if (!pos || pos.phase !== 'collect' || !face) return;
   const norm: [number, number] = [pos.dot.x / r.viewport.width - 0.5, pos.dot.y / r.viewport.height - 0.5];
   void tracker.collect(norm, at).then((ok) => {
     if (ok && run === r && status.kind === 'calibrating') { r.labels++; set({ kind: 'calibrating', startedAt: r.startedAt, labels: r.labels }); }
@@ -111,6 +129,7 @@ function label(at: number, face: boolean): void {
 
 function onFailure(error: unknown): void {
   run = null;
+  inUse = null;
   set({ kind: 'failed', message: messageOf(error) });
 }
 
@@ -118,6 +137,12 @@ function messageOf(error: unknown): string {
   if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) return 'The camera is blocked. Allow it for this page, then try again.';
   if (error instanceof DOMException && error.name === 'NotFoundError') return 'No camera was found.';
   return error instanceof Error ? error.message : 'The eye tracker stopped.';
+}
+
+/** Put `learned` into a fresh worker. False when the tracker refused it. */
+async function useCalibration(learned: LearnedCalibration): Promise<boolean> {
+  await tracker.reset();
+  return !stopped() && (await tracker.restore(learned));
 }
 
 /**
@@ -140,23 +165,37 @@ export async function startEyes(engine: GazeEngine): Promise<EyesStatus> {
     const saved = store.load();
     const geometry = geometryNow();
     if (saved && geometry) {
-      const fit = calibrationCompatibility(saved.geometry, geometry);
-      if (fit.compatible && (await tracker.restore(saved.learned))) { set({ kind: 'tracking', calibratedAt: saved.savedAt }); return status; }
+      // Browsers do not keep a camera's deviceId across page loads (Safari changes it every session), so
+      // only the camera's shape and the window size decide whether the saved calibration still fits.
+      const fit = calibrationCompatibility(saved.geometry, { ...geometry, camera: { ...geometry.camera, deviceId: saved.geometry.camera.deviceId } });
+      if (fit.compatible && (await tracker.restore(saved.learned))) {
+        inUse = { learned: saved.learned, savedAt: saved.savedAt };
+        set({ kind: 'tracking', calibratedAt: saved.savedAt });
+        return status;
+      }
       reason = fit.compatible ? 'The saved calibration could not be restored.' : fit.message;
     }
   } catch (error) {
-    reason = error instanceof Error ? error.message : null;
+    reason = error instanceof Error ? error.message : 'The saved calibration could not be read.';
   }
-  set({ kind: 'uncalibrated', reason });
+  if (!stopped()) set({ kind: 'uncalibrated', reason });
   return status;
 }
 
-/** Arm a calibration run; its dots start with `beginRun` once a face is in view. */
-export function prepareRun(): void {
-  if (status.kind === 'off' || status.kind === 'starting' || status.kind === 'failed' || status.kind === 'training') return;
+/** Arm a calibration run in a fresh worker; its dots start with `beginRun` once a face is in view. */
+export async function prepareRun(): Promise<void> {
+  if (!tracker.running() || !['tracking', 'uncalibrated', 'run-failed'].includes(status.kind)) return;
+  set({ kind: 'preparing' });
+  target?.sample(null, null);
+  try {
+    await tracker.reset();
+  } catch (error) {
+    if (!stopped()) onFailure(error);
+    return;
+  }
+  if (stopped()) return;
   const viewport = { width: window.innerWidth, height: window.innerHeight };
   run = { startedAt: null, dots: dotsFor(viewport), labels: 0, viewport };
-  target?.sample(null, null);
   set({ kind: 'calibrating', startedAt: null, labels: 0 });
 }
 
@@ -173,27 +212,44 @@ export function tickRun(now = performance.now()): void {
   if (run?.startedAt != null && now - run.startedAt >= RUN_MS) void finishRun();
 }
 
-/** Leave a run without training: the previous calibration, if any, stays in use. */
-export function cancelRun(): void {
-  if (!run) return;
+/** Leave a run without training: the calibration in use before it, if any, is put back. */
+export async function cancelRun(): Promise<void> {
+  if (!['preparing', 'calibrating', 'run-failed'].includes(status.kind)) return;
   run = null;
-  const saved = (() => { try { return store.load(); } catch { return null; } })();
-  set(saved ? { kind: 'tracking', calibratedAt: saved.savedAt } : { kind: 'uncalibrated', reason: null });
+  if (status.kind === 'run-failed' && status.fallback && inUse) { set({ kind: 'tracking', calibratedAt: inUse.savedAt }); return; }
+  const previous = inUse;
+  if (!previous) { set({ kind: 'uncalibrated', reason: null }); return; }
+  try {
+    if (await useCalibration(previous.learned)) { set({ kind: 'tracking', calibratedAt: previous.savedAt }); return; }
+  } catch (error) {
+    if (stopped()) return;
+  }
+  if (stopped()) return;
+  inUse = null;
+  set({ kind: 'uncalibrated', reason: 'The calibration in use could not be put back.' });
 }
 
 async function finishRun(): Promise<void> {
   if (!run || status.kind !== 'calibrating') return;
   run = null;
   set({ kind: 'training' });
-  const lease = store.lease;
   try {
     await tracker.train();
     const learned = await tracker.exportCalibration();
     const geometry = geometryNow();
-    if (!learned || !geometry) throw new Error('Calibration did not finish. Try again.');
-    const saved = store.save(learned, geometry, lease) ?? store.save(learned, geometry, store.lease);
-    set({ kind: 'tracking', calibratedAt: saved?.savedAt ?? Date.now() });
+    if (stopped()) return;
+    if (!learned || !geometry) throw new Error('Calibration did not finish.');
+    // Another tab may have saved since this one last read: read it, then this run's calibration wins.
+    const saved = store.save(learned, geometry, store.lease) ?? (store.load(), store.save(learned, geometry, store.lease));
+    inUse = { learned, savedAt: saved?.savedAt ?? Date.now() };
+    set({ kind: 'tracking', calibratedAt: inUse.savedAt });
   } catch (error) {
-    set({ kind: 'uncalibrated', reason: error instanceof Error ? error.message : 'Calibration did not finish. Try again.' });
+    if (stopped()) return;
+    const reason = 'Calibration did not finish. Keep your face in view and look at each dot until its ring closes.';
+    let fallback = false;
+    if (inUse) { try { fallback = await useCalibration(inUse.learned); } catch { fallback = false; } }
+    if (stopped()) return;
+    if (!fallback) inUse = null;
+    set({ kind: 'run-failed', reason, fallback });
   }
 }

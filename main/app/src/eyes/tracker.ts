@@ -66,10 +66,29 @@ export class EyeTracker {
     this.video = video;
     this.canvas = document.createElement('canvas');
     const generation = ++this.generation;
-    this.client = new WorkerClient(new Worker(WORKER_URL), (error) => this.fail(error));
-    await Promise.all([this.client.call('init', WORKER_INIT, [], 90000), video.play()]);
-    if (generation !== this.generation) throw new Error('Tracker stopped during start');
+    await Promise.all([this.openWorker(generation), video.play()]);
     this.schedule();
+  }
+
+  private async openWorker(generation: number): Promise<void> {
+    const client = new WorkerClient(new Worker(WORKER_URL), (error) => this.fail(error));
+    this.client = client;
+    await client.call('init', WORKER_INIT, [], 90000);
+    if (generation !== this.generation) throw new Error('Tracker stopped during start');
+  }
+
+  /**
+   * Replace the worker with a fresh, untrained one; the camera keeps running. The worker accepts
+   * labels only before it has trained or restored a calibration, and keeps a failed run's samples,
+   * so every calibration run starts here.
+   */
+  async reset(): Promise<void> {
+    if (!this.video) throw new Error('Tracker is unavailable');
+    const generation = this.generation;
+    await this.withLoopStopped(async (old) => {
+      old.stop();
+      await this.openWorker(generation);
+    });
   }
 
   private fail(error: unknown): void {
@@ -164,6 +183,8 @@ export class EyeTracker {
       if (generation === this.generation) { this.training = false; this.schedule(); }
     }
   }
+
+  running(): boolean { return this.video !== null; }
 
   geometry(): CameraGeometry | null {
     const s = this.stream?.getVideoTracks()[0]?.getSettings();

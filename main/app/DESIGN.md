@@ -1,4 +1,4 @@
-# Clarte app (UI v1 · s1)
+# Clarté app (UI v1 · s1)
 
 The first UI v1 prototype (owner, 2026-11-08). It began as UI v0's style 8 ("Cloud, second pass", itself a copy of style 7 · Cloud, PR #17) and moved here from `prototypes/UI/v0/s8`. The sections below record its decisions in the order they were made; where a later one replaces an earlier one, the later one says so. For what it inherits, see v0's [style 7](../../v0/s7/DESIGN.md) and [style 6](../../v0/s6/DESIGN.md).
 
@@ -34,7 +34,7 @@ One space, 32 px, everywhere. It is the gap from the screen's edges to the cards
 Earlier grids, in order: six equal cards on a 16 px grid (PR #18); a shorter letter row; then style 6 and 7's 296 × 338 px cards with 64 px gutters, 32 px from the side edges and 40 px from the top and bottom (owner, 2026-11-07).
 ## Speaking (owner, 2026-11-07)
 
-The Cloud turns green and livelier while Clarte speaks, as in style 6. Style 7 hid it whenever text filled the middle, and the spoken sentence counted, so the green was never seen. In style 8 the Cloud stays while Clarte speaks, with the sentence over it. Its face steps aside (it erases at Speak and redraws when the speech ends), so it never sits under the words.
+The Cloud turns green and livelier while Clarté speaks, as in style 6. Style 7 hid it whenever text filled the middle, and the spoken sentence counted, so the green was never seen. In style 8 the Cloud stays while Clarté speaks, with the sentence over it. Its face steps aside (it erases at Speak and redraws when the speech ends), so it never sits under the words.
 
 ## Second round (owner, 2026-11-07)
 
@@ -75,7 +75,7 @@ The Cloud renders exactly as style 7's in the light theme.
 
 ## Sound (NAT-24)
 
-This app plays the shared sound system ([UI v0's SOUND.md](../../v0/SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume share the **Sound** settings page: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
+This app plays the shared sound system ([UI v0's SOUND.md](../../v0/SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarté speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume share the **Sound** settings page: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
 
 ## The companion (owner, 2026-11-08)
 
@@ -83,7 +83,7 @@ The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn
 
 The owner then asked for it to be a ball (2026-11-08). The clip is a circle, with the eyes a little above its centre. Lighting comes from the upper left: a soft highlight there (22% white at most), and a shadow on the ball's own edge all round, deepest at the lower right (16% at most). Both are meant to go unnoticed and only make it read as a sphere. A floor shadow under it was tried and removed at the owner's request.
 
-Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08) makes the eyes white. With `currentColor` they took Clarte's dark ink and sank into the gradient's navy; a white ring around ink eyes was tried and declined. On the original palette white eyes measured median 3.4:1 against the companion over 20 s; on the grey-white palette they measure median 1.8:1, worst 1.3:1, so they read by shape rather than contrast.
+Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarté is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08) makes the eyes white. With `currentColor` they took Clarté's dark ink and sank into the gradient's navy; a white ring around ink eyes was tried and declined. On the original palette white eyes measured median 3.4:1 against the companion over 20 s; on the grey-white palette they measure median 1.8:1, worst 1.3:1, so they read by shape rather than contrast.
 
 To take the component as given, the app now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
 
@@ -106,4 +106,4 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarté speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).

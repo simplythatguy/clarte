@@ -1,5 +1,5 @@
 /**
- * Clarte: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
+ * Clarté: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
  * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
  * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
  * voice cloning); words from the prediction engine (useWords.ts); and looks from the webcam eye
@@ -48,9 +48,10 @@ import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
 import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { OptionsFace } from './OptionsFace.tsx';
-import { OnboardingPage, onboardingSlots } from './Onboarding.tsx';
-import { cancelRun, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
-import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
+import { OnboardingPage, onboardingSlots, tallCard } from './Onboarding.tsx';
+import { GuideOrb } from './GuideOrb.tsx';
+import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
+import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
 /** "More" walks the three settings pages in a loop. */
@@ -166,6 +167,43 @@ function halves(letters: string): string[] {
   return [letters.slice(0, cut), letters.slice(cut)];
 }
 
+const AUTO_START_S = 20;
+
+/**
+ * Seconds left before `onDone` runs by itself, counting down while `active`; null once a key, a
+ * click or a mouse movement shows the person can select without their eyes (then it never runs).
+ */
+function useAutoStart(active: boolean, onDone: () => void): number | null {
+  const [left, setLeft] = useState(AUTO_START_S);
+  const [cancelled, setCancelled] = useState(false);
+  useEffect(() => {
+    if (!active || cancelled) return;
+    setLeft(AUTO_START_S);
+    const started = performance.now();
+    const timer = window.setInterval(() => {
+      const remaining = AUTO_START_S - Math.floor((performance.now() - started) / 1000);
+      setLeft(Math.max(0, remaining));
+      if (remaining <= 0) { window.clearInterval(timer); onDone(); }
+    }, 250);
+    const origin = { x: NaN, y: NaN };
+    const cancel = () => setCancelled(true);
+    const move = (e: PointerEvent) => {
+      if (Number.isNaN(origin.x)) { origin.x = e.clientX; origin.y = e.clientY; return; }
+      if (Math.hypot(e.clientX - origin.x, e.clientY - origin.y) > 24) cancel();
+    };
+    window.addEventListener('keydown', cancel);
+    window.addEventListener('pointerdown', cancel);
+    window.addEventListener('pointermove', move);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('keydown', cancel);
+      window.removeEventListener('pointerdown', cancel);
+      window.removeEventListener('pointermove', move);
+    };
+  }, [active, cancelled, onDone]);
+  return active && !cancelled ? left : null;
+}
+
 const GROUP_QUADRANT: Record<GroupId, SlotName> = { G1: 'q5', G2: 'q6', G3: 'q7', G4: 'q8' };
 
 /**
@@ -213,6 +251,8 @@ export function App() {
   const [syncs, setSyncs] = useState(0);
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
   const primary = useSettled('primary', primaryKey(slots.primary), slots.primary, looked, syncs);
+  // The typed letters spell the word the card shows, which holds still while gaze rests on it.
+  const typedWord = primary.value.kind === 'candidate' ? primary.value.word : shown;
 
   // No word fits the groups typed so far: a soft "not yet", a second late, and only if it lasts.
   const noMatch = slots.primary.kind === 'no-match';
@@ -247,7 +287,7 @@ export function App() {
   // Gaze sources and the per-frame clock.
   useEffect(() => {
     const detach = [
-      attachPointerStream(engine, () => mouseOnly.current || eyesStatus().kind !== 'tracking'),
+      attachPointerStream(engine, () => mouseOnly.current || !eyesDrive()),
       startTicking(engine),
       unlockOnGesture(),
       // In development the overlay tracks actionables itself (main.tsx); here for production builds.
@@ -366,39 +406,59 @@ export function App() {
     const s = stateRef.current;
     dispatch({ type: 'screen', screen: s.screen.kind === 'calibration' && s.screen.then === 'voice' ? { kind: 'voice' } : { kind: 'talk' } });
   }, []);
-  const chooseMouse = useCallback(() => { mouseOnly.current = true; cancelRun(); afterCalibration(); }, [afterCalibration]);
+  /** Leave calibration without a new calibration: the one in use before, if any, stays in use. */
+  const leaveCalibration = useCallback((mouse: boolean) => {
+    if (mouse) mouseOnly.current = true;
+    void cancelRun();
+    afterCalibration();
+  }, [afterCalibration]);
 
-  // The calibration flow: start the camera, arm a run once it runs (a recalibration arms one over
-  // the calibration in use), and leave when the new calibration is in use. Escape leaves a run and
-  // keeps the calibration in use.
+  const getStarted = useCallback(() => {
+    if (stateRef.current.screen.kind !== 'welcome') return;
+    play('control');
+    dispatch({ type: 'screen', screen: mouseOnly.current ? { kind: 'voice' } : { kind: 'calibration', then: 'voice' } });
+  }, []);
+  // Before calibration the eyes cannot select yet, so Get started starts by itself after 20 s,
+  // unless the person shows they can use the keyboard or the mouse.
+  const autoStart = useAutoStart(screen.kind === 'welcome' && !mouseOnly.current, getStarted);
+
+  // The calibration flow: start the camera, arm a run in a fresh worker once it runs (over the
+  // calibration in use, for a recalibration), and leave once a new calibration is in use. Escape
+  // leaves a run, except while it trains.
   const eyes = useEyesStatus();
   const calibrating = screen.kind === 'calibration';
-  const armed = useRef(false);
+  /** Set when this calibration screen armed its run: the `calibratedAt` in use then, or 0 for none. */
+  const armedWith = useRef<number | null>(null);
   useEffect(() => {
-    if (!calibrating) { armed.current = false; return; }
+    if (!calibrating) { armedWith.current = null; return; }
     if (eyes.kind === 'off') { void startEyes(engine); return; }
-    if (!armed.current && (eyes.kind === 'tracking' || eyes.kind === 'uncalibrated')) { armed.current = true; prepareRun(); return; }
-    if (armed.current && eyes.kind === 'tracking') { play('calibrated'); afterCalibration(); }
+    if (armedWith.current === null && (eyes.kind === 'tracking' || eyes.kind === 'uncalibrated')) {
+      armedWith.current = eyes.kind === 'tracking' ? eyes.calibratedAt : 0;
+      void prepareRun();
+      return;
+    }
+    if (armedWith.current !== null && eyes.kind === 'tracking' && eyes.calibratedAt !== armedWith.current) { play('calibrated'); afterCalibration(); }
   }, [calibrating, eyes, afterCalibration]);
   useEffect(() => {
     if (!calibrating) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { cancelRun(); afterCalibration(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && eyesStatus().kind !== 'training') leaveCalibration(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [calibrating, afterCalibration]);
-  const calibrationFailure = eyes.kind === 'failed' ? eyes.message : armed.current && eyes.kind === 'uncalibrated' ? eyes.reason : null;
-  const retryCalibration = useCallback(() => {
-    if (eyesStatus().kind === 'failed') { armed.current = false; void startEyes(engine); } else prepareRun();
-  }, []);
+  }, [calibrating, leaveCalibration]);
+  const calibrationFailure = eyes.kind === 'failed' ? eyes.message : eyes.kind === 'run-failed' ? eyes.reason : null;
 
   // A returning person goes straight to the conversation: the camera starts and the saved
-  // calibration is restored, or calibration runs first when there is none that fits.
+  // calibration is restored. When there is none that fits, or the camera fails now or later, the
+  // calibration screen opens (its failure view offers Try again and Use the mouse).
   useEffect(() => {
     if (mouseOnly.current || !setupDone() || PARAMS.get('onboarding') === 'off') return;
-    void startEyes(engine).then((reached) => {
-      if (reached.kind === 'uncalibrated' && stateRef.current.screen.kind === 'talk') dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } });
-    });
+    void startEyes(engine);
   }, []);
+  useEffect(() => {
+    if (mouseOnly.current || (eyes.kind !== 'uncalibrated' && eyes.kind !== 'failed')) return;
+    const kind = stateRef.current.screen.kind;
+    if (kind === 'talk' || kind === 'menu' || kind === 'options') dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } });
+  }, [eyes]);
 
   // The latest labels, read by the select handler without re-subscribing every render.
   const shownRef = useRef({ primary, second, slots });
@@ -414,11 +474,16 @@ export function App() {
       dispatch({ type: 'settings', patch });
       play('control');
     };
-    if (s.screen.kind === 'calibration') return;
+    if (s.screen.kind === 'calibration') {
+      if (action === 'calibrate-retry') {
+        play('control');
+        if (eyesStatus().kind === 'failed') { armedWith.current = null; void startEyes(engine); } else void prepareRun();
+      } else if (action === 'use-mouse') { play('control'); leaveCalibration(true); }
+      else if (action === 'keep-calibration') { play('control'); leaveCalibration(false); }
+      return;
+    }
     if (s.screen.kind === 'welcome') {
-      if (action !== 'get-started') return;
-      play('control');
-      dispatch({ type: 'screen', screen: mouseOnly.current ? { kind: 'voice' } : { kind: 'calibration', then: 'voice' } });
+      if (action === 'get-started') getStarted();
       return;
     }
     if (s.screen.kind === 'voice') {
@@ -480,7 +545,7 @@ export function App() {
       // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
     }
-  }, [resync, runPrimary, runSecond, startSpeaking]);
+  }, [getStarted, leaveCalibration, resync, runPrimary, runSecond, startSpeaking]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;
@@ -520,14 +585,6 @@ export function App() {
     if (linked && (PHASES as readonly string[]).includes(linked)) window.clarteDebug.setPhase(linked);
   }, []);
 
-  if (screen.kind === 'calibration') {
-    return (
-      <Stage id="calibration">
-        <Calibration failure={calibrationFailure} onRetry={retryCalibration} onUseMouse={chooseMouse} />
-      </Stage>
-    );
-  }
-
   // "Replying" shows as soon as a reply is owed (the partner spoke last) or a draft exists, so the
   // partner sees a reply is coming before the first letter (BRIEF "Partner awareness").
   const status: StateName | null = live.kind === 'listening' ? 'listening'
@@ -539,9 +596,20 @@ export function App() {
   let strip: Strip | null = null;
   let rest: ReactNode;
   let restKey: string;
-  if (screen.kind === 'welcome' || screen.kind === 'voice') {
+  if (screen.kind === 'calibration') {
+    // No card while the dots run: the onboarding card slides off to the right. A failure brings
+    // back Try again as the tall card, and a way out in Q1.
+    slotViews = calibrationFailure ? {
+      q1: eyes.kind === 'run-failed' && eyes.fallback
+        ? { action: 'keep-calibration', tone: 'surface', icon: <Back />, bodyKey: 'keep', body: <span className="card-label">Keep the old one</span> }
+        : { action: 'use-mouse', tone: 'surface', icon: <Back />, bodyKey: 'mouse', body: <span className="card-label">Use the mouse</span> },
+      q4: tallCard('calibrate-retry', 'Try again', <ArrowRight />),
+    } : {};
+    restKey = calibrationFailure ? 'calibration-failure' : 'calibration';
+    rest = <Calibration failure={calibrationFailure} />;
+  } else if (screen.kind === 'welcome' || screen.kind === 'voice') {
     const step = screen.kind;
-    slotViews = onboardingSlots(step);
+    slotViews = onboardingSlots(step, autoStart);
     restKey = `onboarding-${step}`;
     rest = <OnboardingPage step={step} />;
   } else if (screen.kind === 'menu' || screen.kind === 'options') {
@@ -569,7 +637,7 @@ export function App() {
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
-          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={shown} wordColours={settings.wordColours} />
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />
         </div>
         <section className="thread thread-title" aria-label={title}>
           {/* The path above the title (owner, 2026-11-08), once there is more than the page itself. */}
@@ -597,7 +665,7 @@ export function App() {
       };
     }
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={shown} wordColours={settings.wordColours} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />;
   }
 
   // The companion (owner, 2026-11-08) floats at the centre only while the middle holds no text at
@@ -610,7 +678,9 @@ export function App() {
 
   return (
     <Stage id="app">
-      {screen.kind !== 'welcome' && screen.kind !== 'voice' && <Companion visible={blank} still={still} />}
+      {screen.kind === 'welcome' || screen.kind === 'voice' || screen.kind === 'calibration'
+        ? <GuideOrb calibrating={screen.kind === 'calibration'} />
+        : <Companion visible={blank} still={still} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
       {strip && <PagedStrip strip={strip} activate={activate} />}
@@ -641,7 +711,7 @@ function Board({ slots, screen, activate }: { slots: Slots; screen: string; acti
         return (
           <Cell key={q} q={q}>
             {view && (
-              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate} className={`${slots[q]?.span ? 'card-span' : ''} ${slots[q]?.className ?? ''}`}>
+              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate} className={`${view.span ? 'card-span' : ''} ${view.className ?? ''}`}>
                 <Swap swapKey={view.bodyKey} className="card-swap" leavingClass="card-leaving" fast={fast}>{view.body}</Swap>
               </Tile>
             )}

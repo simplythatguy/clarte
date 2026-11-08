@@ -1,5 +1,5 @@
 /**
- * The letter groups. Clarte types with four letter groups (an ambiguous keyboard); the prediction
+ * The letter groups. Clarté types with four letter groups (an ambiguous keyboard); the prediction
  * engine (`src/prediction`) decodes a sequence of groups into words. The UIs, the composer, the
  * engine's group code and the docs all name them G1..G4.
  */

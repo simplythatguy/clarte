@@ -34,7 +34,7 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
   }, [])
 
   useEffect(() => {
-    // Its own svg: the page's first svg in Clarte is a card icon, not this one.
+    // Its own svg: the page's first svg in Clarté is a card icon, not this one.
     const rect = svgRef.current?.getBoundingClientRect()
     if (rect) {
       const centerX = rect.left + rect.width / 2
@@ -56,7 +56,7 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
     ? { x: Math.max(-3, Math.min(3, look.x)) * maxReach, y: Math.max(-3, Math.min(3, look.y)) * maxReach }
     : eyeOffset
 
-  // White eyes (owner, 2026-11-08): currentColor is Clarte's dark ink, which sank into the navy.
+  // White eyes (owner, 2026-11-08): currentColor is Clarté's dark ink, which sank into the navy.
   return (
     <motion.div
       className="relative w-full max-w-sm mx-auto p-8 rounded-lg"

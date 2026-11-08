@@ -1,7 +1,7 @@
 /**
  * Backend Quadrants.
  *
- * Every Clarte screen is classified by the gaze backend into a fixed grid of 2 rows × 4 columns.
+ * Every Clarté screen is classified by the gaze backend into a fixed grid of 2 rows × 4 columns.
  * The grid never changes. Each cell is a "backend quadrant", named Q1..Q8 in reading order:
  *
  *   Q1 Q2 Q3 Q4

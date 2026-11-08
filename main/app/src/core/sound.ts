@@ -1,9 +1,9 @@
 /**
- * Clarte's sound system (NAT-24). Calm, gradient cues generated with the Web Audio API: no files.
+ * Clarté's sound system (NAT-24). Calm, gradient cues generated with the Web Audio API: no files.
  *
  * Every cue is a soft pad: sine voices with a slow attack and a long fade, a warm low-pass filter
  * and a little reverb, all in one key (F major, with an open lydian colour). Nothing starts
- * abruptly, because many people who use Clarte startle easily, and almost all energy sits below
+ * abruptly, because many people who use Clarté startle easily, and almost all energy sits below
  * 1 kHz, away from the band that carries speech, so cues never mask the spoken voice.
  *
  * The harmony explores slowly: each accepted word moves one step round a four-chord cycle, so a
@@ -40,13 +40,13 @@ export type CueInfo = { cue: Cue; name: string; moment: string; fewer: boolean }
 
 /** The cue map, in the order a session meets them. `fewer` marks the cues kept at the Fewer level. */
 export const CUES: readonly CueInfo[] = [
-  { cue: 'listen-start', name: 'Opening', moment: 'Clarte starts listening to the partner', fewer: true },
+  { cue: 'listen-start', name: 'Opening', moment: 'Clarté starts listening to the partner', fewer: true },
   { cue: 'listen-stop', name: 'Settling', moment: 'Listening stops', fewer: true },
   { cue: 'word', name: 'Bloom', moment: 'A word is accepted (the chord moves one step each time)', fewer: true },
   { cue: 'delete', name: 'Ease', moment: 'Delete or undo', fewer: false },
   { cue: 'control', name: 'Touch', moment: 'A button, menu item or setting is chosen', fewer: false },
-  { cue: 'speak-start', name: 'Breath in', moment: 'Clarte starts speaking (then every cue ducks)', fewer: true },
-  { cue: 'speak-end', name: 'Breath out', moment: 'Clarte finishes speaking', fewer: true },
+  { cue: 'speak-start', name: 'Breath in', moment: 'Clarté starts speaking (then every cue ducks)', fewer: true },
+  { cue: 'speak-end', name: 'Breath out', moment: 'Clarté finishes speaking', fewer: true },
   { cue: 'unsure', name: 'Hush', moment: 'Nothing matched; play about a second late, never as an error', fewer: false },
   { cue: 'calibration-step', name: 'Step', moment: 'A calibration point is captured (rises point by point)', fewer: false },
   { cue: 'calibrated', name: 'Arrival', moment: 'Calibration is complete', fewer: true },
@@ -143,7 +143,7 @@ function build(make: () => BaseAudioContext = () => new AudioContext({ latencyHi
 /** Loudness is heard roughly as the square of the gain, so the setting maps through it. */
 const gainFor = (v: number) => CEILING * Math.max(0, Math.min(1, v)) ** 2;
 
-/** Cue level while Clarte speaks: present if you listen for it, never on top of the voice. */
+/** Cue level while Clarté speaks: present if you listen for it, never on top of the voice. */
 const DUCKED = 0.22;
 
 function running(): Graph | null {
@@ -390,7 +390,7 @@ export function configureSound(settings: { level?: SoundLevel; volume?: number }
   if (graph) graph.volume.gain.setTargetAtTime(gainFor(volume), graph.ctx.currentTime, 0.05);
 }
 
-/** Lower every cue while Clarte speaks, and bring them back gently after. */
+/** Lower every cue while Clarté speaks, and bring them back gently after. */
 export function duck(on: boolean): void {
   ducked = on;
   if (graph) graph.duck.gain.setTargetAtTime(on ? DUCKED : 1, graph.ctx.currentTime, on ? 0.06 : 0.4);
