@@ -41,9 +41,7 @@
   --g4-ink: #D9480F;
   /* Group inks for glyphs set on the canvas (the word in progress) */
   --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
-  /* Conversation state: the pill is white glass; only its dot carries the state's colour. */
-  --listening: #C4001A;
-  --composing: #9E1F63;
+  /* The spoken word's highlight while Clarte speaks. */
   --speaking: #1F7A38;
   --speaking-face: #E3F2E7;
 
@@ -63,10 +61,8 @@
   --fs-message: calc(52px * var(--scale));
   --fs-live: calc(40px * var(--scale));
   --fs-turn: calc(26px * var(--scale));
-  --fs-letters: calc(36px * var(--scale));
   --fs-label: calc(44px * var(--scale));
   --fs-hint: calc(20px * var(--scale));
-  --fs-pill: min(calc(26px * var(--scale)), 34px);
 
   /* Geometry (owner, 2026-11-08): one space everywhere. The screen edge to a card, and a card to
      the next card across or down, are all --space. Each card stays inside its own quadrant
@@ -246,20 +242,22 @@ body {
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
 
-/* Letter groups: the letters are the label, then the count glyph. */
+/* Letter groups (owner, 2026-11-08): the letters sit centred on the card in two rows (App.tsx
+   `halves`: ABC over DEF), at the Menu label's size. 28cqi caps them so four letters always fit
+   the card's width at large text sizes. */
+.card-group { justify-content: center; align-items: center; }
+.card-group .card-body { margin-top: 0; justify-items: center; align-content: center; --gap: 12px; }
+.card-group .card-swap { align-items: center; }
 .letters {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  font-size: max(24px, min(var(--fs-letters), 15cqi));
+  flex-direction: column;
+  align-items: center;
+  font-size: min(var(--fs-label), 28cqi);
   font-weight: 650;
-  line-height: 1.1;
+  line-height: 1.12;
   letter-spacing: 0.1em;
   margin-right: -0.1em; /* optical centring: tracking adds space after the last letter */
 }
-/* Above 100% text the row may break into two rows of four rather than shrink (BRIEF). */
-:root[data-large] .letters { font-size: max(24px, min(var(--fs-letters), 28cqi)); line-height: 1.05; }
-.card-group .card-body { --gap: 12px; }
 
 /* Thread: the rest zone Q2–Q3 */
 .thread {
@@ -272,38 +270,14 @@ body {
 }
 /* Everything readable stays inside Q2–Q3, inset 40 px from the row boundary: the backend classifies
    where the eye is, not what is drawn, so text in the row gutter would be read as a look at Q5–Q8.
-   Room is shared in priority order: the pill, then the live message (its type steps down), then
+   Room is shared in priority order: the top row (the docked companion), then the live message (its type steps down), then
    whole lines of history. Large text reserves one history line and tightens the rule's margins. */
 :root[data-large] .history { min-height: calc(var(--fs-turn) * 1.35); margin-top: 8px; }
 :root[data-large] .rule { margin: 12px 0 8px; }
 .history[data-yield] { min-height: calc(var(--fs-turn) * 1.35); }
 .history[data-yield] + .rule { margin: 12px 0 8px; }
 .history[data-yield] ~ .now { flex-grow: 1; }
-.state-row { flex: none; height: 48px; display: flex; align-items: center; }
-.state {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 22px 0 18px;
-  border-radius: 999px;
-  font-size: var(--fs-pill);
-  font-weight: 650;
-  letter-spacing: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  background: rgb(255 255 255 / 0.72);
-  border: 1px solid var(--glass-edge);
-  color: var(--ink);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  transition: opacity var(--dur-enter) var(--ease-out);
-}
-.state[data-state='idle'] { opacity: 0; }
-.state i { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--state-dot); transition: background-color var(--dur-phase) var(--ease-state); }
-.state[data-state='listening'] { --state-dot: var(--listening); }
-.state[data-state='composing'] { --state-dot: var(--composing); }
-.state[data-state='speaking'] { --state-dot: var(--speaking); }
+.state-row { flex: none; height: 48px; }
 
 .history {
   flex: 1 1 0;
@@ -441,7 +415,7 @@ body {
 .caret { display: inline-block; width: 1px; height: 1.05em; margin-left: 1px; vertical-align: -0.15em; background: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .layer, .turn, .now-text, .glyph, .glyph > span, .card-swap, .glyph-swap, .state, .caption, .cal-targets { transition-property: opacity; }
+  .layer, .turn, .now-text, .glyph, .glyph > span, .card-swap, .glyph-swap, .caption, .cal-targets { transition-property: opacity; }
   .cal-guide { transition: none !important; }
 }
 
@@ -485,13 +459,9 @@ body {
 .companion-flight { transform-origin: 50% 50%; will-change: transform; }
 /* Block, so no line box adds space under the ball and its box centre is the ball's centre. */
 .companion-flight svg { display: block; }
-/* Docked, the ghost takes the pill's place, so the pill steps right by the ghost's width and a gap. */
-.state-row { transition: translate var(--dur-phase) var(--ease-state); }
-.companion[data-pose='dock'] ~ * .state-row { translate: 48px 0; }
 .companion[data-still] .animate-blink { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .companion .animate-blink { animation: none; }
-  .state-row { transition: none; }
 }
 
 /* `?demo`: the companion alone, as shadcn's demo shows it. */

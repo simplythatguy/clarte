@@ -1,7 +1,8 @@
 /**
  * The conversation, drawn in the Q2–Q3 rest zone.
  *
- * Top: the state pill (Listening, Replying, Speaking), readable from across the table.
+ * Top: a row for the docked companion; the state (Listening, Replying, Speaking) is announced to
+ * assistive technology there, not shown (owner, 2026-11-08).
  * Above the hairline: what has been said. Partner turns left in secondary ink, the person's turns
  * right in ink, no bubbles. Below it: the live line, in a fixed-height slot so nothing above it
  * ever moves: the partner's words as heard, the word in progress, or the sentence being spoken.
@@ -122,19 +123,6 @@ export function Thread({ state, turns, live, composition, context, wordColours }
   const historyRef = useRef<HTMLDivElement>(null);
   const highlight = live.kind === 'speaking' && live.turnId !== null ? live : null;
 
-  // The pill changes width with its label on a short ease-out, like the morphing toolbar in the
-  // owner's reference (a state change, a few times a minute; never under reduced motion).
-  const pillRef = useRef<HTMLSpanElement>(null);
-  const pillWidth = useRef(0);
-  useLayoutEffect(() => {
-    const el = pillRef.current;
-    if (!el) return;
-    const from = pillWidth.current;
-    const to = el.offsetWidth;
-    pillWidth.current = to;
-    if (!from || Math.abs(from - to) < 1 || !state || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    el.animate([{ width: `${from}px` }, { width: `${to}px` }], { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
-  }, [state]);
 
   let nowKey = 'empty';
   let nowClass = 'now';
@@ -217,8 +205,10 @@ export function Thread({ state, turns, live, composition, context, wordColours }
 
   return (
     <section className="thread" aria-label="Conversation">
+      {/* No pill (owner, 2026-11-08): the state is announced, not shown. The row keeps its height as
+          the docked companion's place, so the history never runs under it. */}
       <div className="state-row" role="status" aria-live="polite">
-        <span ref={pillRef} className="state" data-state={state ?? 'idle'} aria-hidden={state ? undefined : true}><i aria-hidden="true" />{state ? STATE_LABEL[state] : STATE_LABEL.composing}</span>
+        <span className="sr-only">{state ? STATE_LABEL[state] : ''}</span>
       </div>
       <div ref={historyRef} className="history">
         {turns.map((turn) => (

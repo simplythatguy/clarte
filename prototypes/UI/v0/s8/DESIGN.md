@@ -4,7 +4,13 @@ A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching
 
 In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
 
+## No state pill (owner, 2026-11-08)
+
+The Listening, Replying and Speaking pill is gone from the screen. A hidden live region in the same place still announces the state to assistive technology, and the row keeps its 48 px height as the docked companion's place, so the history never runs under it. The pill's width animation went with it.
+
 ## Letter cards (owner, 2026-11-08)
+
+The letters sit centred on the card in two rows, the first taking the extra letter: ABC over DEF, GHIJ over KLMN, OPQ over RS, TUVW over XYZ. They are the Menu label's size, 44 px at 100% text (was 36 px). At larger text they are capped at 28% of the card's width, which keeps the widest row (GHIJ, TUVW) at least 25 px inside the card at 200% text on 1280×720.
 
 The letter-group cards use the same grey glass as every other card. Only their letters carry colour, now vibrant: blue `#0A66E8`, violet `#7B2FF7`, green `#00873F` and orange `#D9480F`, in place of style 6's muted inks on pastel tints. The typed word's letters use the same inks, so each letter still matches its card. On the grey glass, blue is 4.7:1 and violet 5.3:1. Green (4.2:1) and orange (3.9:1) pass the 3:1 bar for large text (the letters are 36 px semibold); a green or orange vivid enough to read as vibrant cannot reach 4.5:1 on that grey. The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
 
@@ -53,7 +59,7 @@ Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse,
 
 ### Docking (owner, 2026-11-08)
 
-The ball floats at the centre of the top row, halfway between the top of the screen and 50% (owner, 2026-11-08), only while the middle holds no text at all. Its float rises 8 px, so it rests 4 px low and floats ±4 px about that centre. Any text there sends it to the top-left of Q2, where it docks as a 44 px mark beside the state pill, which steps 48 px right to make room. That includes the conversation history (owner, 2026-11-08: "even for this"), as well as words heard, the message typed, the sentence spoken and a menu title. In practice it sits at the centre at the start of a conversation and flies back only when the middle is empty again.
+The ball floats at the centre of the top row, halfway between the top of the screen and 50% (owner, 2026-11-08), only while the middle holds no text at all. Its float rises 8 px, so it rests 4 px low and floats ±4 px about that centre. Any text there sends it to the top-left of Q2, where it docks as a 44 px mark in the thread's 48 px top row. That includes the conversation history (owner, 2026-11-08: "even for this"), as well as words heard, the message typed, the sentence spoken and a menu title. In practice it sits at the centre at the start of a conversation and flies back only when the middle is empty again.
 
 - **Path.** One curve that rises first and then drifts left along the top. It clears the new words instead of crossing them, and stays 40 px inside Q2, away from Q1. Going home it retraces the same curve.
 - **Timing.** Leaving makes room for words being read, so it launches at once and glides in over 620 ms (`--ease-state`). Coming home, nothing is waiting on it, so it eases out and in over 680 ms (`--ease-move`). It shrinks early on the way out and grows late on the way back.

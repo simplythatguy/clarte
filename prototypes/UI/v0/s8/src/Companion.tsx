@@ -2,7 +2,7 @@
  * The companion (owner, 2026-11-08): the mesh-gradient ball (components/ui/shader-svg.tsx). While
  * the middle holds no text it floats at the centre of the rest zone. When text arrives there (words heard,
  * the message typed, the sentence spoken, a menu title) it flies to the top-left of Q2 and docks as
- * a small mark beside the state pill, and when the middle clears it flies back.
+ * a small mark in the thread's top row, and when the middle clears it flies back.
  *
  * The flight is one progress value, 0 at the centre and 1 docked. Position follows a curve that
  * rises first and then drifts left, so it clears the words rather than crossing them, and it never
@@ -45,8 +45,8 @@ const LANDING: { face: Face; ms: number }[] = [
 /** In flight the eyes look along the way it is heading, further than the pointer would take them. */
 const LEAD_REACH = 1.6;
 
-/** Docked, the ball is as tall as the state pill (48 px) less 2 px each side, 40 px into Q2. */
-const DOCK = { inset: 40, height: 44, pill: 48 };
+/** Docked, the ball sits in the thread's 48 px top row, 2 px in from each side, 40 px into Q2. */
+const DOCK = { inset: 40, height: 44, row: 48 };
 const ASPECT = 1;
 
 type Geometry = { dx: number; dy: number; scale: number };
@@ -58,7 +58,7 @@ function measure(root: HTMLElement, body: HTMLElement, ball: HTMLElement): Geome
   const svgHeight = (b.width - 2 * pad) / ASPECT;
   const edgeY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge-y')) || 40;
   const home = { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2 };
-  const dock = { x: DOCK.inset + (DOCK.height * ASPECT) / 2, y: edgeY + DOCK.pill / 2 };
+  const dock = { x: DOCK.inset + (DOCK.height * ASPECT) / 2, y: edgeY + DOCK.row / 2 };
   return { dx: dock.x - home.x, dy: dock.y - home.y, scale: DOCK.height / svgHeight };
 }
 
