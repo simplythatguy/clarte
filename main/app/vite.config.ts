@@ -2,11 +2,23 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import type { Plugin } from 'vite';
 
 const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
+/** Development only: what the sound detector hears in the browser, appended to .scratch/sound.log at the repo root. */
+const soundLog = (): Plugin => ({
+  name: 'clarte-sound-log',
+  configureServer(server) {
+    const dir = page('../../.scratch');
+    mkdirSync(dir, { recursive: true });
+    server.ws.on('clarte:sound', (data) => appendFileSync(`${dir}/sound.log`, `${new Date().toISOString().slice(11, 23)} ${JSON.stringify(data)}\n`));
+  },
+});
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), soundLog()],
   // shadcn's alias: `@/components/ui/...` resolves to src/components/ui.
   resolve: { alias: { '@': page('src') } },
   server: { port: 5200, strictPort: true },

@@ -55,6 +55,7 @@ import { closeMic, makeVoice, makerNow, move, openMic, resetMaker, setMakerError
 import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
 import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
+import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
 import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
@@ -70,6 +71,8 @@ const STORE = 'clarte.v1';
 const PARAMS = new URLSearchParams(location.search);
 /** `?input=mouse`: keyboard and mouse, with no camera; clicks and keys select. */
 const MOUSE_ONLY = PARAMS.get('input') === 'mouse';
+/** Screens where a sound never selects: the eyes cannot select yet, or the person is recording. */
+const SOUND_OFF = new Set<string>(['welcome', 'calibration', 'voice', 'teach']);
 /** Screens where the eyes cannot select yet, so the pointer does not stand in for them. */
 const EYES_NOT_READY = new Set<string>(['welcome', 'calibration']);
 
@@ -291,6 +294,24 @@ export function App() {
     return () => clearTimeout(timer);
   }, [noMatch]);
   const second = useSettled('delete', secondKey(slots.second), slots.second, looked, syncs);
+
+  // Look + sound (owner, 2026-11-08; DEC-128): a look closes the line round a card and the person's
+  // sound ("yeah", taught under Menu › Settings › My sound) selects it, like Space or a switch. A
+  // sound counts only where it can mean a selection: not while the partner is heard or Clarté
+  // speaks (it could be theirs or its own), not on the voice pages (the person is recording their
+  // voice there), and not before the eyes are calibrated. Keyboard and mouse opens no microphone.
+  useEffect(() => {
+    if (MOUSE_ONLY) return;
+    let sound: SoundSelect | null = null;
+    let stopped = false;
+    const onSound = () => { noteKeyActivation(false); engine.confirm(); };
+    const enabled = () => {
+      const s = stateRef.current;
+      return s.live.kind !== 'listening' && s.live.kind !== 'speaking' && !SOUND_OFF.has(s.screen.kind);
+    };
+    startSoundSelect(onSound, enabled).then((s) => { if (stopped) s.stop(); else sound = s; }, () => {});
+    return () => { stopped = true; sound?.stop(); };
+  }, []);
 
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {

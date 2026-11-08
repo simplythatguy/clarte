@@ -34,7 +34,8 @@ Every launch starts the same way (owner, 2026-11-08):
 
 ## Input
 
-- **Eyes**, by default. Looks come from the webcam tracker. A look never selects (owner, 2026-11-08: no dwell): a steady look closes the line round a card and waits, and Space or Enter, a click or a switch selects it. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration.
+- **Eyes**, by default. Looks come from the webcam tracker. A look never selects (owner, 2026-11-08: no dwell): a steady look closes the line round a card and waits, and the person's **sound**, Space or Enter, a click or a switch selects it.
+- **The person's sound** (DEC-128). The person says "yeah" to select a card their look has armed. **Menu › Settings › My sound** teaches Clarté their own "yeah" in about 30 seconds; after that only their "yeah" selects, and other people talking, someone beside them, claps, coughs and traffic do not (`src/listen/`). Before it is taught, a generic rule stands in: a voiced sound that rises clearly out of the room. The microphone is raw (no echo cancellation, noise suppression or automatic gain), and listening pauses while the partner is heard or Clarté speaks. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration.
 - **Keyboard and mouse.** **Keyboard and mouse** on Welcome, `?input=mouse`, or **Use the mouse** after a camera failure: no camera. A click or keys 1 to 8 select; hovering never does.
 - **Keys and clicks**, always. Keys 1 to 8 select the quadrant with that number, and a click selects a card.
 
@@ -50,6 +51,9 @@ Run these in `main/app` while `./clarte ui` runs:
 - `npm run test:ui:pinned -- http://localhost:5200` checks the pinned first prediction, same-position double click, stationary explicit confirmation, held-input safety, and bottom-row paging boundaries.
 - `npm run check` puts every debug phase through the backend-quadrant layout check at four window sizes.
 - `node scripts/e2e-first-run.mjs` drives the first run and a second launch in Chromium on a fake camera. It needs Gaze Lab's face fixture (`npm run fixture` in `prototypes/Gaze Lab`). A photo cannot move its eyes, so this check proves the plumbing, not gaze accuracy.
+- `node scripts/e2e-sound-select.mjs` checks the generic sound rule on a fake microphone: a look arms a card, steady noise does not select, and a short "ah" does.
+- `node scripts/e2e-listen.mjs` teaches one person's sound on a fake microphone (CNVVE recordings in `fixtures/listen`): their held-out takes match; two other people's and a clap do not; with a card armed, only their own sound selects it.
+- `node scripts/listen-eval.ts <data dir>` scores the listener offline on public recordings against the old loudness detector (see its header for the data).
 - `npx tsc --noEmit -p tsconfig.json` typechecks the app.
 
 ## Where things live in the app
