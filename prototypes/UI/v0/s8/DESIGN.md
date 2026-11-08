@@ -29,6 +29,12 @@ The Cloud turns green and livelier while Clarte speaks, as in style 6. Style 7 h
 
 - **The Cloud is style 7's size again.** A 0.8× Cloud was tried and undone at the owner's request.
 
+## Dwell feedback (owner, 2026-11-08)
+
+Looking at a card draws a line round its edge: it starts at the top left, runs clockwise at an even pace, and closes the loop exactly when the dwell completes, so the line's length is the time left. It starts after the existing intent delay (150 ms for letters, 250 ms for buttons), so a glance that passes over a card shows nothing. Leaving early retracts it in 150 ms, once the engine's blink grace (about 300 ms) has passed. The colour follows the card: ink on grey and white cards, the group's ink on letter cards, white on dark cards.
+
+A selection floods the card like liquid: a translucent tint (16%) wets the corners first, and the last dry patch beads into an oval that closes at the centre (260 ms, `--ease-state`). The tint then fades (280 ms, starting 40 ms before the flood ends). The card is back at rest about half a second after the selection, even while gaze stays on it. Before, a selected card stayed white with an accent edge until gaze left, which read as slow. The tint never hides the card's new content, so nothing waits for it. Built in `Tile.tsx` as Web Animations on one SVG per card: a rounded rect for the line (`pathLength` 1, dash offset), and a tint masked by a blurred ellipse that scales from 0.8 to 0. Under reduced motion the line steps round in quarters and a selection is a brief tint without the flood.
+
 ## Menu (owner, 2026-11-08)
 
 The menu is a small tree, kept in one table in `Menu.tsx` (title, parent, entries per page):

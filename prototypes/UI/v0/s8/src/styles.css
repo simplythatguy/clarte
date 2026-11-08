@@ -176,38 +176,31 @@ body {
    so it leaves the centre of attention. A 10% edge keeps it findable as a card on the white page,
    and it darkens to full ink while it is looked at. */
 .card-white { background: var(--canvas); color: var(--ink-2); border-color: rgb(20 20 40 / 0.1); transition-property: background-color, border-color, opacity, color; }
-.card-white:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); color: var(--ink); }
+.card-white:is([data-gaze='fill'], [data-gaze='preview']) { border-color: var(--glass-edge-focus); color: var(--ink); }
 /* Focus cue: the glass clears a step and its edge turns white. */
-.card:is(.card-surface, .card-group):is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
-.card-ink:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
-/* A selection: solid white with the accent edge while gaze remains. */
-.card[data-gaze='done'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.card:is(.card-surface, .card-group):is([data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
+.card-ink:is([data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
 .card > .card-icon, .card > .card-body { transition: opacity var(--dur-phase) var(--ease-state); }
 .card-body { margin-top: auto; }
 .card[aria-disabled] { cursor: default; }
-.card[aria-disabled] > :not(.wash) { opacity: 0.32; }
+.card[aria-disabled] > :not(.trace) { opacity: 0.32; }
 
-/* The dwell: a white wash rising from the bottom edge (Tile.tsx), under the card's content. */
-.wash {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--surface);
-  transform: scaleY(0);
-  transform-origin: 50% 100%;
-  will-change: transform;
-  pointer-events: none;
-}
-.card-ink .wash { background: rgb(255 255 255 / 0.16); }
-/* A white wash cannot show on a white card, so its dwell rises in the grey glass instead. */
-.card-white .wash { background: rgb(20 20 40 / 0.05); }
-.card[data-gaze='preview'] .wash { opacity: 0.55 !important; }
+/* The dwell (owner, 2026-11-08; Tile.tsx): a line runs clockwise round the card's edge from the
+   top left and closes as the dwell completes; on a selection it floods inward to the centre as a
+   soft translucent tint and fades. Ink on grey and white cards, the group's colour on letters,
+   white on dark cards. */
+.card { --trace: var(--ink); }
+.card-group { --trace: var(--gi); }
+.card-ink { --trace: #FFFFFF; }
+.trace { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; pointer-events: none; }
+.trace-line { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: calc(var(--radius-card) - 2.5px); fill: none; stroke: var(--trace); stroke-width: 3px; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
+.trace-flood { width: 100%; height: 100%; fill: var(--trace); fill-opacity: 0.16; }
+.trace-hole { transform-box: view-box; transform-origin: 50% 50%; }
 @media (prefers-reduced-motion: reduce) {
-  .card .wash { transform: scaleY(0) !important; }
-  .card[data-step='1'] .wash { transform: scaleY(0.25) !important; }
-  .card[data-step='2'] .wash { transform: scaleY(0.5) !important; }
-  .card[data-step='3'] .wash { transform: scaleY(0.75) !important; }
-  .card[data-step='4'] .wash { transform: scaleY(1) !important; }
+  .card[data-step='1'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.75 !important; }
+  .card[data-step='2'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.5 !important; }
+  .card[data-step='3'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.25 !important; }
+  .card[data-step='4'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0 !important; }
 }
 
 /* A plain icon, no ring (glass-tiles reference). */
@@ -664,9 +657,8 @@ body {
   --g4-ink: #8A4A22;
 }
 :root[data-palette='vibrant'] .card-group { background: var(--gi); border-color: transparent; color: #FFFFFF; }
-/* The look deepens the colour (a dark wash rises), so white letters only gain contrast. */
-:root[data-palette='vibrant'] .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 92%, #000); border-color: transparent; }
-:root[data-palette='vibrant'] .card-group .wash { background: rgb(0 0 0 / 0.26); }
-:root[data-palette='vibrant'] .card-group[data-gaze='done'] { border-color: var(--ink); box-shadow: inset 0 0 0 2px #FFFFFF, 0 0 0 2px var(--ink); }
+/* The look deepens the colour, so white letters only gain contrast. */
+:root[data-palette='vibrant'] .card-group:is([data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 92%, #000); border-color: transparent; }
+:root[data-palette='vibrant'] .card-group { --trace: #FFFFFF; }
 /* Unavailable (listening, speaking): back to a pale tint with coloured letters, so it reads as off. */
 :root[data-palette='vibrant'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 10%, #FFFFFF); color: var(--gi); }

@@ -1,21 +1,21 @@
 /**
  * A gaze target: one card inside one backend quadrant.
  *
- * Style 6 · Glass (owner references, 2026-11-07): every card is a frosted glass tile with a plain
- * icon at its top left and its words at its bottom left; looking at it fills it with white from
- * the bottom up, so the card itself is the dwell (the glass-tiles reference: the tile under the
- * pointer turns white). The choreography per look:
- *  - intent delay (150 ms groups, 250 ms controls): nothing changes;
- *  - focus cue: the glass brightens one step and its edge turns white, held for 100 ms;
- *  - progress: a white wash rises from the bottom edge, linear, over the remaining dwell;
- *  - commit: the card is solid white and its edge turns the accent while gaze remains;
- *  - cancel: the wash drains back down from wherever it is over 150 ms;
- *  - re-arm: after a commit the wash fades (it does not drain) once gaze leaves.
- * The wash is one element scaled with `transform` by Web Animations started only on state
- * transitions, so a dwell costs no per-frame DOM writes and no paint (MOTION acceptance 8). Under
- * reduced motion the wash steps up in quarters instead of rising.
+ * The dwell (owner, 2026-11-08) is a line tracing the card's edge: it starts at the top left, runs
+ * clockwise, and closes the loop exactly when the dwell completes. The choreography per look:
+ *  - intent delay (150 ms groups, 250 ms controls): nothing changes, so a passing glance shows nothing;
+ *  - trace: the glass brightens a step and the line runs round the edge, linear, so its length is
+ *    the time left;
+ *  - commit: the closed line floods inward as a translucent tint, like liquid: it wets the corners
+ *    first and the last dry patch beads into an oval that closes at the centre (260 ms, launching
+ *    promptly and settling), then the tint fades (280 ms, overlapping the flood's last 40 ms). The
+ *    card is back at rest about half a second after the selection, even while gaze stays on it,
+ *    and the tint never hides the card's new content, so nothing waits for it;
+ *  - cancel: the line retracts the way it came over 150 ms.
+ * Every step is a Web Animation started on a state transition, never a per-frame write. Under
+ * reduced motion the line steps round in quarters and the commit is a brief tint without the flood.
  */
-import { isValidElement, useEffect, useRef, type ReactNode } from 'react';
+import { isValidElement, useEffect, useId, useRef, type ReactNode } from 'react';
 import type { GroupId } from '../../shared/decoder.ts';
 import { engine, intentDelay, isQuiet } from './gaze.ts';
 import { Swap } from './Swap.tsx';
@@ -67,75 +67,104 @@ type Props = {
   children?: ReactNode;
 };
 
-/** How long the static focus cue shows before progress starts moving. */
-const FOCUS_HOLD = 100;
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+/** The commit: the flood closes in, then the tint fades. Together about half a second. */
+const FLOOD_MS = 260;
+const FADE_MS = 280;
+const FADE_AT = FLOOD_MS - 40;
+const EASE_STATE = 'cubic-bezier(0.2, 0, 0, 1)';
+const RETRACT_MS = 150;
 
 const reducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
-/** The white wash: `scaleY` from the bottom edge, with the arc's old interface. */
-function washController(wash: HTMLElement) {
+/**
+ * The edge line (one rounded rect inset in the card, pathLength 1) and the flood: a tint masked by
+ * a soft oval hole that starts larger than the card and shrinks to nothing at its centre.
+ */
+function traceController(svg: SVGSVGElement) {
+  const line = svg.querySelector<SVGRectElement>('.trace-line')!;
+  const hole = svg.querySelector<SVGEllipseElement>('.trace-hole')!;
   let anims: Animation[] = [];
-  const scale = () => Math.min(1, Math.max(0, new DOMMatrixReadOnly(getComputedStyle(wash).transform).d));
-  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; };
-  const set = (v: number) => { wash.style.transform = `scaleY(${v})`; };
-  const run = (from: number, to: number, ms: number) => {
-    if (ms > 0 && Math.abs(from - to) > 0.001) anims.push(wash.animate([{ transform: `scaleY(${from})` }, { transform: `scaleY(${to})` }], { duration: ms, easing: 'linear' }));
+  let floodEnds: Promise<void> | null = null;
+  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; floodEnds = null; };
+  const offset = () => parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
+  const reset = () => {
+    line.style.strokeDashoffset = '1';
+    line.style.opacity = '0';
+    hole.style.transform = 'scale(1)';
+    svg.style.opacity = '1';
   };
+  const play = (el: Element, frames: Keyframe[], ms: number, easing: string, delay = 0) => {
+    const a = el.animate(frames, { duration: ms, easing, delay, fill: 'forwards' });
+    anims.push(a);
+    return a;
+  };
+  reset();
   return {
-    /** Rise from wherever it is to full over `ms`, linear (progress encodes time). */
-    fill(ms: number) { const s0 = scale(); stop(); wash.style.opacity = '1'; set(1); run(s0, 1, ms); },
-    full() { stop(); wash.style.opacity = '1'; set(1); },
-    /** A cancel: drain back down from wherever it is over `ms`. */
-    drain(ms: number) { const s0 = scale(); stop(); set(0); run(s0, 0, ms); },
-    /** After a commit: fade the full wash out without draining. */
-    fade(ms: number) {
+    /** Run the line from wherever it is to closed, linear, over `ms`. */
+    trace(ms: number) {
+      const from = offset();
       stop();
-      wash.style.opacity = '0';
-      if (ms <= 0) { set(0); return; }
-      const a = wash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: EASE_OUT });
-      anims.push(a);
-      a.finished.then(() => set(0), () => {});
+      line.style.opacity = '1';
+      line.style.strokeDashoffset = '0';
+      if (ms > 0 && from > 0.001) play(line, [{ strokeDashoffset: from }, { strokeDashoffset: 0 }], ms, 'linear');
     },
+    /** Confirm mode: the loop shows closed, waiting. */
+    closed() { stop(); reset(); line.style.opacity = '1'; line.style.strokeDashoffset = '0'; },
+    /** A cancel: the line retracts the way it came. */
+    retract(ms: number) {
+      if (floodEnds) return;
+      const from = offset();
+      stop();
+      reset();
+      if (ms > 0 && from < 0.999) play(line, [{ strokeDashoffset: from, opacity: 1 }, { strokeDashoffset: 1, opacity: 1 }], ms, EASE_OUT);
+    },
+    /** The commit: the tint floods in from the edge and closes at the centre, then fades, then rest. */
+    flood(reduce: boolean) {
+      stop();
+      line.style.opacity = '1';
+      line.style.strokeDashoffset = '0';
+      hole.style.transform = 'scale(0)';
+      // From 0.8 the corners are already wet (0.86 is where the oval's edge meets them), so the flood
+      // shows from its first frame; it launches promptly and the last dry drop closes gently.
+      if (!reduce) play(hole, [{ transform: 'scale(0.8)' }, { transform: 'scale(0)' }], FLOOD_MS, EASE_STATE);
+      const fade = play(svg, [{ opacity: 1 }, { opacity: 0 }], reduce ? 200 : FADE_MS, EASE_OUT, reduce ? 0 : FADE_AT);
+      floodEnds = fade.finished.then(() => { stop(); reset(); }, () => {});
+    },
+    clear() { stop(); reset(); },
   };
 }
 
-type Phase = 'rest' | 'focus' | 'fill' | 'preview' | 'done';
+type Phase = 'rest' | 'fill' | 'preview' | 'done';
 
 export function Tile({ action, tone, group, icon, label, disabled: disabledProp = false, gone = false, fast = false, onActivate, className = '', children }: Props) {
   const disabled = disabledProp || gone;
   const card = useRef<HTMLButtonElement>(null);
-  const washRef = useRef<HTMLSpanElement>(null);
+  const traceRef = useRef<SVGSVGElement>(null);
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
 
   useEffect(() => {
     let phase: Phase = 'rest';
     let step = -1;
-    const wash = washRef.current ? washController(washRef.current) : null;
-    // A persistent card whose action just changed (a screen change) starts from rest: the white
-    // of the selection that caused the change fades back to glass.
-    if (card.current && card.current.dataset.gaze !== 'rest') {
-      card.current.dataset.gaze = 'rest';
-      wash?.fade(150);
-    }
+    const trace = traceRef.current ? traceController(traceRef.current) : null;
+    // A persistent card whose action just changed (a screen change) starts from rest.
+    if (card.current && card.current.dataset.gaze !== 'rest') card.current.dataset.gaze = 'rest';
 
     const enter = (next: Phase, remaining: number) => {
       const el = card.current;
-      if (!el || !wash) return;
+      if (!el || !trace) return;
       const prev = phase;
       phase = next;
       el.dataset.gaze = next;
       const reduce = reducedMotion?.matches ?? false;
-      if (next === 'preview') {
-        wash.full();
-      } else if (next === 'fill') {
-        if (!reduce) wash.fill(remaining);
+      if (next === 'fill') {
+        if (!reduce) trace.trace(remaining);
+      } else if (next === 'preview') {
+        trace.closed();
       } else if (next === 'done') {
-        wash.full();
-      } else if (prev === 'done') {
-        // After a commit the white fades back to glass; it does not drain like a cancel.
-        wash.fade(reduce ? 0 : 150);
+        trace.flood(reduce);
       } else if (prev === 'fill' || prev === 'preview') {
-        wash.drain(reduce ? 0 : 150);
+        trace.retract(reduce ? 0 : RETRACT_MS);
       }
     };
 
@@ -144,15 +173,15 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
       if (!el) return;
       let next: Phase = 'rest';
       const dwellMs = engine.settings.dwellMs;
-      // The static focus step shrinks at very short dwells so progress always has room to show.
-      const start = intentDelay(action) + Math.min(FOCUS_HOLD, Math.max(0, (dwellMs - intentDelay(action)) / 3));
+      // The line starts after the intent delay and closes exactly when the dwell completes.
+      const start = intentDelay(action);
       let elapsed = 0;
       if (!disabled && s.action === action && !isQuiet(action, s)) {
         if (s.state === 'dwelling') {
           elapsed = s.progress * dwellMs;
-          next = elapsed < intentDelay(action) ? 'rest' : elapsed < start ? 'focus' : 'fill';
+          next = elapsed < start ? 'rest' : 'fill';
         } else if (s.state === 'previewed') {
-          next = 'preview'; // Confirm mode: a half-strength full wash, waiting; no accent edge yet
+          next = 'preview'; // Confirm mode: the loop closed, waiting
         } else if (s.state === 'selected') {
           next = 'done';
         }
@@ -160,7 +189,7 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
       if (next !== phase) enter(next, Math.max(0, dwellMs - Math.max(elapsed, start)));
       if (reducedMotion?.matches) {
         const span = Math.max(1, dwellMs - start);
-        const nextStep = next === 'fill' ? Math.min(4, 1 + Math.floor(((elapsed - start) / span) * 4)) : next === 'done' || next === 'preview' ? 4 : 0;
+        const nextStep = next === 'fill' ? Math.min(4, 1 + Math.floor(((elapsed - start) / span) * 4)) : next === 'preview' ? 4 : 0;
         if (nextStep !== step) { step = nextStep; el.dataset.step = String(step); }
       }
     });
@@ -180,7 +209,17 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
       data-gaze="rest"
       onClick={() => { if (!disabled) onActivate(action); }}
     >
-      <span ref={washRef} className="wash" aria-hidden="true" />
+      <svg ref={traceRef} className="trace" aria-hidden="true">
+        <defs>
+          <filter id={`${id}-soft`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" /></filter>
+          <mask id={`${id}-wet`}>
+            <rect width="100%" height="100%" fill="#fff" />
+            <ellipse className="trace-hole" cx="50%" cy="50%" rx="82%" ry="82%" fill="#000" filter={`url(#${id}-soft)`} />
+          </mask>
+        </defs>
+        <rect className="trace-flood" mask={`url(#${id}-wet)`} />
+        <rect className="trace-line" pathLength={1} />
+      </svg>
       {icon && <span className="card-icon" aria-hidden="true"><Swap swapKey={iconKey(icon)} className="glyph-swap" leavingClass="glyph-leaving" fast={fast}>{icon}</Swap></span>}
       <span className="card-body">{children}</span>
     </button>
