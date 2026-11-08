@@ -10,7 +10,7 @@ Needs only `git`, a browser and internet; no Python, Node, compiler, ffmpeg or G
 git clone https://github.com/simplythatguy/clarte.git
 cd clarte
 cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_API_KEY for Voice
-./clarte ui               # Windows: clarte ui
+./clarte ui               # Windows: clarte ui.
 ```
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
