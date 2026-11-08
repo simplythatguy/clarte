@@ -38,7 +38,7 @@ Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of st
 
 The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, dark blue-grey, very dark blue), with two ink eyes that follow the pointer and blink every 3 s, bobbing every 2.8 s. `?demo` shows it alone.
 
-Two changes from the given file, both needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref.
+Three changes from the given file. Two were needed to run here. styled-jsx is Next.js only, so its rules sit in a plain `<style>`. It measured `document.querySelector("svg")`, which in Clarte is the Listen card's icon, so it measures its own svg through a ref. The third (owner, 2026-11-08: the eyes "blend in") gives each eye a white ring painted under its ink fill. The gradient runs from pastel pink to near-black, so no single eye colour reads on all of it. Over 20 s of drift the worst contrast against the ghost was 1.29:1 for ink eyes and 1.83:1 for white ones; the ring holds the eye's edge at 16:1 (`evidence/companion-eyes.png`).
 
 To take the component as given, style 8 now has shadcn's structure: the `@/` alias to `src`, `src/components/ui/`, and Tailwind 4 (theme and utilities only, no preflight, so style 8's own styles are unchanged).
 
