@@ -6,7 +6,7 @@
  *
  * The flight is one progress value, 0 at the centre and 1 docked. Position follows a curve that
  * rises first and then drifts left, so it clears the words rather than crossing them, and it never
- * travels near Q1. Size, lean and stretch all derive from the same value, so a change of mind
+ * travels near Q1. Size and lean both derive from the same value, so a change of mind
  * mid-flight just turns it round from where it is.
  *
  * Its face travels too: the eyes look where it is going and narrow, as into the wind. On landing,
@@ -62,8 +62,8 @@ function measure(root: HTMLElement, body: HTMLElement, ball: HTMLElement): Geome
   return { dx: dock.x - home.x, dy: dock.y - home.y, scale: DOCK.height / svgHeight };
 }
 
-/** The transform at progress `p`, heading `dir` (+1 to the dock, -1 home), with `land` squash 0…1. */
-function pose(g: Geometry, p: number, dir: number, land: number): string {
+/** The transform at progress `p`, heading `dir` (+1 to the dock, -1 home). It always stays a circle. */
+function pose(g: Geometry, p: number, dir: number): string {
   // Quadratic curve from home (0, 0) to the dock, its control point nearly straight above home:
   // it rises out of the words first, then drifts left along the top.
   const cx = g.dx * 0.12;
@@ -72,11 +72,8 @@ function pose(g: Geometry, p: number, dir: number, land: number): string {
   const y = 2 * (1 - p) * p * cy + p * p * g.dy;
   // It shrinks early on the way out (and so grows late on the way back).
   const s = 1 + (g.scale - 1) * (1 - Math.pow(1 - p, 2.2));
-  const arc = Math.sin(Math.PI * p);
-  const lean = -dir * 9 * arc;
-  const sx = s * (1 - 0.04 * arc) * (1 + 0.1 * land);
-  const sy = s * (1 + 0.06 * arc) * (1 - 0.1 * land);
-  return `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${lean.toFixed(2)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  const lean = -dir * 9 * Math.sin(Math.PI * p);
+  return `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${lean.toFixed(2)}deg) scale(${s.toFixed(4)})`;
 }
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -93,11 +90,11 @@ export function Companion({ visible, still }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const flightRef = useRef<HTMLDivElement>(null);
   const [face, setFace] = useState<Face>(AT_REST);
-  const flight = useRef({ p: visible ? 0 : 1, dir: 1, land: 0, geometry: null as Geometry | null });
+  const flight = useRef({ p: visible ? 0 : 1, dir: 1, geometry: null as Geometry | null });
 
   const apply = () => {
     const f = flight.current;
-    if (flightRef.current && f.geometry) flightRef.current.style.transform = pose(f.geometry, f.p, f.dir, f.land);
+    if (flightRef.current && f.geometry) flightRef.current.style.transform = pose(f.geometry, f.p, f.dir);
   };
 
   // Measure on mount and on every resize, and hold the current pose.
@@ -135,7 +132,6 @@ export function Companion({ visible, still }: Props) {
       running[0].finished.then(() => {
         if (cancelled) return;
         f.p = goal;
-        f.land = 0;
         apply();
         running.push(animate(el, { opacity: 1 }, { duration: 0.15, ease: [0.23, 1, 0.32, 1] }));
       });
@@ -156,17 +152,13 @@ export function Companion({ visible, still }: Props) {
         ease,
         delay: lead,
         onUpdate: (v) => { f.p = v; apply(); },
-        onComplete: () => {
-          running.push(animate(0, 1, { duration: 0.32, ease: [0.23, 1, 0.32, 1], onUpdate: (k) => { f.land = Math.sin(Math.PI * k); apply(); } }));
-          settle(LANDING);
-        },
+        onComplete: () => settle(LANDING),
       }));
     }
     return () => {
       cancelled = true;
       running.forEach((a) => a.stop());
       timers.forEach(clearTimeout);
-      f.land = 0;
     };
   }, [target]); // eslint-disable-line react-hooks/exhaustive-deps
 

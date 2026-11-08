@@ -61,15 +61,14 @@ export function MeshGradientSVG({ look = null, squint = false }: Props = {}) {
     <motion.div
       className="relative w-full max-w-sm mx-auto p-8 rounded-lg"
       animate={{
+        // Only a float: the ball stays a circle (owner, 2026-11-08).
         y: [0, -8, 0],
-        scaleY: [1, 1.08, 1],
       }}
       transition={{
         duration: 2.8,
         repeat: Number.POSITIVE_INFINITY,
         ease: "easeInOut",
       }}
-      style={{ transformOrigin: "top center" }}
     >
       <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" className="w-full h-auto">
         <defs>

@@ -36,7 +36,7 @@ Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of st
 
 ## The companion (owner, 2026-11-08)
 
-The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, and two grey-whites, #DADDE3 and #ECEEF1, in place of the reference's dark blue-grey and very dark blue at the owner's request, 2026-11-08), with two eyes that follow the pointer and blink every 3 s, bobbing every 2.8 s. `?demo` shows it alone.
+The owner rejected the Cloud ("I don't like the cloud in general") and a redrawn cumulus, and asked for their reference component exactly, colours included. It is in `src/components/ui/shader-svg.tsx`: a ghost silhouette clipped over a `@paper-design/shaders-react` mesh gradient (pastel pink, sky blue, medium blue, and two grey-whites, #DADDE3 and #ECEEF1, in place of the reference's dark blue-grey and very dark blue at the owner's request, 2026-11-08), with two eyes that follow the pointer and blink every 3 s, floating up and down 8 px every 2.8 s. The reference also stretched it 8% taller on each float; that is removed so the ball is always a circle (owner, 2026-11-08). `?demo` shows it alone.
 
 The owner then asked for it to be a ball (2026-11-08). The clip is a circle, with the eyes a little above its centre. Lighting comes from the upper left: a soft highlight there (22% white at most), and a shadow on the ball's own edge all round, deepest at the lower right (16% at most). Both are meant to go unnoticed and only make it read as a sphere. A floor shadow under it was tried and removed at the owner's request.
 
@@ -52,9 +52,9 @@ The ball floats at the centre only while the middle holds no text at all. Any te
 
 - **Path.** One curve that rises first and then drifts left along the top. It clears the new words instead of crossing them, and stays 40 px inside Q2, away from Q1. Going home it retraces the same curve.
 - **Timing.** Leaving makes room for words being read, so it launches at once and glides in over 620 ms (`--ease-state`). Coming home, nothing is waiting on it, so it eases out and in over 680 ms (`--ease-move`). It shrinks early on the way out and grows late on the way back.
-- **Body.** It leans up to 9° into the turn and stretches up to 6% along the way. It squashes 10% as it lands, and recovers over 320 ms.
+- **Body.** It leans up to 9° into the turn. It stays a perfect circle throughout: no stretch in flight and no squash on landing (owner, 2026-11-08).
 - **Face.** The eyes go first, 90 ms before the body, looking where it is heading and narrowing as if into the wind. On landing, momentum carries them further up-left (260 ms), they glance up-right (520 ms), and then they return to following the pointer. The landing glances reach about 2.5 times the pointer's range so they still read at 44 px.
-- **Interruption.** Position, size, lean and stretch all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ball turns round from where it is.
+- **Interruption.** Position, size and lean all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ball turns round from where it is.
 - **Still or reduced motion.** No flight. It fades out (150 ms), moves, and fades in at the other place, with the face at rest.
 
 ## Open questions for the owner
