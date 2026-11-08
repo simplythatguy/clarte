@@ -9,8 +9,8 @@
  *  - commit: a solid circle of the card's own vivid colour grows from the centre until it covers
  *    the card (260 ms) and holds a beat (120 ms); then the filled card, its line and its words fade
  *    out together, as one piece, to the card as it was (280 ms). When the selection turns the card
- *    into one that already has the fill's colour (Menu becoming Back), there is no exit: the fill
- *    hands over to the new card. Inside the circle
+ *    into a different button (any screen change, Menu becoming Back), the fill is dropped at once and
+ *    the new button appears clean: no exit animation carries over. Inside the circle
  *    the card's words and icon turn to the colour that reads on it (white, or ink on a white fill),
  *    exactly as far as the circle has reached: a copy of the content in that colour, clipped to the
  *    same circle. The card is back at rest about half a second after the selection, even while gaze
@@ -180,9 +180,9 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
   const traceRef = useRef<SVGSVGElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
 
-  // One controller for the card's whole life: a selection that changes the card's action (Menu
-  // becoming Back, a page change) keeps its fill running across the change.
+  // One controller for the card's whole life, so its line and fill outlive a re-render.
   const controller = useRef<ReturnType<typeof traceController> | null>(null);
+  const shownAction = useRef(action);
   useEffect(() => {
     if (traceRef.current && fillRef.current) controller.current = traceController(traceRef.current, fillRef.current);
     return () => { controller.current?.clear(); controller.current = null; };
@@ -192,8 +192,12 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
     let phase: Phase = 'rest';
     let step = -1;
     const trace = controller.current;
-    // A persistent card whose action just changed (a screen change) starts from rest.
+    // A persistent card whose action just changed is a different button now (a screen change, Menu
+    // becoming Back): it starts from rest with no exit animation carried over from the old one
+    // (owner, 2026-11-08: Settings' fill was playing out on the Sound card that took its place).
     if (card.current && card.current.dataset.gaze !== 'rest') card.current.dataset.gaze = 'rest';
+    if (shownAction.current !== action) trace?.clear();
+    shownAction.current = action;
 
     const enter = (next: Phase, remaining: number) => {
       const el = card.current;
