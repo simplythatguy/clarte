@@ -9,8 +9,8 @@ export function MeshGradientSVG() {
     "#FFB3D9", // Pastel pink
     "#87CEEB", // Sky blue
     "#4A90E2", // Medium blue
-    "#2C3E50", // Dark blue-gray
-    "#1A1A2E", // Very dark blue
+    "#DADDE3", // Grey-white (owner, 2026-11-08, in place of dark blue-gray)
+    "#ECEEF1", // Pale grey-white (in place of very dark blue)
   ]
 
   const svgRef = useRef<SVGSVGElement>(null)
