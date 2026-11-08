@@ -10,7 +10,7 @@ The primary card always sits in Q4 (top right) and the second card in Q1 (top le
 
 ## Options (owner, 2026-11-08)
 
-When the typed groups spell two whole words about equally well (`conflictFor`, unchanged), the screen no longer branches with lines to two cards. The Q4 card reads **Options** with the word count, and it opens the Options screen. That screen has Back (to Home) in Q1, the page title in the middle, and every whole word the groups spell, most likely first (`optionsFor`):
+When the typed groups spell two whole words about equally well (`conflictFor`, unchanged), the screen no longer branches with lines to two cards. The Q4 card reads **Options**, with nothing below the word. Above it, in slightly smaller type (36 px against 44 px), are the three most likely words, the likeliest nearest the label and each one dimmer going up (62%, 42%, 27%). A faint ⋯ sits on top only when more than three words fit (owner, 2026-11-08). Selecting the card opens the Options screen. That screen has Back (to Home) in Q1, the page title in the middle, and every whole word the groups spell, most likely first (`optionsFor`):
 
 - Up to five words: the first four in Q5, Q6, Q7, Q8, and the fifth in Q4.
 - More than five: two at a time in Q5 and Q6, with ← in Q7 and → in Q8. An arrow card is just its arrow, and it fades when the list cannot go further that way.

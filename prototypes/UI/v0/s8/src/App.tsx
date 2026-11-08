@@ -127,7 +127,21 @@ function primaryFace(fn: PrimaryFn): CardFace {
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
     case 'say-again': return { icon: <Again />, label: 'Say again' };
-    case 'options': return { icon: <Options />, label: 'Options', hint: `${fn.count} words` };
+    // Owner, 2026-11-08: "Options" alone at the bottom; above it the three most likely words,
+    // dimmer the further up they go, and a faint ⋯ on top only when the list goes on.
+    case 'options': return {
+      icon: <Options />,
+      name: `Options: ${fn.top.join(', ')}${fn.more ? ', and more' : ''}`,
+      label: (
+        <span className="options-face">
+          {fn.more && <span className="options-more" aria-hidden="true">⋯</span>}
+          {[...fn.top].reverse().map((word) => (
+            <span key={word} className="options-word" style={{ ['--len' as string]: word.length }}>{word}</span>
+          ))}
+          <span className="card-label" style={longest('Options')}>Options</span>
+        </span>
+      ),
+    };
   }
 }
 

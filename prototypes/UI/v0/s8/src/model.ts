@@ -161,8 +161,9 @@ export type PrimaryFn =
   | { kind: 'speak' }
   | { kind: 'stop-speaking' }
   | { kind: 'say-again'; turnId: number }
-  /** Several whole words fit about equally well: open the Options screen to choose. */
-  | { kind: 'options'; count: number };
+  /** Several whole words fit about equally well: open the Options screen to choose. `top` is the
+   *  three most likely, shown on the card; `more` says whether the list goes on past them. */
+  | { kind: 'options'; top: string[]; more: boolean };
 
 export type SecondFn =
   | { kind: 'delete'; word: boolean }
@@ -189,7 +190,8 @@ export function slotsFor(state: State): Slots {
   if (c.pending.length) {
     const conflict = conflictOf(state);
     if (conflict) {
-      return { primary: { kind: 'options', count: optionsFor(state.composition, contextWords(state)).length }, second: { kind: 'delete', word: c.reopened }, groups: true };
+      const words = optionsFor(state.composition, contextWords(state));
+      return { primary: { kind: 'options', top: words.slice(0, 3), more: words.length > 3 }, second: { kind: 'delete', word: c.reopened }, groups: true };
     }
     const candidate = currentCandidate(c, contextWords(state));
     return {
@@ -210,7 +212,7 @@ export function primaryKey(fn: PrimaryFn): string {
     case 'suggestion': return `suggestion:${fn.text}`;
     case 'candidate': return `candidate:${fn.word}`;
     case 'say-again': return `say-again:${fn.turnId}`;
-    case 'options': return `options:${fn.count}`;
+    case 'options': return `options:${fn.top.join(',')}:${fn.more}`;
     default: return fn.kind;
   }
 }
