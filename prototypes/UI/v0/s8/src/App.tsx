@@ -57,7 +57,8 @@ import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Sparkle, S
 const SAY_AGAIN_MS = 6000;
 /** "More" walks the three settings pages in a loop. */
 const NEXT_PAGE: Record<MenuPage, MenuPage> = { main: 'main', settings: 'settings-2', 'settings-2': 'settings-3', 'settings-3': 'settings', demo: 'demo' };
-const HOLDER = "One moment, I'm answering.";
+// Style 8 (owner, 2026-11-07): the floor-holder is "Wait!" (style 7: "One moment").
+const HOLDER = "Wait! I'm answering.";
 const STORE = 'clarte.style8.v1';
 
 function loadStored(): State {
@@ -110,17 +111,6 @@ function useSettled<T>(slot: string, key: string, value: T, looked: string | nul
   return shown.current;
 }
 
-function applyTheme(theme: Settings['theme']): void {
-  const root = document.documentElement;
-  if (root.dataset.theme === theme) return;
-  // Suppress every transition for the swap so colours do not smear (better-ui animations.md).
-  const style = document.createElement('style');
-  style.textContent = '*,*::before,*::after{transition:none !important}';
-  document.head.append(style);
-  root.dataset.theme = theme;
-  void document.body.offsetHeight;
-  requestAnimationFrame(() => requestAnimationFrame(() => style.remove()));
-}
 
 function Cell({ q, children }: { q: string; children?: ReactNode }) {
   return <div className={`cell cell-${q}`}>{children}</div>;
@@ -146,7 +136,7 @@ function primaryFace(fn: PrimaryFn): CardFace {
 function secondFace(fn: SecondFn, pending: number): CardFace {
   switch (fn.kind) {
     case 'delete': return fn.word ? { icon: <Erase />, label: 'Delete word' } : { icon: <Erase />, label: 'Delete', hint: pending ? 'Last group' : 'Last word' };
-    case 'one-moment': return { icon: <Hand />, label: 'One moment' };
+    case 'one-moment': return { icon: <Hand />, label: 'Wait!' };
     case 'menu': return { icon: <MenuLines />, label: 'Menu' };
     case 'dismiss': return { icon: <Close />, label: 'Not now' };
     // The second word of a conflict: the branch's other end (Branch.tsx).
@@ -231,7 +221,6 @@ export function App() {
     setDwellClasses(settings.letterDwell, settings.controlDwell, screen.kind === 'talk', settings.repeat);
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
-    applyTheme(settings.theme);
     configureSound({ level: settings.sound, volume: settings.volume });
     store({ settings });
   }, [settings, screen.kind]);
@@ -520,9 +509,11 @@ export function App() {
   const pulse = live.kind === 'listening' ? (live.transcript.match(/\S+/g)?.length ?? 0) : live.kind === 'speaking' ? live.word + 1 : 0;
 
   // Style 7's Cloud (owner, 2026-11-07) is there only while the middle is blank: it leaves as
-  // soon as text appears there (words heard, the message typed, the sentence spoken, a menu title).
+  // soon as text appears there (words heard, the message typed, a menu title). Style 8 (owner,
+  // 2026-11-07): it is also there while Clarte speaks, so it turns green and livelier again as in
+  // style 6, with the spoken sentence over it.
   const composing = state.composition.words.length > 0 || state.composition.pending.length > 0;
-  const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || live.kind === 'speaking' || composing;
+  const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || composing;
   const blank = screen.kind === 'talk' && !liveText;
   // Once a turn has joined the history, its feeling shows on the companion's face.
   const newest = state.turns[state.turns.length - 1];
@@ -533,7 +524,7 @@ export function App() {
 
   return (
     <Stage id="app" surface={screen.kind === 'setup' ? 'report' : 'talk'}>
-      {screen.kind !== 'setup' && <Companion visible={blank} listening={live.kind === 'listening'} reaction={reaction} mood={mood} pulse={pulse} still={still} theme={settings.theme} />}
+      {screen.kind !== 'setup' && <Companion visible={blank} listening={live.kind === 'listening'} reaction={reaction} mood={mood} pulse={pulse} still={still} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
       {screen.kind === 'talk' && <Branch conflict={slots.conflict ?? null} />}

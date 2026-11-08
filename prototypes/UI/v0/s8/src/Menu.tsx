@@ -8,13 +8,13 @@ import type { ReactNode } from 'react';
 import type { MenuPage, Settings } from './model.ts';
 import type { SlotName, Slots, SlotView } from './Tile.tsx';
 import { longest } from './text.ts';
-import { Again, Back, Blob, Flask, Mic, Next, Palette, Sliders, Sparkle, Speaker, Sun, Target, TextSize, Timer, Wave } from './icons.tsx';
+import { Again, Back, Blob, Flask, Mic, Next, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave } from './icons.tsx';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
 /** A quiet glyph inside each setting's dwell ring, so the ring never reads as an empty radio button. */
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
-  letterDwell: Timer, controlDwell: Timer, textScale: TextSize, theme: Sun, sound: Speaker, mode: Target,
+  letterDwell: Timer, controlDwell: Timer, textScale: TextSize, sound: Speaker, mode: Target,
   wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob, volume: Speaker,
 };
 
@@ -25,7 +25,6 @@ const CYCLES = {
   letterDwell: { key: 'letterDwell', name: 'Letter dwell', values: [300, 450, 600, 800, 1000, 1500, 2000], format: seconds },
   controlDwell: { key: 'controlDwell', name: 'Button dwell', values: [300, 600, 900, 1200, 1500, 2000], format: seconds },
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
-  theme: { key: 'theme', name: 'Theme', values: ['light', 'dark'], format: (v: string) => (v === 'light' ? 'Light' : 'Dark') },
   sound: { key: 'sound', name: 'Sounds', values: ['all', 'fewer', 'off'], format: (v: string) => ({ all: 'All', fewer: 'Fewer', off: 'Off' })[v] ?? v },
   volume: { key: 'volume', name: 'Volume', values: [0.25, 0.5, 0.75, 1], format: (v: number) => `${Math.round(v * 100)}%` },
   mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
@@ -46,7 +45,8 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
 }
 
 const PAGES: Record<Exclude<MenuPage, 'main'>, (SettingKey | null)[]> = {
-  settings: ['letterDwell', 'controlDwell', 'textScale', 'theme'],
+  // Style 8 (owner, 2026-11-07): the dark theme is gone, so Theme's place is a rest zone.
+  settings: ['letterDwell', 'controlDwell', 'textScale', null],
   // NAT-24: Sounds moved to its own page beside Volume; its old place is a rest zone.
   'settings-2': [null, 'mode', 'orbMotion', 'suggestions'],
   'settings-3': ['sound', 'volume', null, null],
@@ -86,7 +86,7 @@ export function menuSlots(page: MenuPage, settings: Settings): Slots {
   const back = icon('back', 'Back', <Back />, 'ink');
 
   // Style 8 (owner, 2026-11-07): One moment and Phrases are gone from the menu; the other items
-  // keep their places. Q4 and Q5 are rest zones on this page; One moment stays on the conversation
+  // keep their places. Q4 and Q5 are rest zones on this page; Wait! (style 7's One moment) stays on the conversation
   // screen while listening.
   if (page === 'main') {
     return {

@@ -21,7 +21,7 @@ export type Turn = {
   id: number;
   who: 'partner' | 'me';
   text: string;
-  /** A floor-holder ("One moment…"): said aloud, kept in the record, never a reply. */
+  /** A floor-holder ("Wait!…"): said aloud, kept in the record, never a reply. */
   holder?: boolean;
 };
 
@@ -48,7 +48,6 @@ export type Settings = {
   letterDwell: number;
   controlDwell: number;
   textScale: number;
-  theme: 'light' | 'dark';
   /** Which cues play (SOUND.md): all of them, the fewer important ones, or none. */
   sound: SoundLevel;
   /** Cue volume, 0–1. */
@@ -67,7 +66,6 @@ export const DEFAULT_SETTINGS: Settings = {
   letterDwell: 600,
   controlDwell: 900,
   textScale: 1,
-  theme: 'light',
   sound: 'all',
   volume: 0.75,
   mode: 'dwell',
