@@ -310,7 +310,17 @@ export class GazeEngine {
     const s = this.internal;
     let event: GazeEvent | undefined;
 
-    if (s.kind === 'selected') {
+    if (s.kind === 'selected' && this.settings.mode === 'confirm') {
+      // Confirm mode: a look never selects by itself, so nothing can fire under a resting gaze and
+      // the person need not look away between selections. The card they keep looking at is ready
+      // again after rearmMs (another Space, click or sound selects it again: a double letter, a
+      // second Delete); a card that took its place (a new screen) starts its own look at once.
+      if (looked === s.action && under === s.action) {
+        if (at - s.at >= this.settings.rearmMs) this.internal = { kind: 'previewed', action: s.action, awaySince: null };
+      } else {
+        this.internal = { kind: 'idle' };
+      }
+    } else if (s.kind === 'selected') {
       if (looked === s.action) {
         this.internal = { ...s, offSince: null };
         if (this.settings.repeat === 'redwell' && at - s.at >= this.settings.dwellMs * 1.5) { this.select(s.action, at); return; }

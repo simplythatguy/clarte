@@ -191,5 +191,21 @@ wideEngine.setActionables([{ id: 'wide', rect: { left: 740, top: 470, right: 142
 for (let t = 0; t <= 700; t += 33) wideEngine.sample(Math.floor(t / 33) % 2 ? 1250 : 900, 700, t);
 check('a wide card split across its quadrants still settles', wideEngine.snapshot.looked === 'wide', JSON.stringify(wideEngine.snapshot));
 
+// Confirm mode needs no look away between selections (no dwell, #32).
+const againEngine = new GazeEngine({ mode: 'confirm', dwellMs: 300, holdMs: 0, rearmMs: 300, smoothing: 1, deadBand: 0 });
+againEngine.setViewport(viewport);
+againEngine.setActionables(style1);
+const againEvents: string[] = [];
+againEngine.subscribe((_, event) => { if (event?.type === 'select') againEvents.push(event.action); });
+for (let t = 0; t <= 400; t += 33) againEngine.sample(100, 100, t);
+againEngine.confirm(420);
+for (let t = 433; t <= 900; t += 33) againEngine.sample(100, 100, t);
+check('a steady look is ready again after a confirmation', againEngine.snapshot.state === 'previewed', againEngine.snapshot.state);
+againEngine.confirm(910);
+check('a second confirmation selects again without looking away', againEvents.length === 2, againEvents.join(' '));
+againEngine.setActionables(style1.map((a) => (a.id === 'mode' ? { ...a, id: 'next-screen' } : a)));
+for (let t = 943; t <= 1400; t += 33) againEngine.sample(100, 100, t);
+check('a new card in the same place previews without looking away', againEngine.snapshot.state === 'previewed' && againEngine.snapshot.action === 'next-screen', JSON.stringify(againEngine.snapshot));
+
 if (failures) { console.error(`${failures} check(s) failed`); process.exit(1); }
 console.log('all checks passed');

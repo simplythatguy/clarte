@@ -102,6 +102,9 @@ export function guardQuadrant(quadrant: QuadrantId | null, action: string): void
 }
 
 export function isGuarded(action: string, snapshot: GazeSnapshot = engine.snapshot): boolean {
+  // Only a dwell can fire under a resting gaze. In confirm mode every selection is an explicit
+  // Space, click, switch or sound, so the new card in a quadrant needs no look away first.
+  if (engine.settings.mode !== 'dwell') return false;
   return guard !== null && snapshot.quadrant === guard.quadrant && action !== guard.action;
 }
 
