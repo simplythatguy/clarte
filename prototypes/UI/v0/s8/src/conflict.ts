@@ -14,6 +14,7 @@
  */
 import { decode, type Candidate } from '../../shared/decoder.ts';
 import type { Composition } from '../../shared/composer.ts';
+import { liveProbabilities } from './predict.ts';
 
 export const CLOSE = 0.6;
 /**
@@ -41,6 +42,17 @@ function zipf(c: Candidate, extraPerLetter = 400, length = 0): { p: number; cont
 
 export function conflictFor(c: Composition, context: readonly string[] = []): Conflict | null {
   if (c.reopened || c.pending.length < CONFLICT_FROM) return null;
+  // The language model (NAT-27): Autocomplete v1's probabilities, normalised over every word with
+  // this group prefix, apply the same two rules directly.
+  const live = liveProbabilities(c.pending);
+  if (live) {
+    const [a, b] = live.whole;
+    if (!a || !b || b.probability / a.probability < CLOSE) return null;
+    if (a.probability + b.probability < ENDS_HERE * live.longer) return null;
+    // Q1 accepts the composer's first candidate, so the branch must start from that same word.
+    if (decode(c.pending, { limit: 1, context })[0]?.word !== a.word) return null;
+    return { first: a.word, second: b.word };
+  }
   const list = decode(c.pending, { limit: 60, context });
   const whole = list.filter((x) => x.complete);
   if (whole.length < 2) return null;

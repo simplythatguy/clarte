@@ -834,3 +834,13 @@ body {
 .gallery-thumb-cloud { background: radial-gradient(circle at 38% 32%, #FFF7F0, #FFE4D0 45%, #FFD5B6 80%, #FFC49C); --sketch-ink: #6E3B22; }
 .gallery-thumb-cloud .sketch { width: 78%; height: 78%; }
 :root[data-palette='vibrant'] .gallery-thumb-cloud { background: radial-gradient(circle at 38% 32%, #FFE9D8, #FFC79E 45%, #FFAE70 80%, #FF9A52); --sketch-ink: #4A2412; }
+
+/* NAT-27: the real eye tracker's frame. Always full-window (its gaze fractions and calibration
+   geometry match this page); invisible and inert behind the app, on top during calibration. */
+.eyes-frame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; z-index: -1; opacity: 0; pointer-events: none; background: transparent; }
+.eyes-frame[data-shown] { z-index: 50; opacity: 1; pointer-events: auto; background: #fff; }
+.eyes-back {
+  position: fixed; z-index: 51; top: 14px; left: 50%; translate: -50% 0;
+  font: inherit; font-size: 15px; padding: 8px 16px; border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12); background: rgba(255, 255, 255, 0.92); color: #1d1d1f; cursor: pointer;
+}

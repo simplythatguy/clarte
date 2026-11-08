@@ -16,6 +16,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { QuadrantId } from '../../shared/quadrants.ts';
 import { engine } from './gaze.ts';
+import { useEyes } from './eyes.ts';
 import type { Settings, SetupStep } from './model.ts';
 import { SETUP_STEPS } from './model.ts';
 import type { Slots, SlotView } from './Tile.tsx';
@@ -157,6 +158,9 @@ function PlacesChart({ seen }: { seen: Set<QuadrantId> }) {
 
 function EyesReport({ settings, calibratedAt }: { settings: Settings; calibratedAt: number | null }) {
   const seen = useSeen();
+  // NAT-27: the real tracker once it streams; "Camera" while it is framed but not calibrated.
+  const eyes = useEyes();
+  const source = eyes.streaming ? 'Eyes' : eyes.connected ? 'Camera' : 'Mouse';
   return (
     <>
       <section className="report report-tall" aria-label="Eyes">
@@ -164,7 +168,7 @@ function EyesReport({ settings, calibratedAt }: { settings: Settings; calibrated
           <header className="report-top"><Counter step="eyes" /><span className="report-where">Setup</span></header>
           <Heading name="Eyes" detail="Tracking check" />
           <div className="metrics">
-            <Metric caption="Gaze from" value="Mouse" />
+            <Metric caption="Gaze from" value={source} />
             <Metric caption="Calibration" value={calibratedAt ? 'Done' : 'Not yet'} />
             <Metric caption="Selection" value={settings.mode === 'dwell' ? 'Dwell' : 'Confirm'} />
             <Metric caption="Letter dwell" value={(settings.letterDwell / 1000).toFixed(1)} unit="s" />
