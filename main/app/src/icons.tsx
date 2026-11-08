@@ -33,6 +33,8 @@ export const RecordDot = () => <Icon><circle cx="12" cy="12" r="6" fill="current
 export const Ellipsis = () => <Icon><circle cx="6" cy="12" r="1.8" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" /><circle cx="18" cy="12" r="1.8" fill="currentColor" stroke="none" /></Icon>;
 export const Check = () => <Icon><path d="M5 12.5l4.5 4.5L19 7.5" /></Icon>;
 export const ArrowRight = () => <Icon><path d="M5 12h13.5" /><path d="M13 6.5l5.5 5.5-5.5 5.5" /></Icon>;
+/** Keyboard and mouse: a keyboard, its keys as dots and a space bar. */
+export const Keyboard = () => <Icon><rect x="2.5" y="6.5" width="19" height="11" rx="2" /><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8.5 14h7" /></Icon>;
 export const Timer = () => <Icon><circle cx="12" cy="13" r="7.5" /><path d="M12 9v4l2.5 2" /><path d="M9.5 3h5" /></Icon>;
 export const TextSize = () => <Icon><path d="M3.5 18l4.5-12 4.5 12M5.2 14h5.6" /><path d="M14 18l3-8 3 8M15 15.5h4" /></Icon>;
 export const Sun = () => <Icon><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></Icon>;

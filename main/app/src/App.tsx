@@ -3,7 +3,7 @@
  * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
  * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
  * making the person's voice in VoiceSetup.tsx); words from the prediction engine (useWords.ts); and looks from the webcam eye
- * tracker (eyes/session.ts), or the mouse with `?input=mouse` or while the tracker is not calibrated.
+ * tracker (eyes/session.ts); with keyboard and mouse (`?input=mouse`, or chosen) clicks and keys select.
  *
  * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
  * the conversation thread, Q5–Q8 the letter groups. Every activation (dwell, digit key, click,
@@ -68,23 +68,24 @@ const SAMPLE = 'Hello, this is my voice.';
 const HOLDER = "Wait! I'm answering.";
 const STORE = 'clarte.v1';
 const PARAMS = new URLSearchParams(location.search);
-/** `?input=mouse`: the mouse stands in for the eyes and no camera starts. */
+/** `?input=mouse`: keyboard and mouse, with no camera; clicks and keys select. */
 const MOUSE_ONLY = PARAMS.get('input') === 'mouse';
+/** Screens where the eyes cannot select yet, so the pointer does not stand in for them. */
+const EYES_NOT_READY = new Set<string>(['welcome', 'calibration']);
 
+/**
+ * Every launch opens on Welcome, then eye calibration (owner, 2026-11-08); `?onboarding=off` opens
+ * straight into the app. Only the settings carry over.
+ */
 function loadStored(): State {
-  // `?onboarding=off` opens straight into the app.
-  const skip = PARAMS.get('onboarding') === 'off';
+  const screen: State['screen'] = PARAMS.get('onboarding') === 'off' ? { kind: 'talk' } : INITIAL_STATE.screen;
   try {
     const raw = localStorage.getItem(STORE);
-    if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
-    const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean };
-    return {
-      ...INITIAL_STATE,
-      settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }),
-      screen: saved.setupDone || skip ? { kind: 'talk' } : INITIAL_STATE.screen,
-    };
+    if (!raw) return { ...INITIAL_STATE, screen };
+    const saved = JSON.parse(raw) as { settings?: Partial<Settings> };
+    return { ...INITIAL_STATE, settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }), screen };
   } catch {
-    return INITIAL_STATE;
+    return { ...INITIAL_STATE, screen };
   }
 }
 
@@ -96,11 +97,19 @@ function migrate(settings: Settings): Settings {
   return settings;
 }
 
-function setupDone(): boolean {
-  try { return Boolean(JSON.parse(localStorage.getItem(STORE) ?? '{}').setupDone); } catch { return false; }
+/**
+ * Whether the person has finished the first run's voice pages (Continue after making a voice, or
+ * Not now); later launches then go from calibration straight to the conversation. A store saved
+ * before this, when the whole first run happened once, says `setupDone` instead.
+ */
+function voiceDone(): boolean {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}') as { voiceDone?: boolean; setupDone?: boolean };
+    return Boolean(saved.voiceDone || saved.setupDone);
+  } catch { return false; }
 }
 
-function store(patch: { settings?: Settings; setupDone?: boolean }): void {
+function store(patch: { settings?: Settings; voiceDone?: boolean }): void {
   try {
     const current = JSON.parse(localStorage.getItem(STORE) ?? '{}');
     localStorage.setItem(STORE, JSON.stringify({ ...current, ...patch }));
@@ -258,7 +267,7 @@ export function App() {
   const words = useWords(state);
   const slots = slotsFor(state, words);
   const shown = shownWord(state.composition, words.prediction)?.word ?? null;
-  /** The mouse drives looks for the rest of the session (`?input=mouse`, or chosen after a camera failure). */
+  /** Keyboard and mouse for the rest of the session, with no selection by dwell (`?input=mouse`, Keyboard and mouse on Welcome, or Use the mouse after a camera failure). */
   const mouseOnly = useRef(MOUSE_ONLY);
   // Bumped when an activation landed on a stale label, so the label catches up at once.
   const [syncs, setSyncs] = useState(0);
@@ -300,7 +309,10 @@ export function App() {
   // Gaze sources and the per-frame clock.
   useEffect(() => {
     const detach = [
-      attachPointerStream(engine, () => mouseOnly.current || !eyesDrive()),
+      // The pointer stands in for the eyes only while the eyes are expected but not driving, and
+      // never on Welcome or calibration, where the eyes cannot select yet. With keyboard and mouse
+      // nothing selects by dwell (owner): a click or keys 1–8 select, and hovering never does.
+      attachPointerStream(engine, () => !mouseOnly.current && !eyesDrive() && !EYES_NOT_READY.has(stateRef.current.screen.kind)),
       startTicking(engine),
       unlockOnGesture(),
       // In development the overlay tracks actionables itself (main.tsx); here for production builds.
@@ -428,11 +440,19 @@ export function App() {
     afterCalibration();
   }, [afterCalibration]);
 
+  /** Welcome leads to calibration, then the voice pages until they are done, then the conversation. */
   const getStarted = useCallback(() => {
     if (stateRef.current.screen.kind !== 'welcome') return;
     play('control');
-    dispatch({ type: 'screen', screen: mouseOnly.current ? FIRST_VOICE : { kind: 'calibration', then: 'voice' } });
+    const done = voiceDone();
+    dispatch({ type: 'screen', screen: mouseOnly.current ? (done ? { kind: 'talk' } : FIRST_VOICE) : { kind: 'calibration', then: done ? 'talk' : 'voice' } });
   }, []);
+  /** Keyboard and mouse: no camera and no calibration; clicks and keys select for the session. */
+  const chooseKeyboardAndMouse = useCallback(() => {
+    if (stateRef.current.screen.kind !== 'welcome') return;
+    mouseOnly.current = true;
+    getStarted();
+  }, [getStarted]);
   // Before calibration the eyes cannot select yet, so Get started starts by itself after 20 s,
   // unless the person shows they can use the keyboard or the mouse.
   const autoStart = useAutoStart(screen.kind === 'welcome' && !mouseOnly.current, getStarted);
@@ -462,13 +482,9 @@ export function App() {
   }, [calibrating, leaveCalibration]);
   const calibrationFailure = eyes.kind === 'failed' ? eyes.message : eyes.kind === 'run-failed' ? eyes.reason : null;
 
-  // A returning person goes straight to the conversation: the camera starts and the saved
-  // calibration is restored. When there is none that fits, or the camera fails now or later, the
-  // calibration screen opens (its failure view offers Try again and Use the mouse).
-  useEffect(() => {
-    if (mouseOnly.current || !setupDone() || PARAMS.get('onboarding') === 'off') return;
-    void startEyes(engine);
-  }, []);
+  // Every launch calibrates (Get started), over the saved calibration once the camera restores it,
+  // so Escape and Keep the old one fall back to it. If the camera fails later, or the calibration
+  // stops fitting, the calibration screen opens (its failure view offers Try again and Use the mouse).
   useEffect(() => {
     if (mouseOnly.current || (eyes.kind !== 'uncalibrated' && eyes.kind !== 'failed')) return;
     const kind = stateRef.current.screen.kind;
@@ -492,7 +508,7 @@ export function App() {
     const s = stateRef.current.screen;
     if (s.kind !== 'voice') return;
     closeMic();
-    if (s.from === 'first-run') { store({ setupDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); }
+    if (s.from === 'first-run') { store({ voiceDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); }
     else dispatch({ type: 'screen', screen: { kind: 'menu', page: 'voice' } });
   }, []);
 
@@ -588,6 +604,7 @@ export function App() {
     }
     if (s.screen.kind === 'welcome') {
       if (action === 'get-started') getStarted();
+      else if (action === 'keyboard-mouse') chooseKeyboardAndMouse();
       return;
     }
     if (s.screen.kind === 'voice') { voiceAction(action); return; }
@@ -656,7 +673,7 @@ export function App() {
       // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
     }
-  }, [getStarted, hear, leaveCalibration, resync, runPrimary, runSecond, startSpeaking, voiceAction]);
+  }, [getStarted, hear, leaveCalibration, resync, runPrimary, runSecond, startSpeaking, chooseKeyboardAndMouse, voiceAction]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;

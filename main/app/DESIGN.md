@@ -38,7 +38,7 @@ The eye tracker is most accurate toward a card's centre, so every card's words, 
 
 - **The Options card** keeps its icon in the top-left corner, out of the flow. Its face is already a tall stack (three words over "Options"), and the stack centres in the whole card. The leaderboard measures each word from the card rather than the stack, so a word that stays never jumps when the stack recentres.
 - **Letters** are centred in their one row. At large text they wrap into two centred rows, as before.
-- **Tall cards** (Get started, Try again, Continue) centre their label in the whole card, which owns both quadrants.
+- **Tall cards** (Try again, Record my voice) centre their label in the whole card, which owns both quadrants.
 - **Content too tall for the middle** (two-line labels at 200% text on small windows) pushes the bottom row out first, so the words slide down a little rather than under the icon. `fit.ts` shrinks the text only when the words would pass the card's bottom padding.
 - The selection fill's copy of the words is laid out with the same rows, so it inverts exactly over them, and the circle now grows from the words.
 
@@ -111,6 +111,14 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 - **Face.** The eyes go first, 90 ms before the body, looking where it is heading and narrowing as if into the wind. On landing, momentum carries them further up-left (260 ms), they glance up-right (520 ms), and then they return to following the pointer. The landing glances reach about 2.5 times the pointer's range so they still read at 44 px.
 - **Interruption.** Position, size and lean all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ball turns round from where it is.
 - **Still or reduced motion.** No flight. It fades out (150 ms), moves, and fades in at the other place, with the face at rest.
+
+## Every launch starts at Welcome (owner, 2026-11-08)
+
+Each launch opens on Welcome, then eye calibration, not only the first. The saved calibration stays as the fallback: Get started starts the camera, the saved calibration is restored, and the run trains over it, so Escape during the run and **Keep the old one** after a failed run keep it. The voice pages follow calibration only until the person finishes them once, by Continue after making a voice or by Not now (`voiceDone` in `clarte.v1`; a store from before with `setupDone` counts). Menu › My voice reaches them at any time. `?onboarding=off` still skips the whole flow, and `?input=mouse` skips calibration.
+
+Welcome is laid out like a voice page with two actions: two wide cards in the bottom row, **Keyboard and mouse** (grey glass, keyboard icon) over Q5–Q6 and **Get started** (ink, still with "Starts in 20 s") over Q7–Q8. The words and the orb are centred in the whole top row, a rest zone. As calibration starts, Get started slides off to the right as the tall card did (520 ms, `card-slide`) and Keyboard and mouse fades. Get started keeps one body key with or without its hint: the press that stops the countdown would otherwise swap the body under the pointer, and the click would never fire.
+
+**Keyboard and mouse** skips calibration and starts no camera, the same as Use the mouse after a camera failure. With keyboard and mouse nothing selects by dwell (owner's standing rule): a click or keys 1–8 select, and hovering never does. So the pointer no longer feeds the gaze engine in a keyboard-and-mouse session, and it never does on Welcome or calibration, where the eyes cannot select yet and only a mouse could dwell. Elsewhere, without a calibrated tracker (`?onboarding=off`), the pointer still stands in for the eyes. Dwell stays the default for the eyes.
 
 ## Open questions for the owner
 
