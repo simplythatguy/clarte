@@ -32,18 +32,13 @@
   /* The selection box around the word in progress (editor reference). */
   --select-line: #C9C6CF;
   --report-hairline: #DAD7DF;
-  /* Letter groups (owner, 2026-11-08): vibrant letters on the same grey glass as every other card,
-     each a static gradient from its own colour into a neighbouring hue, like the ball's. Every point
-     of every gradient keeps at least 3.8:1 on the grey (3:1 is the bar for large text; the letters
-     are 36 px semibold). The typed word's letters take each gradient's first colour. */
-  --g1-from: #0A7BEA; --g1-to: #4F46E5;
-  --g2-from: #6D3CF5; --g2-to: #B524D6;
-  --g3-from: #15803D; --g3-to: #0D7F8C;
-  --g4-from: #D9480F; --g4-to: #DB2760;
-  --g1-ink: var(--g1-from);
-  --g2-ink: var(--g2-from);
-  --g3-ink: var(--g3-from);
-  --g4-ink: var(--g4-from);
+  /* Letter groups (owner, 2026-11-08): vibrant letters on the same grey glass as every other card.
+     On the grey, blue and violet keep at least 4.5:1; green 4.2:1 and orange 3.9:1, above the
+     3:1 for large text (the letters are 36 px semibold). */
+  --g1-ink: #0A66E8;
+  --g2-ink: #7B2FF7;
+  --g3-ink: #00873F;
+  --g4-ink: #D9480F;
   /* Group inks for glyphs set on the canvas (the word in progress) */
   --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
   /* The spoken word's highlight while Clarte speaks. */
@@ -209,10 +204,10 @@ body {
 .card-icon .icon { width: 36px; height: 36px; }
 .icon-destructive { color: var(--destructive); }
 
-[data-group='G1'] { --gi: var(--g1-ink); --gt: var(--g1-text); --g-from: var(--g1-from); --g-to: var(--g1-to); }
-[data-group='G2'] { --gi: var(--g2-ink); --gt: var(--g2-text); --g-from: var(--g2-from); --g-to: var(--g2-to); }
-[data-group='G3'] { --gi: var(--g3-ink); --gt: var(--g3-text); --g-from: var(--g3-from); --g-to: var(--g3-to); }
-[data-group='G4'] { --gi: var(--g4-ink); --gt: var(--g4-text); --g-from: var(--g4-from); --g-to: var(--g4-to); }
+[data-group='G1'] { --gi: var(--g1-ink); --gt: var(--g1-text); }
+[data-group='G2'] { --gi: var(--g2-ink); --gt: var(--g2-text); }
+[data-group='G3'] { --gi: var(--g3-ink); --gt: var(--g3-text); }
+[data-group='G4'] { --gi: var(--g4-ink); --gt: var(--g4-text); }
 
 .card-body { display: grid; justify-items: start; align-content: end; min-width: 0; max-width: 100%; --gap: 8px; }
 /* One content box per face, stacked in one grid cell: MOTION's page change, in place. The old face
@@ -262,13 +257,6 @@ body {
 /* Above 100% text the row may break into two rows of four rather than shrink (BRIEF). */
 :root[data-large] .letters { font-size: max(24px, min(var(--fs-letters), 28cqi)); line-height: 1.05; }
 .card-group .card-body { --gap: 12px; }
-/* The letters are painted with their group's gradient (the Vibrant palette keeps white letters). */
-:root:not([data-palette='vibrant']) .card-group .letters {
-  background: linear-gradient(100deg, var(--g-from), var(--g-to));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 
 /* Thread: the rest zone Q2–Q3 */
 .thread {
