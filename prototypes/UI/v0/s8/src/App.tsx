@@ -36,7 +36,7 @@ import {
   type Settings,
   type State,
 } from './model.ts';
-import { Tile, type SlotName, type Slots } from './Tile.tsx';
+import { Tile, type SlotName, type SlotView, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
 import { TITLES, menuSlots, nextValue, type SettingKey } from './Menu.tsx';
 import { Calibration } from './Calibration.tsx';
@@ -116,7 +116,7 @@ function Cell({ q, children }: { q: string; children?: ReactNode }) {
 
 type CardFace = { icon: ReactNode; label?: ReactNode; hint?: string; name?: string };
 
-/** What the primary card (Q1, ink) shows for each function. */
+/** What the primary card (ink; Q1, or Q4 when it is Listen or Stop listening) shows for each function. */
 function primaryFace(fn: PrimaryFn): CardFace {
   switch (fn.kind) {
     case 'listen': return { icon: <Mic />, label: 'Listen' };
@@ -130,7 +130,7 @@ function primaryFace(fn: PrimaryFn): CardFace {
   }
 }
 
-/** What the second card (Q4, white) shows for each function. */
+/** What the second card (white; Q4, or Q1 when it is Menu or Wait!) shows for each function. */
 function secondFace(fn: SecondFn, pending: number): CardFace {
   switch (fn.kind) {
     case 'delete': return fn.word ? { icon: <Erase />, label: 'Delete word' } : { icon: <Erase />, label: 'Delete', hint: pending ? 'Last group' : 'Last word' };
@@ -486,10 +486,12 @@ export function App() {
   } else {
     const pFace = primaryFace(primary.value);
     const sFace = secondFace(second.value, state.composition.pending.length);
-    slotViews = {
-      q1: { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> },
-      q4: { action: 'delete', tone: 'surface', icon: sFace.icon ?? undefined, label: sFace.name, disabled: second.value.kind === 'none', bodyKey: second.key, body: <FaceBody face={sFace} /> },
-    };
+    const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
+    const secondView: SlotView = { action: 'delete', tone: 'surface', icon: sFace.icon ?? undefined, label: sFace.name, disabled: second.value.kind === 'none', bodyKey: second.key, body: <FaceBody face={sFace} /> };
+    // Owner, 2026-11-08: Menu lives in Q1 and the Listen toggle in Q4, so each keeps one place: Listen
+    // turns into Stop where it was, and Menu opens where its Back button will be.
+    const swapped = primary.value.kind === 'listen' || primary.value.kind === 'stop-listening' || second.value.kind === 'menu';
+    slotViews = swapped ? { q1: secondView, q4: primaryView } : { q1: primaryView, q4: secondView };
     for (const id of GROUP_IDS) {
       slotViews[GROUP_QUADRANT[id]] = {
         action: id, tone: 'group', group: id, disabled: !slots.groups, bodyKey: id,

@@ -4,6 +4,10 @@ A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching
 
 In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
 
+## Menu in Q1, Listen in Q4 (owner, 2026-11-08)
+
+Menu now sits in Q1 and the Listen button in Q4, so each keeps one place. Listen turns into Stop where it was, and Menu opens where the menu's Back button will be. In practice: idle shows Menu in Q1 and Listen in Q4; listening shows Wait! in Q1 and Stop in Q4; after speaking, Menu is in Q1 and Say again in Q4. Typing is unchanged, so Q1 still always holds the predicted word (DEC-100), and a suggested reply, Speak and Stop speaking stay in Q1. Each card keeps its own tone (Listen and Stop dark, Menu and Wait! grey) wherever it sits.
+
 ## No state pill (owner, 2026-11-08)
 
 The Listening, Replying and Speaking pill is gone from the screen. A hidden live region in the same place still announces the state to assistive technology, and the row keeps its 48 px height as the docked companion's place, so the history never runs under it. The pill's width animation went with it.
@@ -27,7 +31,7 @@ The Cloud turns green and livelier while Clarte speaks, as in style 6. Style 7 h
 
 ## Menu (owner, 2026-11-07)
 
-One moment and Phrases are gone from the menu, and the Phrases page went with them. The other items keep their places: Back (Q1), Settings (Q6), Recalibrate (Q7) and Demo (Q8). Q4 and Q5 are rest zones on that page. It stays on the conversation screen, in Q4 while listening, renamed **Wait!** (owner, 2026-11-07). Selecting it says "Wait! I'm answering."
+One moment and Phrases are gone from the menu, and the Phrases page went with them. The other items keep their places: Back (Q1), Settings (Q6), Recalibrate (Q7) and Demo (Q8). Q4 and Q5 are rest zones on that page. It stays on the conversation screen while listening, renamed **Wait!** (owner, 2026-11-07). Selecting it says "Wait! I'm answering."
 
 ## No dark theme (owner, 2026-11-07)
 
