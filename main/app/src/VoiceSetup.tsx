@@ -1,9 +1,11 @@
 /**
  * Making the person's voice (NAT-32), in place of the first run's voice placeholder and from
  * Menu › My voice. The recording and the clone come from prototypes/Voice (myvoice/); the pages are
- * this app's own: the onboarding's tall ink card over Q4 and Q8 holds each page's main action,
- * Not now sits in Q1 where Back sits in the menu, and the bottom row holds the page's other actions.
- * The text sits in the rest zone between them (Q2–Q3), under a smaller orb.
+ * this app's own. A page with one action besides Not now (or Hear it) puts both in the bottom row
+ * as wide cards, the action in ink over Q7–Q8 (owner, 2026-11-08). A page with more keeps the
+ * onboarding's tall ink card over Q4 and Q8 for its main action, Not now in Q1 where Back sits in
+ * the menu, and its other actions in the bottom row. The text sits in the top row's rest zone
+ * (Q2–Q3), under a smaller orb, centred on the row.
  *
  *   intro      Record my voice · Old recordings · Not now
  *   consent    I agree · Not now            (the service's consent statement, word for word)
@@ -39,6 +41,12 @@ const card = (action: string, label: string, icon: ReactNode, disabled = false, 
   body: <span className="card-label" style={longest(label)}>{label}</span>,
 });
 const notNow = () => card('voice-leave', 'Not now', <Close />);
+/**
+ * A page with one action besides Not now (owner, 2026-11-08): both share the bottom row as wide
+ * cards, Not now over Q5–Q6 and the action, in ink, over Q7–Q8, so the top row is the words alone.
+ */
+const pair = (left: SlotView, action: string, label: string, icon: ReactNode): Slots =>
+  ({ q5: { ...left, span: 2 }, q7: { ...card(action, label, icon, false, 2), tone: 'ink' } });
 
 /** Why voice making cannot start, or null when it can. */
 function blocked(service: ServiceState): string | null {
@@ -51,12 +59,12 @@ export function voiceSlots({ step, source, maker, service }: VoiceView): Slots {
   switch (step) {
     case 'intro':
       return blocked(service)
-        ? { q1: notNow(), q4: tallCard('voice-check', 'Try again', <Again />) }
+        ? pair(notNow(), 'voice-check', 'Try again', <Again />)
         : { q1: notNow(), q4: tallCard('voice-record', 'Record my voice', <Mic />), q5: card('voice-old', 'Old recordings', <Waveform />) };
     case 'consent':
-      return { q1: notNow(), q4: tallCard('voice-agree', 'I agree', <Check />) };
+      return pair(notNow(), 'voice-agree', 'I agree', <Check />);
     case 'record': {
-      if (!maker.mic) return { q1: notNow(), q4: tallCard('voice-mic', 'Try again', <Again />) };
+      if (!maker.mic) return pair(notNow(), 'voice-mic', 'Try again', <Again />);
       const live = maker.recording !== null;
       const prompt = PROMPTS[maker.index];
       const take = live
@@ -71,18 +79,17 @@ export function voiceSlots({ step, source, maker, service }: VoiceView): Slots {
       };
     }
     case 'files':
-      return { q1: notNow(), q4: tallCard('voice-files', 'Choose files', <Waveform />) };
+      return pair(notNow(), 'voice-files', 'Choose files', <Waveform />);
     case 'making':
       return { q1: notNow() };
     case 'ready':
-      // Owner, 2026-11-08: the two choices share the bottom row as wide cards, and the top row is the words.
-      return { q5: card('voice-hear', 'Hear it', <Speaker />, false, 2), q7: { ...card('voice-done', 'Continue', <Check />, false, 2), tone: 'ink' } };
+      return pair(card('voice-hear', 'Hear it', <Speaker />), 'voice-done', 'Continue', <Check />);
     case 'need-more':
-      return { q1: notNow(), q4: tallCard('voice-more', 'Record more', <Mic />) };
+      return pair(notNow(), 'voice-more', 'Record more', <Mic />);
     case 'error':
       return source === 'current'
         ? { q1: notNow(), q4: tallCard('voice-retry', 'Try again', <Again />), q5: card('voice-more', 'Record more', <Mic />) }
-        : { q1: notNow(), q4: tallCard('voice-retry', 'Try again', <Again />) };
+        : pair(notNow(), 'voice-retry', 'Try again', <Again />);
   }
 }
 
