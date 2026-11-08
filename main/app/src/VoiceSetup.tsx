@@ -95,6 +95,10 @@ export function voiceSlots({ step, source, maker, service }: VoiceView): Slots {
 
 /** The page's words: a title and at most one line under it, or the prompt to read. */
 export function VoicePage({ step, source, maker, service, note }: VoiceView) {
+  // A page whose buttons all sit in the bottom row (pair) has the top row to itself: the orb rests
+  // over Q1–Q2 and the words, left-aligned, over Q3–Q4 (owner, 2026-11-08; GuideOrb.tsx places the orb).
+  const slots = voiceSlots({ step, source, maker, service, note });
+  const split = !slots.q1 && !slots.q4;
   let body: ReactNode;
   let label = 'Your voice';
   switch (step) {
@@ -143,7 +147,7 @@ export function VoicePage({ step, source, maker, service, note }: VoiceView) {
       break;
   }
   return (
-    <section className="onboarding voice-page" aria-label={label}>
+    <section className={`onboarding voice-page${split ? ' voice-split' : ''}`} aria-label={label}>
       <div className="voice-text">{body}</div>
     </section>
   );

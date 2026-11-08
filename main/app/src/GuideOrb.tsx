@@ -29,6 +29,8 @@ const TEXT_GAP = 40;
  * together in the three columns left of the tall card; the orb reads where the text landed.
  */
 function rest(): Place {
+  // A voice page with the top row to itself: the orb has Q1–Q2 alone and rests at their centre.
+  if (document.querySelector('.rest-entering .voice-split')) return { x: window.innerWidth / 4, y: window.innerHeight / 4, size: SIZE.rest };
   const text = document.querySelector('.rest-entering .onboarding > *')?.getBoundingClientRect();
   // Voice pages share the top row with the bottom row's cards, so the orb is smaller and closer.
   const voice = document.querySelector('.rest-entering .voice-page') !== null;

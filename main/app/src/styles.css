@@ -569,6 +569,11 @@ body {
 /* Recording: a red dot beside the word, so the state never rests on colour alone. */
 .voice-dot { width: 12px; height: 12px; border-radius: 50%; background: #D93036; }
 :root[data-large] .onboarding.voice-page > * { margin-top: calc(64px + 16px); }
+/* A voice page with the top row to itself (owner, 2026-11-08): the orb rests centred over Q1–Q2
+   (GuideOrb.tsx) and the words sit centred over Q3–Q4 as one left-aligned block. */
+.onboarding.voice-page.voice-split { grid-column: 3 / 5; padding: 0 32px; }
+.onboarding.voice-page.voice-split > *, :root[data-large] .onboarding.voice-page.voice-split > * { margin: 0; }
+.voice-split .voice-text { justify-items: start; text-align: left; }
 /* The onboarding orb (GuideOrb.tsx): placed by its centre (--x, --y) at --size, gliding between
    places at the calibration's move time. As a target it does not float, so its centre is exact. */
 .guide-orb {
