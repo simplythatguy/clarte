@@ -14,6 +14,7 @@ export const PHASES = [
   'composing-pending',
   'composing-reopened',
   'composing-options',
+  'composing-options-b',
   'composing-nomatch',
   'composing-ready',
   'speaking',
@@ -94,6 +95,9 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'composing-options':
       // "I might": might, night, light and limit fit the same groups, the first two about equally well.
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'might', context) };
+    case 'composing-options-b':
+      // "I good": good, more, lose and hope fit the same groups.
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'good', context) };
     case 'options':
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['in', 'how']), 'been', context), screen: { kind: 'options', at: 0 } };
     case 'options-many':

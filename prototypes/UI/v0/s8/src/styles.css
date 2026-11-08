@@ -278,8 +278,12 @@ body {
 .card-label.is-quote { font-size: calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1)); }
 /* The Options card (owner, 2026-11-08): "Options" at the bottom, the three most likely words above
    it a little smaller, each dimmer than the one below, and ⋯ on top when there are more. */
-.options-face { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.options-face { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
 .options-word { font-size: min(calc(36px * var(--scale)), calc(140cqi / var(--len, 6))); font-weight: 600; line-height: 1.1; }
+/* A word that dropped out of the top three, drawn where it was while it slides off (OptionsFace.tsx). */
+.options-leaving { position: absolute; left: 0; pointer-events: none; }
+.options-more { font-size: calc(28px * var(--scale)); line-height: 0.6; letter-spacing: 0.08em; opacity: 0; transition: opacity var(--dur-phase) var(--ease-state); }
+.options-more[data-on] { opacity: 0.22; }
 .options-face > .card-label { margin-top: 6px; }
 /* Short windows: the preview words give up size and spacing first, so "Options" keeps its size. */
 @media (max-height: 820px) {
@@ -288,10 +292,6 @@ body {
   .options-face > .card-label { margin-top: 4px; }
   .options-more { font-size: calc(22px * var(--scale)); }
 }
-.options-word:nth-last-child(2) { opacity: 0.62; }
-.options-word:nth-last-child(3) { opacity: 0.42; }
-.options-word:nth-last-child(4) { opacity: 0.27; }
-.options-more { font-size: calc(28px * var(--scale)); line-height: 0.6; letter-spacing: 0.08em; opacity: 0.22; }
 .card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
 /* Where Back goes (owner, 2026-11-08): the page's name, small and faded, above "Back". */
 .crumb { font-size: max(16px, min(calc(17px * var(--scale)), 9cqi)); font-weight: 500; line-height: 1.25; color: currentColor; opacity: 0.5; }

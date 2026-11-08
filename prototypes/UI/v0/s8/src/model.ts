@@ -212,7 +212,6 @@ export function primaryKey(fn: PrimaryFn): string {
     case 'suggestion': return `suggestion:${fn.text}`;
     case 'candidate': return `candidate:${fn.word}`;
     case 'say-again': return `say-again:${fn.turnId}`;
-    case 'options': return `options:${fn.top.join(',')}:${fn.more}`;
     default: return fn.kind;
   }
 }

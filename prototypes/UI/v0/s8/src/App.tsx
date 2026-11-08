@@ -49,6 +49,7 @@ import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
 import { PagedStrip, pageList, type Strip } from './Pager.tsx';
+import { OptionsFace } from './OptionsFace.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { SETUP_STEPS } from './model.ts';
 import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
@@ -127,20 +128,12 @@ function primaryFace(fn: PrimaryFn): CardFace {
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
     case 'say-again': return { icon: <Again />, label: 'Say again' };
-    // Owner, 2026-11-08: "Options" alone at the bottom; above it the three most likely words,
-    // dimmer the further up they go, and a faint ⋯ on top only when the list goes on.
+    // Owner, 2026-11-08: "Options" at the bottom, the three most likely words above it, reordering
+    // like a live leaderboard as typing changes them (OptionsFace.tsx).
     case 'options': return {
       icon: <Options />,
       name: `Options: ${fn.top.join(', ')}${fn.more ? ', and more' : ''}`,
-      label: (
-        <span className="options-face">
-          {fn.more && <span className="options-more" aria-hidden="true">⋯</span>}
-          {[...fn.top].reverse().map((word) => (
-            <span key={word} className="options-word" style={{ ['--len' as string]: word.length }}>{word}</span>
-          ))}
-          <span className="card-label" style={longest('Options')}>Options</span>
-        </span>
-      ),
+      label: <OptionsFace top={fn.top} more={fn.more} />,
     };
   }
 }
