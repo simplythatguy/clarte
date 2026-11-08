@@ -16,7 +16,7 @@ One environment in this folder (`.venv`), the native build (`build/`) and the tr
 (Git LFS):
 
 ```sh
-cd 'prototypes/Word Prediction'
+cd main/engine
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pip install -r requirements-gpu.txt && .venv/bin/python -m pip install --no-deps mlx-lm==0.32.2   # Apple Silicon: the GPU rescorer
 .venv/bin/python build.py                                # native ARPA and assignment libraries into build/

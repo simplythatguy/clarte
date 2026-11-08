@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Builds the fallback decoder's echo table `src/echo.json` from the prediction engine's ARPA 4-gram
- * (`prototypes/Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz`), the way
+ * (`main/engine/models/lm_mix_top3_4gram_abs0.0.arpa.gz`), the way
  * `build-bigrams.mjs` builds the next-word table: for each of the most frequent content words (the
  * lexicon past its FUNCTION most frequent entries), which function words the model has seen right
  * before it with p(word | function word) ≥ 10^FLOOR, as a bit mask over the function words in
@@ -30,7 +30,7 @@ const CONTENT = Number(args.content ?? 7000);
 const FLOOR = Number(args.floor ?? -4);
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const arpa = fileURLToPath(new URL('../../../../Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
+const arpa = fileURLToPath(new URL('../../../../../main/engine/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
 const lexicon = JSON.parse(readFileSync(`${here}/../src/lexicon.json`, 'utf8')).map(([w]) => w);
 const functionWords = lexicon.slice(0, FUNCTION);
 const functionIndex = new Map(functionWords.map((w, i) => [w, i]));

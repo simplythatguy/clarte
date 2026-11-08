@@ -1,4 +1,4 @@
-> Moved from `prototypes/Word Prediction/v0/README.md` when the prediction prototypes were merged into one folder (`../README.md`). Paths below that say `prototypes/Word Prediction/v0` now mean `prototypes/Word Prediction`; its `server.py` is replaced by the merged `server.py`, which keeps `POST /api/predict`.
+> Moved from `main/engine/v0/README.md` when the prediction prototypes were merged into one folder (`../README.md`). Paths below that say `main/engine/v0` now mean `main/engine`; its `server.py` is replaced by the merged `server.py`, which keeps `POST /api/predict`.
 
 # Word Prediction v0
 
@@ -36,7 +36,7 @@ as missing (`clarte` fetches them itself into `.tools/models` and points
 `WORDPRED_MODELS` there).
 
 ```sh
-cd 'prototypes/Word Prediction/v0'   # from the repo root
+cd 'main/engine/v0'   # from the repo root
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt -r build-requirements.txt
 .venv/bin/python build.py

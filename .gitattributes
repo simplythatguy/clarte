@@ -1,7 +1,7 @@
 # Word Prediction model binaries are stored with Git LFS (three exceed GitHub's 100 MB limit).
-prototypes/Word[[:space:]]Prediction/models/**/*.safetensors filter=lfs diff=lfs merge=lfs -text
-prototypes/Word[[:space:]]Prediction/models/*.arpa.gz filter=lfs diff=lfs merge=lfs -text
-prototypes/Word[[:space:]]Prediction/models/*.pkl filter=lfs diff=lfs merge=lfs -text
+main/engine/models/**/*.safetensors filter=lfs diff=lfs merge=lfs -text
+main/engine/models/*.arpa.gz filter=lfs diff=lfs merge=lfs -text
+main/engine/models/*.pkl filter=lfs diff=lfs merge=lfs -text
 # Launcher shims keep their own line endings on every checkout.
 clarte text eol=lf
 clarte.cmd text eol=crlf

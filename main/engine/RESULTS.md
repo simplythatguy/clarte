@@ -341,7 +341,7 @@ engine changes, recorded in `bench/decision.tsv` (h3.adversarial).
 
 ## Commands
 
-All from `prototypes/Word Prediction/v1` with `PY=.venv/bin/python`:
+All from `main/engine/v1` with `PY=.venv/bin/python`:
 
 ```sh
 $PY build_lexicon.py                                                   # data/lexicon.tsv.gz
@@ -737,7 +737,7 @@ neural rule); a second commit or any mention puts it first (adversarial `commit-
 
 ## Commands (round 2)
 
-All from `prototypes/Word Prediction/v1` with `PY=.venv/bin/python` (install: README.md):
+All from `main/engine/v1` with `PY=.venv/bin/python` (install: README.md):
 
 ```sh
 $PY fetch_models.py                                                      # Qwen2.5-1.5B into models/ (gitignored, 3.1 GB)

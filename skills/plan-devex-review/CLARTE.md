@@ -8,7 +8,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 | Surface | Product type |
 | --- | --- |
-| The prediction engine (`prototypes/Word Prediction`): `/api/v1/predict` (CONTRACT.md), the `/api/predict` compatibility route and the `wordpred` package it builds on | Library/SDK and API |
+| The prediction engine (`main/engine`): `/api/v1/predict` (CONTRACT.md), the `/api/predict` compatibility route and the `wordpred` package it builds on | Library/SDK and API |
 | The voice service HTTP API (`/voices`, `/voices/{id}/speak`, …) | API/Service |
 | `node prototypes/UI/v0/s_all/serve.mjs`, each prototype's run steps, `npm run test:sessions` | CLI Tool and Documentation |
 | `skills/`, the `CLARTE.md` overlays, `scripts/validate.py` | Claude Code Skill |

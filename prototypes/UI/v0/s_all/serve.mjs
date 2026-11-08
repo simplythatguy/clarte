@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Serves the S0–S7V preview on http://localhost:5100 (PORT overrides it). Starts any of the seven
 // style dev servers (s1–s7 on the seven ports after it, 5101–5107 by default) and the local
-// prediction engine (`prototypes/Word Prediction`: S6, and S0 through its compatibility route) when
+// prediction engine (`main/engine`: S6, and S0 through its compatibility route) when
 // they are not already running.
 //
 // The engine is found by its health, not by an open port: `GET /api/v1/health` must answer
@@ -75,7 +75,7 @@ if (isMain) {
     children.push(child);
     console.log(`s${n}: starting on ${port}`);
   }
-  const ENGINE = join(ROOT, '../../Word Prediction');
+  const ENGINE = join(ROOT, '../../../main/engine');
   const PYTHON = join(ENGINE, WINDOWS ? '.venv/Scripts/python.exe' : '.venv/bin/python');
   /** What `/engine.json` tells the styles: where the engine is (or will be once it has warmed). */
   const engine = { origin: null, started: false };
@@ -89,7 +89,7 @@ if (isMain) {
       console.log(`prediction engine: starting on ${port} (about 30 s); S0 shows "Engine offline" and S6 decodes locally until it is up`);
     } else {
       engine.origin = null;
-      console.log(`prediction engine not set up (no ${PYTHON}): S0 will show "Engine offline" and S6 decodes locally. See prototypes/Word Prediction/README.md`);
+      console.log(`prediction engine not set up (no ${PYTHON}): S0 will show "Engine offline" and S6 decodes locally. See main/engine/README.md`);
     }
   } catch (error) {
     console.log(`${error.message}; S6 decodes locally`);

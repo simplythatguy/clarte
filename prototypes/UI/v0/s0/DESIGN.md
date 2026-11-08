@@ -41,10 +41,10 @@ Known limit: pastel faces against the canvas are 1.06:1, so a target's edge is f
 
 `clarte-light-live.html` is the same screen wired to the real word-prediction engine, for trying the direction with real decoding (2026-11-07, at the owner's request). Visuals and the quadrant map are unchanged except that the group tiles follow the owner's later decision and print their letters as the primary label instead of a range.
 
-Start the engine (the ported prototype, no API keys; set it up once as `prototypes/Word Prediction/README.md` describes; it loads in about 25 s and prints `Serving http://127.0.0.1:8765`). `node prototypes/UI/v0/s_all/serve.mjs` starts it for you, or run it alone:
+Start the engine (the ported prototype, no API keys; set it up once as `main/engine/README.md` describes; it loads in about 25 s and prints `Serving http://127.0.0.1:8765`). `node prototypes/UI/v0/s_all/serve.mjs` starts it for you, or run it alone:
 
 ```sh
-cd 'prototypes/Word Prediction'
+cd 'main/engine'
 .venv/bin/python server.py --port 8765   # Windows: .venv\Scripts\python server.py --port 8765
 ```
 

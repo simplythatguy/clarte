@@ -34,9 +34,9 @@ session recordings, voice material or partner transcripts into this harness.
 Run from the repository root:
 
 ```powershell
-python 'prototypes/Word Prediction/v0/bench/run.py' --vocabulary PATH --split dev --output .scratch/prediction-dev.json
+python 'main/engine/v0/bench/run.py' --vocabulary PATH --split dev --output .scratch/prediction-dev.json
 # Explicit opt-in, using one of the two verified configurations:
-python 'prototypes/Word Prediction/v0/bench/run.py' --vocabulary PATH --split dev --claude-model MODEL --output .scratch/prediction-claude-dev.json
+python 'main/engine/v0/bench/run.py' --vocabulary PATH --split dev --claude-model MODEL --output .scratch/prediction-claude-dev.json
 ```
 
 `MODEL` must be `claude-haiku-5-5` or `claude-sonnet-5-5`. Other model names are
