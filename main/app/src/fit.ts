@@ -28,10 +28,12 @@ function overflows(card: HTMLElement): boolean {
   const width = card.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   const height = card.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   if (texts(card).some((el) => el.scrollWidth > width + 1)) return true;
-  const kids = [...card.children].filter((k) => (k as HTMLElement).offsetHeight > 0 && getComputedStyle(k).position !== 'absolute') as HTMLElement[];
-  const gap = parseFloat(cs.rowGap) || 0;
-  const used = kids.reduce((sum, k) => sum + k.offsetHeight, 0) + gap * Math.max(0, kids.length - 1);
-  return used > height + 1;
+  // The words sit in the card's middle row (styles.css); when they outgrow it they slide down, so
+  // the content overflows when the words' box runs past the card's padding at the bottom.
+  const body = card.querySelector<HTMLElement>(':scope > .card-body');
+  if (!body) return false;
+  const bottom = card.getBoundingClientRect().top + card.clientTop + card.clientHeight - parseFloat(cs.paddingBottom);
+  return body.getBoundingClientRect().bottom > bottom + 1 || body.offsetHeight > height + 1;
 }
 
 function fitOne(card: HTMLElement): void {
