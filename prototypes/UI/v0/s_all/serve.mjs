@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Serves the S0–S6 preview on http://localhost:5100 (PORT overrides it). Starts any of the six
-// style dev servers (s1–s6 on the six ports after it, 5101–5106 by default) and the local
+// Serves the S0–S8 preview on http://localhost:5100 (PORT overrides it). Starts any of the eight
+// style dev servers (s1–s8 on the eight ports after it, 5101–5108 by default) and the local
 // prediction engine that are not already running: the v1 engine (S6, and S0 through its
 // compatibility route) when `Word Prediction/v1/server.py` exists, else v0.
 //
@@ -67,7 +67,7 @@ process.on('SIGINT', stop); process.on('SIGTERM', stop);
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
-  for (let n = 1; n <= 6; n++) {
+  for (let n = 1; n <= 8; n++) {
     const port = PORT + n;
     if (await listening(port)) { console.log(`s${n}: already running on ${port}`); continue; }
     // npm is npm.cmd on Windows, which Node can only start through a shell.

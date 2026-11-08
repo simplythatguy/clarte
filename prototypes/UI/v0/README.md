@@ -71,6 +71,7 @@ Controls named in the first prototype idea: **R1/R2** (Record → Respond mode b
 | `composer.ts` | The message model: committed words, pending groups, candidate index, and the reducer for group / accept / next / delete / clear / phrase |
 | `speech.ts` | Listening (Web Speech API in Chrome, scripted fallback elsewhere) and speaking (speech synthesis) |
 | `overlay.ts` | Developer overlay and live actionable tracking |
+| `sound.ts` | The sound system: calm, generated cues in one key, with levels, volume and ducking under the voice ([SOUND.md](SOUND.md)) |
 | `selftest.ts` | Headless checks, run with Node |
 
 The shared folder is owned by the v0 brief, not by any one style. A style that needs a change proposes it in its report rather than editing `shared/`.
@@ -86,7 +87,9 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 | `s4/` | Split: a 2×2 letter keypad on the left, controls top-right, text bottom-right | Q7, Q8 | 5104 |
 | `s5/` | Dialogue: the conversation as a thread, whole-reply predictions from the partner's words | Q2, Q3 | 5105 |
 | `s6/` | Orb: the owner's 2026-11-07 concept on style 5's grid, with the always-on word and always-on listening. A white page, frosted glass cards that turn white as they are looked at, and a light-orange orb in the Q2–Q3 rest zone that holds the message and reacts to the conversation. Q1 is always the engine's word (the next word, or the completion while typing; Stop while speaking); Q4 is whatever is most needed now (the second word of a branch, Delete, Done, Say again or Menu), and Done opens a page with Speak in the same spot and Other words, a chooser of every exact-length word for the last word's code, four a page. The microphone runs whenever the device is not speaking. Finds the prediction engine (`Word Prediction/v1`) by its health on 8765 or the ports after it (or `?engine=`), decodes locally until it answers, and survives the engine being slow, broken or killed (`s6/scripts/hostile.mjs`). The type is Atkinson Hyperlegible Next | Q2, Q3 | 5106 |
-| `s_all/` | Preview of all seven: one page with a vertical S0–S6 switcher at the top right | — | 5100 |
+| `s7/` | Cloud: a copy of style 6 (v1 stays as it was). The orb with a hand-drawn face lives in the blank middle and leaves whenever text appears there: the face erases itself and the orb fades, then both return when the text is gone. It has 18 reactions to what is said, plus faces for at rest and listening, and two palettes: Soft (style 6) and Vibrant (solid letter cards with white letters). `s_all` shows it as S7 (soft) and S7V (vibrant) | Q2, Q3 | 5107 |
+| `s8/` | Cloud, second pass: a copy of style 7 (v2 stays as it was) whose Cloud stays (green and livelier) while Clarte speaks. The menu drops One moment and Phrases, and there is no dark theme. Cards keep style 6 and 7's sizes. `s_all` shows it as S8 (soft) and S8V (vibrant) | Q2, Q3 | 5108 |
+| `s_all/` | Preview of every style: one page with a vertical S0–S8V switcher at the top right | — | 5100 |
 
 Run everything with one command from the repository root: `./clarte ui` (Windows: `clarte ui`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
 
@@ -94,11 +97,15 @@ Run everything with one command from the repository root: `./clarte ui` (Windows
 node prototypes/UI/v0/s_all/serve.mjs
 ```
 
-The engine is `prototypes/Word Prediction/v1` (the always-on contract in its `CONTRACT.md`; `s_all` starts it when its `server.py` exists, else the v0 prototype). Both reuse v0's `.venv`, native build and models: set them up once, as the v0 README describes. `s_all` checks `GET /api/v1/health` rather than the port: if 8765 is held by something else it starts the engine on the next free port and tells S6 through `/engine.json` (S0 still expects 8765). Until the engine is up, S0 shows "Engine offline" and S6 decodes with its local fallback (`s6/src/lexicon.json` and `s6/src/bigrams.json`, generated from the engine's vocabulary and 4-gram by `s6/scripts/build-lexicon.mjs` and `build-bigrams.mjs`), switching to the engine as soon as it answers. Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the five ports after it.
+The engine is `prototypes/Word Prediction/v1` (the always-on contract in its `CONTRACT.md`; `s_all` starts it when its `server.py` exists, else the v0 prototype). Both reuse v0's `.venv`, native build and models: set them up once, as the v0 README describes. `s_all` checks `GET /api/v1/health` rather than the port: if 8765 is held by something else it starts the engine on the next free port and tells S6 through `/engine.json` (S0 still expects 8765). Until the engine is up, S0 shows "Engine offline" and S6 decodes with its local fallback (`s6/src/lexicon.json` and `s6/src/bigrams.json`, generated from the engine's vocabulary and 4-gram by `s6/scripts/build-lexicon.mjs` and `build-bigrams.mjs`), switching to the engine as soon as it answers. Engine errors print in this terminal. `PORT` moves the switcher (default 5100); the styles then take the eight ports after it.
 
-Then open http://localhost:5100. Each of `s1`–`s6` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
+Then open http://localhost:5100. Each of `s1`–`s8` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
 
 **Onboarding is out of scope for v0.** The product keeps the calibration and onboarding flow from `prototypes/Eye Tracking`. The styles still contain the simulated calibration they were built with, but `?onboarding=off` opens any of them straight into the app, and `s_all` always loads them that way.
+
+## Sound
+
+[SOUND.md](SOUND.md) holds the sound rules, the cue map and the measurements. Style 8 plays the cues; its dev server also serves a listening page with every cue side by side at http://localhost:5108/sounds.html.
 
 ## Reference material
 

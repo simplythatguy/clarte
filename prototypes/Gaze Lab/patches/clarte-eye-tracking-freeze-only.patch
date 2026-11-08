@@ -1,0 +1,66 @@
+Clarte eye tracking: freeze the pose input weights during calibration (prototypes/Eye Tracking)
+==============================================================================================
+
+Freeze-only subset of gaze-lab/patches/clarte-eye-tracking-fixes.patch (the WebEyeTrack.ts hunks, unchanged), for Clarte
+commit b7b8f98f169f71a7c87e31d71cade3df06c6b3af; vendor/webeyetrack/local/WebEyeTrack.ts is unchanged on origin/main since.
+Review material only; nothing has been applied anywhere. From the Clarte repo root:
+  git apply --check gaze-lab/patches/clarte-eye-tracking-freeze-only.patch
+
+What it changes: in WebEyeTrack.adapt(), the gradient of the first Dense layer's kernel rows 512-517 (the head-vector and
+face-origin inputs) is zeroed at every Adam step (tf.variableGrads + masked applyGradients); loss, optimizer, hold-out and
+early stopping are otherwise as shipped. With 42 labels at one pose those inputs are constant, so unfrozen they act as a
+free bias and the pretrained head-movement compensation is lost to whatever the training trajectory does.
+
+Why this subset: the matrix-layout correction in the full patch made the shipped (pretrained) network WORSE on both recorded
+sessions (pooled +14 px [+5, +23] and +21 px [+10, +32]; translation and head-turn blocks), so it should not ship with the
+current weights. No MODEL_VERSION bump is needed for this subset: the head vector is unchanged; existing saved calibrations
+keep working (they were trained without the freeze and keep their own weights until the person recalibrates).
+
+Measured (one tester, gaze-lab): live session 2, frozen head from session 1 vs fresh shipped calibration on the same frames:
+10 cm slide left 14.0 cm -> 2.4 cm median error, right 10.7 -> 3.2 cm. Video replay of both sessions with the fix vs without
+(paired per dot, 95 % bootstrap): session 2 pooled -127 px [-161, -92], 88/111 dots better, no block worse; session 1 pooled
+-0.3 px [-2, +1] (that calibration happened not to drift). Details: gaze-lab/REPLAY-FIXES-REPORT.md, EYE-TRACKING-PLAN.md.
+Regenerate vendor/webeyetrack/LOCAL-ADAPTATIONS.patch and the source fingerprint after applying (repo convention).
+
+--- "a/prototypes/Eye Tracking/vendor/webeyetrack/local/WebEyeTrack.ts"
++++ "b/prototypes/Eye Tracking/vendor/webeyetrack/local/WebEyeTrack.ts"
+@@ -187,6 +187,13 @@
+     const variables = this.blazeGaze.trainableVariables();
+     const initial = variables.map(v => v.clone());
+     let bestWeights: tf.Tensor[] = [];
++    // The first Dense layer's kernel rows 512-517 multiply the head vector and face origin. With 42 labels taken at one
++    // pose those inputs are constants, so Adam drifts the rows to fit the labels and the pretrained pose compensation
++    // is lost. Their gradient is zeroed at every step; everything else trains as before.
++    const poseKernel = variables.find(v => v.shape.length === 2 && v.shape[0] === 518);
++    if (!poseKernel) throw new Error('First Dense kernel [518, n] not found among the trainable variables');
++    const poseCols = poseKernel.shape[1] ?? 0;
++    const poseMask = tf.tidy(() => tf.concat([tf.ones([512, poseCols]), tf.zeros([6, poseCols])], 0));
+     const opt = tf.train.adam(training.lr, 0.85, 0.9, 1e-8);
+     const predictHead = (rows: number[] | null) => tf.tidy(() => {
+       const pick = (t: tf.Tensor) => rows ? tf.gather(t, rows) : t;
+@@ -222,11 +229,14 @@
+       let best = before, bestStep = 0, since = 0, stepsUsed = 0;
+       bestWeights = variables.map(v => v.clone());
+       for (let step = 1; step <= training.steps; step++) {
+-        const loss = opt.minimize(() => tf.tidy(() => {
++        const { value: loss, grads } = tf.variableGrads(() => tf.tidy(() => {
+           const prediction = applyAffineMatrix(A, predictHead(trainRows));
+           const fit = tf.losses.meanSquaredError(trainLabels, prediction).asScalar();
+           return training.l2 > 0 ? fit.add(tf.addN(variables.map((v, i) => v.sub(initial[i]).square().sum())).mul(training.l2)).asScalar() : fit;
+-        }), true, variables);
++        }), variables);
++        const g = grads[poseKernel.name]; grads[poseKernel.name] = g.mul(poseMask); g.dispose();
++        opt.applyGradients(variables.map(v => ({ name: v.name, tensor: grads[v.name] })));
++        tf.dispose(grads);
+         if (!loss) throw new Error('Calibration training did not produce a loss');
+         try { if (!(await loss.data()).every(Number.isFinite)) throw new Error('Calibration training diverged'); }
+         finally { loss.dispose(); }
+@@ -250,7 +260,7 @@
+       this.latestGazeResult = null;
+     } finally {
+       tf.dispose([supportX.eyePatches, supportX.headVectors, supportX.faceOrigins3D, supportY, features, initial, bestWeights]);
+-      opt.dispose();
++      opt.dispose(); poseMask.dispose();
+     }
+   }
+ 

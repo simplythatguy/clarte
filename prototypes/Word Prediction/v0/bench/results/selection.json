@@ -1,0 +1,4 @@
+{
+  "workflow": "claude-hybrid",
+  "criterion": "Equal-weight macro top2 across next/prefix2/full; errors then local break ties; chosen before test"
+}

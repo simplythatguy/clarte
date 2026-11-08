@@ -1,0 +1,40 @@
+{
+  "name": "gaze-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local test harness for the Clarte eye-tracking pipeline: calibrate once, validate under head/body/camera shifts, record everything locally.",
+  "scripts": {
+    "build:vendor": "node scripts/build-vendor.mjs",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "build": "npm run build:vendor && npm run typecheck && vite build",
+    "start": "node server.mjs",
+    "dev": "vite --host 127.0.0.1 --port 4332 --strictPort",
+    "test": "vitest run tests",
+    "test:parity": "node scripts/parity.mjs",
+    "test:e2e": "node scripts/e2e.mjs",
+    "test:e2e:simple": "node scripts/e2e-simple.mjs",
+    "test:e2e:free": "node scripts/e2e-simple.mjs --test=free",
+    "test:replay": "node scripts/replay-check.mjs",
+    "fixture": "node scripts/make-fixture.mjs",
+    "analyze": ".venv/bin/python -I analysis/analyze.py",
+    "test:fixes": "node scripts/fixes-check.mjs",
+    "replay": "node scripts/replay-blocks.mjs",
+    "patch:fixes": "node scripts/make-fixes-patch.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.18",
+    "@tensorflow/tfjs": "4.22.0",
+    "ml-matrix": "6.12.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.64.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -18,11 +18,11 @@ def complete_with(predictor, history, message, groups):
         return {'word': '', 'probability': 0.0, 'alternatives': []}
     word, probability = matches[0]
     return {'word': word, 'probability': probability,
-            'alternatives': [{'word': w, 'probability': p} for w, p in matches[1:4]]}
+            'alternatives': [{'word': w, 'probability': p} for w, p in matches[1:2]]}
 
 
 def complete(history, message, groups):
-    """Return the most probable matching word, its conditional mass, and up to 3 alternatives."""
+    """Return the most probable matching word, its conditional mass, and one alternative."""
     global _predictor
     if _predictor is None:
         _predictor = Predictor(model=os.environ.get('WORDPRED_MODEL', 'deployable'))

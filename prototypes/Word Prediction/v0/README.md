@@ -106,23 +106,25 @@ position. A predictor instance is serial; use one per worker, or serialize
 calls. The stdlib server processes requests serially.
 
 `predict(history, message, groups)` returns `likely`, `choose`, `short`, `ghost`,
-and `candidates`, with the same ordering as research `ui/server.py`:
+and `candidates`, using the two-choice product contract:
 
-- `likely`: up to 12 matches in decreasing context probability, with stable ties.
-- `choose`: the highest-probability guess, then exact keyed-length words, then
-  longer completions, from the original top-200 probability shortlist; at most 12.
-- `short`: up to 8 matches with keyed length from `max(typed,1)` through
+- `likely`: up to two matches in decreasing context probability, with stable ties.
+- `choose`: the same two best matches as `likely`, in the same order.
+- `short`: the subset of the two best matches with keyed length from `max(typed,1)` through
   `max(typed,1)+2`.
-- `ghost`: the optimal composer's first item, or `""` if there are no matches.
-- `candidates`: the optimal composer's ranked words, up to 12.
+- `ghost`: the first probability-ranked match, or `""` if there are no matches.
+- `candidates`: the same two best matches as `likely`.
 
-`likely[0]` and `ghost` can differ. The composer minimizes modeled future
-selections; its ghost is not necessarily the most probable completion. Earlier
-ghosts remain accessible in the chooser (`exclude_accepted=false`).
+The HTTP-facing view uses probability ranking consistently and does not run the
+native optimal composer. The research `rank(context, groups)` API is unchanged:
+it minimizes modeled future selections and can differ from `likely[0]`.
 `matching_probabilities(context, groups)` exposes decreasing `(word, probability)`
 pairs normalized over **all** vocabulary words with that prefix, for the sibling
 Autocomplete API. With no groups it returns next-word probabilities.
 The optional noisy ring-slip adapter is not included in this port.
+See [bench/README.md](bench/README.md) for the new two-choice evaluation protocol.
+The synthetic benchmark can explicitly call Claude; the application runtime
+continues to run locally and does not read API keys or send conversations remotely.
 
 ## HTTP API
 
