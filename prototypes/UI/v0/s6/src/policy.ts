@@ -32,7 +32,9 @@ export type PrimaryFn =
   | { kind: 'word'; word: string; display?: string; rank: number; complete: boolean; slip?: boolean }
   /** Groups are pending and nothing fits them, not even one digit off. */
   | { kind: 'no-match' }
-  /** Several whole words fit the typed groups: open them in Q5–Q8 rather than guess (conflict.ts `optionsFor`). */
+  /** No dictionary word fits the typed groups and none is one slip away: spell the word letter by letter (spell.ts). */
+  | { kind: 'spell' }
+  /** Several whole words fit the typed groups: open them in Q5–Q7 rather than guess (conflict.ts `optionsFor`). */
   | { kind: 'options' }
   | { kind: 'stop-speaking' };
 
@@ -83,6 +85,9 @@ export function primaryFor(state: State, prediction: Prediction): PrimaryFn {
     return fn;
   }
   const alt = prediction.fallback;
+  // Only a one-slip correction is offered as a word: a word for a shorter prefix ("Private" for the
+  // 20 groups of polyphiloprogenitive) is not what was typed, so the person spells it instead.
+  if (state.composition.pending.length && alt?.kind !== 'corrected') return prediction.provisional ? { kind: 'no-match' } : { kind: 'spell' };
   if (alt && state.composition.pending.length) {
     const fn: PrimaryFn = { kind: 'word', word: alt.word, rank: 0, complete: false, slip: true };
     if (alt.display) fn.display = alt.display;

@@ -126,6 +126,7 @@ const look = () => evaluate(() => {
     live: s.live.kind,
     down: window.clarteDebug.engineDown(),
     source: window.clarteDebug.prediction().source,
+    provisional: Boolean(window.clarteDebug.prediction().provisional),
     violations: window.clarteDebug.validate(),
     badText: (bodyText.match(/\b(error|loading|offline|undefined|NaN|null)\b/gi) ?? []).slice(0, 3),
     nowClipped: Boolean(nowText && now && nowText.scrollWidth > now.clientWidth + 1),
@@ -139,7 +140,8 @@ function problem(detail) { current.problems.push(detail); }
 async function sane(label = '') {
   const v = await look();
   const where = label ? `${label}: ` : '';
-  if (v.screen === 'talk' && v.live !== 'speaking' && (!v.q1 || v.q1 === 'No word')) problem(`${where}Q1 shows "${v.q1}"`);
+  // "No word" is allowed only while a healthy engine is still answering (the local decoder's no-match is provisional).
+  if (v.screen === 'talk' && v.live !== 'speaking' && (!v.q1 || (v.q1 === 'No word' && !v.provisional))) problem(`${where}Q1 shows "${v.q1}"${v.provisional ? '' : ' (final)'}`);
   if (v.badText.length) problem(`${where}text on screen: ${v.badText.join(', ')}`);
   for (const c of v.cards) {
     if (!c.text) problem(`${where}card ${c.action} is blank`);
@@ -237,7 +239,7 @@ await run('3 thirty groups that match nothing, then Delete past empty', async ()
 await run('4 very long words in Q1, Q4, the message and the chooser', async () => {
   await fresh();
   await type('antidisestablishmentarianism', 15);
-  await sleep(500);
+  await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 6000); await sleep(150);
   let v = await sane('28 groups');
   note(`Q1 for antidisestablishmentarianism: "${v.q1}" (${v.source})`);
   await shot('04a-long-word-typing');
@@ -245,7 +247,7 @@ await run('4 very long words in Q1, Q4, the message and the chooser', async () =
   const got = [];
   for (const w of ['uncomfortable', 'responsibilities', 'congratulations']) {
     await type(w, 15);
-    await sleep(350);
+    await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 6000); await sleep(150);
     const t = await sane(`typing ${w}`);
     got.push(`${w} → "${t.q1}"`);
     await press('1', 150);
@@ -814,14 +816,14 @@ await run('27 type floor: a 22-letter word is never below 20 px on Q1, in the me
   for (const [w, h] of [[1440, 900], [1280, 720]]) {
     await fresh(); await page.setViewportSize({ width: w, height: h }); await rest();
     await heard('What was the longest word you learned at school?'); await settle();
-    await type('electroencephalography', 15); await sleep(400);
+    await type('electroencephalography', 15); await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 6000); await sleep(150);
     let a = await audit();
     const q1Size = await evaluate(() => parseFloat(getComputedStyle(document.querySelector('.cell-q1 .card-swap:not(.card-leaving) .card-label')).fontSize));
     if (q1Size < 20) problem(`${w}x${h}: Q1 label at ${q1Size.toFixed(1)}px`);
     if (a.small.length) problem(`${w}x${h} typing: ${a.small.join(', ')}`);
     if (a.clipped.length) problem(`${w}x${h} typing: clipped ${a.clipped.join(', ')}`);
     await press('1', 150);
-    for (const word of ['uncomfortable', 'physiotherapist']) { await type(word, 15); await sleep(300); await press('1', 150); }
+    for (const word of ['uncomfortable', 'physiotherapist']) { await type(word, 15); await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 6000); await sleep(150); await press('1', 150); }
     await press('4', 400); await press('7', 500); // Other words for physiotherapist
     a = await audit();
     if (a.small.length) problem(`${w}x${h} chooser: ${a.small.join(', ')}`);
@@ -1031,6 +1033,46 @@ await run('34 a whole-word rival further down the list still opens Options ("the
   const v = await look();
   if (v.words.join(' ') !== 'the hero') problem(`message is "${v.words.join(' ')}"`);
   note(`Q1 "${q1}"; options ${page1.join(', ')}; message "${v.words.join(' ')}"`);
+  await sane();
+});
+
+await run('35 a word no dictionary has: Q1 offers Spell, and the letters spell it (a made-up word each run)', async () => {
+  await fresh(); await rest();
+  // A new pronounceable word each run: the engine learns a spelled word, so a fixed one would come back as a prediction.
+  const syl = ['bra', 'cor', 'vel', 'nith', 'quo', 'zar', 'pel', 'drim', 'ost', 'wex', 'lun', 'tiv'];
+  const word = Array.from({ length: 5 }, () => syl[Math.floor(Math.random() * syl.length)]).join('');
+  await type(word, 100); await settle();
+  const q1 = await labelOf('.cell-q1');
+  if (q1 !== 'Spell') problem(`after "${word}" Q1 reads "${q1}", not Spell`);
+  await shot('35a-spell-in-q1');
+  await press('1', 300);
+  let looks = 1;
+  for (let i = 0; i < word.length; i++) {
+    let found = false;
+    for (let tries = 0; tries < 4 && !found; tries++) {
+      const shown = await evaluate(() => [5, 6, 7].map((q) => document.querySelector(`.cell-q${q} .card-swap:not(.card-leaving) .card-label`)?.textContent?.trim().toLowerCase() ?? ''));
+      const at = shown.indexOf(word[i]);
+      if (i === 3 && tries === 0) await shot('35b-spelling');
+      if (at >= 0) { await press(String(5 + at), 120); found = true; } else await press('8', 120);
+      looks++;
+    }
+    if (!found) { problem(`letter ${i + 1} ("${word[i]}") was not offered`); break; }
+  }
+  await settle();
+  const v = await look();
+  if (v.words.join(' ') !== word || v.screen !== 'talk') problem(`after spelling: message "${v.words.join(' ')}" on ${v.screen}`);
+  // Back from Spell keeps the groups; Delete removes the last letter.
+  await type('zq', 100); await settle();
+  if ((await labelOf('.cell-q1')) === 'Spell') {
+    await press('1', 300); await press('5', 150);
+    const one = await evaluate(() => window.clarteDebug.state().screen);
+    await press('4', 200);
+    const none = await evaluate(() => window.clarteDebug.state().screen);
+    if (one.letters?.length !== 1 || none.letters !== '') problem(`Delete in Spell: ${JSON.stringify(one)} → ${JSON.stringify(none)}`);
+    await press('1', 300);
+    if ((await look()).pending !== 2) problem('Back from Spell lost the typed groups');
+  }
+  note(`"${word}" spelled in ${looks} looks for ${word.length} letters`);
   await sane();
 });
 

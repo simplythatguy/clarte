@@ -42,7 +42,8 @@ import { primaryKey, secondaryKey, type PrimaryFn, type SecondaryFn } from './po
 import type { Conflict } from './conflict.ts';
 import { Tile, type SlotName, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
-import { TITLES, doneSlots, menuSlots, nextValue, otherSlots, type SettingKey } from './Menu.tsx';
+import { TITLES, doneSlots, menuSlots, nextValue, otherSlots, spellSlots, type SettingKey } from './Menu.tsx';
+import { rankLetters } from './spell.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { hearPartner, nextScript, playScript, resetScript, speakWords, wordsOf, type OnHeard, type PartnerSession, type Speech } from './voice.ts';
@@ -54,7 +55,7 @@ import { Orb, type OrbMood } from './Orb.tsx';
 import { Branch } from './Branch.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { commit, discover, engineDown, engineOrigin, fetchPrediction, keyOf, peek, seed, setEngine, subscribe, type PredictRequest, type Prediction } from './prediction.ts';
-import { Again, ArrowRight, Check, Ellipsis, Erase, MenuLines, StopSquare } from './icons.tsx';
+import { Again, ArrowRight, Check, Ellipsis, Erase, MenuLines, StopSquare, TextSize } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
 const STORE = 'clarte.style6.v2';
@@ -219,6 +220,7 @@ function primaryFace(fn: PrimaryFn, index: number): CardFace {
     case 'word': return { icon: <Check />, label: <WordLabel word={fn.word} display={fn.display} index={index} /> };
     case 'no-match': return { icon: <Check />, label: 'No word' };
     case 'options': return { icon: <Ellipsis />, label: 'Options' };
+    case 'spell': return { icon: <TextSize />, label: 'Spell' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
   }
 }
@@ -396,7 +398,7 @@ export function App() {
   // and restarted after). Nothing stops it on a timer. `micLive` feeds the state pill.
   const [micLive, setMicLive] = useState(false);
   const speaking = live.kind === 'speaking';
-  const conversing = screen.kind === 'talk' || screen.kind === 'done' || screen.kind === 'other' || screen.kind === 'menu';
+  const conversing = screen.kind === 'talk' || screen.kind === 'done' || screen.kind === 'other' || screen.kind === 'spell' || screen.kind === 'menu';
   const micWanted = settings.partner === 'microphone' && conversing && !speaking;
   useEffect(() => {
     if (!micWanted) return;
@@ -464,6 +466,7 @@ export function App() {
       case 'word': accept(fn.word, fn.rank, fn.display); return;
       case 'no-match': return;
       case 'options': dispatch({ type: 'screen', screen: { kind: 'other', page: 0, pending: true } }); play('control'); return;
+      case 'spell': dispatch({ type: 'screen', screen: { kind: 'spell', letters: '', page: 0 } }); play('control'); return;
       case 'stop-speaking': stopSpeakingNow(); return;
     }
   }, [accept, stopSpeakingNow]);
@@ -555,6 +558,23 @@ export function App() {
         const rank = s.screen.page * CHOOSER_PAGE + i;
         if (words[i] && pending) { accept(words[i].text, rank, words[i].display); dispatch({ type: 'screen', screen: { kind: 'talk' } }); resync('primary'); }
         else if (words[i]) replaceWord(words[i], rank);
+      }
+      return;
+    }
+    if (s.screen.kind === 'spell') {
+      const { letters, page } = s.screen;
+      const pending = s.composition.pending;
+      const ranked = rankLetters(letters, pending);
+      const pages = Math.max(1, Math.ceil(ranked.length / CHOOSER_PAGE));
+      if (action === 'back') { go({ kind: 'talk' }); resync('primary'); }
+      else if (action === 'delete-letter') { dispatch({ type: 'screen', screen: { kind: 'spell', letters: letters.slice(0, -1), page: 0 } }); play('delete'); }
+      else if (action === 'more' && page + 1 < pages) go({ kind: 'spell', letters, page: page + 1 });
+      else if (/^letter-[0-2]$/.test(action)) {
+        const letter = ranked[page * CHOOSER_PAGE + Number(action.slice(-1))];
+        if (!letter) return;
+        const word = letters + letter;
+        if (word.length < pending.length) { dispatch({ type: 'screen', screen: { kind: 'spell', letters: word, page: 0 } }); play('commit'); }
+        else { accept(word, 0); dispatch({ type: 'screen', screen: { kind: 'talk' } }); resync('primary'); }
       }
       return;
     }
@@ -679,7 +699,8 @@ export function App() {
     : null;
   // The word in progress draws the shown word's letters (in its written form), so the glyphs and the
   // card agree. With nothing typed the next word stays on its card only: the message shows what was said, not a guess.
-  const candidate = state.composition.pending.length && primary.value.fn.kind === 'word' ? primary.value.fn.display ?? primary.value.fn.word : null;
+  const candidate = screen.kind === 'spell' ? screen.letters || null
+    : state.composition.pending.length && primary.value.fn.kind === 'word' ? primary.value.fn.display ?? primary.value.fn.word : null;
   const thread = (shown: StateName | null, marked = false) => <Thread state={shown} turns={state.turns} live={live} hearing={state.hearing} composition={state.composition} candidate={candidate} marked={marked} wordColours={settings.wordColours} />;
 
   let slotViews: Slots;
@@ -708,6 +729,14 @@ export function App() {
     slotViews = doneSlots();
     restKey = 'thread';
     boardKey = 'done';
+    rest = thread(status);
+  } else if (screen.kind === 'spell') {
+    // The word being spelled stays in the message: its chosen letters, then a dot per group still to spell.
+    const ranked = rankLetters(screen.letters, state.composition.pending);
+    const pages = Math.max(1, Math.ceil(ranked.length / CHOOSER_PAGE));
+    slotViews = spellSlots(ranked.slice(screen.page * CHOOSER_PAGE, (screen.page + 1) * CHOOSER_PAGE), screen.page, pages, screen.letters.length > 0);
+    restKey = 'thread';
+    boardKey = `spell-${screen.letters.length}-${screen.page}`;
     rest = thread(status);
   } else if (screen.kind === 'other') {
     // The message stays, with the word about to give way marked as the selected object.
@@ -738,7 +767,7 @@ export function App() {
   }
 
   // The orb takes the conversation's state as its mood, and pulses on each word heard or spoken.
-  const mood: OrbMood = screen.kind !== 'talk' && screen.kind !== 'done' && screen.kind !== 'other' ? 'idle' : status ?? 'idle';
+  const mood: OrbMood = screen.kind !== 'talk' && screen.kind !== 'done' && screen.kind !== 'other' && screen.kind !== 'spell' ? 'idle' : status ?? 'idle';
   const pulse = speaking ? live.word + 1 : (state.hearing.match(/\S+/g)?.length ?? 0);
 
   return (

@@ -83,7 +83,7 @@ function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) 
   // Dots after the letters (groups typed past the word the screen can offer) may wrap; the letters never break.
   const dotted = glyphs.some((g) => g.letter === null);
   return (
-    <span className={`word in-progress${hasLetters ? '' : ' dots'}${hasLetters && dotted ? ' tail' : ''}`}>
+    <span className={`word in-progress${hasLetters ? '' : ' dots'}${hasLetters && dotted ? ' tail' : ''}${glyphs.length > 12 ? ' long' : ''}`}>
       <span className="sr-only">{hasLetters ? glyphs.map((g) => g.letter ?? '').join('') : `${glyphs.length} letters typed`}</span>
       {slots.map((g, i) => {
         const letter = g.letter === null ? null : first && i === 0 ? g.letter.toUpperCase() : g.letter;

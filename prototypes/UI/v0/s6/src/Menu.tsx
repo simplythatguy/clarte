@@ -153,3 +153,27 @@ export function otherSlots(words: Shown[], index: number, page: number, pages: n
   });
   return slots;
 }
+
+/**
+ * Spell (owner, 2026-11-08): one letter of the current group per card in Q5–Q7, best first, with the
+ * arrow in Q8 to the group's next letters; Q4 deletes the last letter chosen; Q1 Back leaves with the
+ * groups as typed.
+ */
+export function spellSlots(letters: string[], page: number, pages: number, canDelete: boolean): Slots {
+  const slots: Slots = { q1: item('back', 'Back', <Back />, 'ink') };
+  if (canDelete) slots.q4 = item('delete-letter', 'Delete', <Erase />);
+  letters.forEach((letter, i) => {
+    slots[WORD_SLOTS[i]] = {
+      action: `letter-${i}`, tone: 'surface', bodyKey: `letter:${letter}`, label: letter.toUpperCase(),
+      body: <span className="card-label is-word is-letter" style={{ ['--len' as string]: 1 }}>{letter.toUpperCase()}</span>,
+    };
+  });
+  if (page + 1 < pages) {
+    const at = `Page ${page + 1} of ${pages}`;
+    slots.q8 = {
+      action: 'more', tone: 'surface', label: `More letters, ${at}`, bodyKey: `more-letters:${page}`,
+      body: <><span className="card-label card-arrow" aria-hidden="true"><Next /></span><span className="card-hint">{at}</span></>,
+    };
+  }
+  return slots;
+}

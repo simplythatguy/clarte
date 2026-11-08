@@ -22,6 +22,7 @@ export const PHASES = [
   'done',
   'other-words',
   'composing-options',
+  'spell',
   'options',
   'other-words-few',
   'speaking',
@@ -121,6 +122,12 @@ export function seedFor(name: PhaseName, base: State): State {
       // Other words for "go" (code 23): the first page of four exact-length words, with More.
       const state: State = { ...talk, screen: { kind: 'other', page: 0 }, composition: message(['i', 'would', 'love', 'to', 'go']) };
       seed(chooserRequestOf(state, 0), { words: [['go', 0.5], ['no', 0.2], ['ho', 0.03], ['jo', 0.02]].map(([word, p]) => ({ word: word as string, p: p as number, complete: true })), total: 9, longer: 0, offset: 0, source: 'engine' });
+      return state;
+    }
+    case 'spell': {
+      // polyphiloprogenitive typed, nothing in the dictionary fits, five letters spelled so far.
+      const state: State = { ...talk, screen: { kind: 'spell', letters: 'polyp', page: 0 }, composition: typeGroupsOf(message([]), 'polyphiloprogenitive') };
+      seed(requestOf(state), { words: [], total: 0, longer: 0, offset: 0, source: 'engine' });
       return state;
     }
     case 'composing-options':

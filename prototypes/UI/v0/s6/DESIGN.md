@@ -124,6 +124,16 @@ The factor 3 was measured. Typing every prefix of all 1,256 vocabulary words, a 
 
 **Recovery.** Typing another group continues the word and the branch goes. Delete is not reachable during a branch. To undo, accept either word, then Done → Delete word, which reopens it with the next candidate. A screen-reader status line says "Two words fit: might or night."
 
+## Spell (`src/spell.ts`, owner 2026-11-08)
+
+A word no dictionary has cannot come from the groups alone: "polyphiloprogenitive" is in none of wordfreq, Webster's 2nd or the New Oxford American Dictionary, so the engine returned nothing and Q1 showed "Private" (the best word for a seven-group prefix) with thirteen dots. When nothing matches and nothing is one slip away, Q1 now reads **Spell**. Spell walks the typed groups letter by letter: Q5–Q7 the three likeliest letters of the current group, the arrow in Q8 for the rest of that group, Q4 Delete (the last letter), Q1 Back (the groups as typed). The message shows the letters chosen and a dot per group still to spell. The last letter accepts the word, and the engine learns it (`commit`), so the next time it is offered whole.
+
+Letters are ranked by a letter 4-gram over the stand-in lexicon's spellings (one count per word) with a two-letter look-ahead through the groups still to come. On 600 held-out words of six letters or more: 68% of letters first, 1.06 looks per letter; polyphiloprogenitive 22 looks for 20 letters, otorhinolaryngologist 25 for 21. A one-slip correction is still offered as a word.
+
+While a healthy engine is still answering, the local decoder's "nothing matches" is provisional (its lexicon is a fifth of the engine's): Q1 shows the unavailable "No word" until the engine answers, so Spell never opens for a word the engine knows. A local answer becomes final when the engine fails or is gone.
+
+A long word in progress stays on one line so the message fit steps its type down; past twelve groups its dots are drawn smaller, so fifty groups fit one line at the 20 px floor, and the line keeps room for the selection box's handles. Hostile case 35 spells a new made-up word each run.
+
 ## Exact length first (`src/policy.ts` `EXACT_FIRST`, owner 2026-11-08)
 
 While typing, Q1 prefers a word exactly as long as the groups typed over a longer completion when the whole word is at least a tenth as likely. The owner's case: "the" typed in full as the first word showed "What" (what 0.76, the 0.12, with no context to favour either). Completions still show while no whole word of that length is likely, so "w", "wh" still offer What. Replayed on the round-3 dev records: 2.9194 selections per word vs 2.9632 for completion first (1.5% fewer); showing only exact-length words, as first asked, would cost about 4.96, because no word could be finished early. Hostile case 33.

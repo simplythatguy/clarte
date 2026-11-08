@@ -14,6 +14,7 @@ import { conflictFor } from '../src/conflict.ts';
 import type { Prediction } from '../src/prediction.ts';
 import { canFollow, nextWordsOf, predictLocal } from '../src/local.ts';
 import { displayWord, sentenceOf } from '../src/text.ts';
+import { rankLetters } from '../src/spell.ts';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -49,9 +50,9 @@ check('Q1 while the partner is being heard: still the next word', primaryFor({ .
 check('Q1 typing: the completion', same(primaryFor({ ...talk, composition: typing(message(['i', 'would', 'love', 'to', 'go']), 'outs') }, COMPLETION), { kind: 'word', word: 'outside', rank: 0, complete: true }));
 check('Q1 reopened: the candidate at the engine offset carries its rank', primaryFor({ ...talk, composition: { ...message(['i']), pending: signatureOf('go'), candidateIndex: 2, reopened: true } }, { ...NEXT, offset: 2 }).kind === 'word'
   && (primaryFor({ ...talk, composition: { ...message(['i']), pending: signatureOf('go'), candidateIndex: 2, reopened: true } }, { ...NEXT, offset: 2 }) as { rank: number }).rank === 2);
-check('Q1 no match, nothing one digit off either: No word', same(primaryFor({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, NONE), { kind: 'no-match' }));
+check('Q1 no match, nothing one digit off either: Spell', same(primaryFor({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, NONE), { kind: 'spell' }));
 check('Q1 no match with a correction: the corrected word, marked slip', same(primaryFor({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, { ...NONE, fallback: { word: 'suzy', kind: 'corrected' } }), { kind: 'word', word: 'suzy', rank: 0, complete: false, slip: true }));
-check('Q1 no match with a prefix word: that word, marked slip', (primaryFor({ ...talk, composition: typing(EMPTY_COMPOSITION, 'thexxxx') }, { ...NONE, fallback: { word: 'the', kind: 'prefix' } }) as { slip?: boolean }).slip === true);
+check('Q1 no match with only a prefix word: Spell, not the prefix word', primaryFor({ ...talk, composition: typing(EMPTY_COMPOSITION, 'thexxxx') }, { ...NONE, fallback: { word: 'the', kind: 'prefix' } }).kind === 'spell');
 check('Q1 fallback only while groups are pending', primaryFor(talk, { ...NONE, fallback: { word: 'the', kind: 'prefix' } }).kind === 'no-match');
 // Round 4: the word just accepted is never offered as the next word (the engine's echo, "hello hello").
 const hello: State = { ...talk, composition: message(['hello']) };
@@ -101,6 +102,22 @@ check('Q1 exact length first: "the" typed in full shows the, not what', same(pri
 check('Q1 exact length first: not when the whole word is under a tenth of the completion', (primaryFor(theTyped, pred([['what', 0.9, false], ['the', 0.05, true]], { branch: false })) as { word?: string }).word === 'what');
 check('Q1 exact length first: a slip correction is never preferred', (primaryFor(theTyped, { ...WHAT_THE, words: [WHAT_THE.words[0], { ...WHAT_THE.words[1], corrected: true }] }) as { word?: string }).word === 'what');
 check('Q1 exact length first: not after a reopen (Delete word pages the ranking)', (primaryFor({ ...theTyped, composition: { ...theTyped.composition, reopened: true, candidateIndex: 1 } }, WHAT_THE) as { word?: string }).word === 'what');
+
+// ── Q1 Spell: no dictionary word fits and none is one slip away (owner, 2026-11-08: polyphiloprogenitive) ──
+const unknown: State = { ...talk, composition: typing(message([]), 'polyphiloprogenitive') };
+check('Q1 Spell: nothing matches and the only fallback is a word for a shorter prefix', primaryFor(unknown, { ...pred([]), total: 0, fallback: { word: 'private', kind: 'prefix' } }).kind === 'spell');
+check('Q1 Spell: nothing matches and there is no fallback at all', primaryFor(unknown, { ...pred([]), total: 0 }).kind === 'spell');
+check('Q1 Spell: not while a healthy engine is still answering (the local decoder\'s lexicon is smaller): No word until it does', primaryFor(unknown, { ...pred([]), total: 0, source: 'local', provisional: true }).kind === 'no-match');
+check('Q1 Spell: a one-slip correction is still offered as the word', (primaryFor(unknown, { ...pred([]), total: 0, fallback: { word: 'please', kind: 'corrected' } }) as { word?: string }).word === 'please');
+check('Q1 Spell: phase', phaseOf(unknown, { ...pred([]), total: 0, fallback: { word: 'private', kind: 'prefix' } }) === 'composing-spell');
+check('Q1 Spell: phase of the open page', phaseOf({ ...unknown, screen: { kind: 'spell', letters: 'po', page: 0 } }, pred([])) === 'spell');
+{
+  const g = signatureOf('polyphiloprogenitive');
+  const ranks = [...'polyphiloprogenitive'].map((ch, i) => rankLetters('polyphiloprogenitive'.slice(0, i), g).indexOf(ch));
+  check('Spell: every letter is among its group\'s letters, ranked', ranks.every((r) => r >= 0), ranks.join(','));
+  check('Spell: most letters are first or second (letter model)', ranks.filter((r) => r <= 1).length >= 16, ranks.join(','));
+  check('Spell: no letters past the last group', rankLetters('polyphiloprogenitive', g).length === 0);
+}
 
 // ── Q1 Options: several whole words fit and none is close enough to branch on (owner, 2026-11-08) ──
 const hosting: State = { ...talk, composition: typing(message(['computer', 'science', 'is']), 'hosting') };
@@ -224,7 +241,7 @@ check('hearing-ended keeps interim words as a turn', reducer({ ...s, hearing: 'a
 }
 
 check('phase: slip', phaseOf({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, { ...NONE, fallback: { word: 'suzy', kind: 'corrected' } }) === 'composing-slip');
-check('phase: no match', phaseOf({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, NONE) === 'composing-nomatch');
+check('phase: no match is spell', phaseOf({ ...talk, composition: typing(EMPTY_COMPOSITION, 'suzy') }, NONE) === 'composing-spell');
 check('phase: hearing', phaseOf({ ...talk, hearing: 'It is' }, NEXT) === 'hearing');
 check('phase: hearing while typing', phaseOf({ ...talk, hearing: 'It is', composition: message(['yes']) }, NEXT) === 'hearing-typing');
 check('phase: branch', phaseOf(branching, BRANCH) === 'composing-branch');

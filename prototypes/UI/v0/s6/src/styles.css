@@ -428,10 +428,12 @@ body {
 
 /* The word in progress (BRIEF "The word in progress") */
 .word { white-space: nowrap; }
-/* A run of dots (no known word, or groups typed past the word offered) may wrap, so a long
-   unknown name never runs off the edge; letters never break (there is no break between them). */
-/* The dotted word moves to the next line whole, and breaks inside only when it is wider than the line. */
-.word.in-progress:is(.dots, .tail) { white-space: normal; display: inline-block; max-width: 100%; }
+/* A long word in progress stays on one line, so the message fit (Thread.tsx) sees it as too wide and
+   steps the type down, to 20 px at the least; past twelve groups its dots are drawn smaller, so even
+   fifty groups fit one line at that floor. Only past the floor may the dots wrap (line by line, so
+   the overflow keeps whole lines). */
+.word.in-progress.long .glyph.dot > span { width: 0.34em; height: 0.34em; margin: 0 0.04em; }
+.now[data-overflow] .word.in-progress:is(.dots, .tail) { white-space: normal; }
 .settle { transition: color var(--dur-settle) var(--ease-state); @starting-style { color: var(--gt); } }
 .keep-colour .settle { color: var(--gt); }
 .glyph { transition: color var(--dur-cue) var(--ease-state), opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
@@ -537,6 +539,9 @@ body {
 .thread .rule { background: transparent; margin: 16px 0 8px; }
 .now { text-align: center; align-items: center; }
 .now .now-text { max-width: 100%; }
+/* Room for the selection box's outline and handles (0.1em + 6.25px past the word), which the fit
+   counts, so a word as wide as the line still shows both handles. */
+.now .now-text { padding-inline: calc(0.1em + 8px); }
 .turn-partner { color: var(--ink-2); }
 
 /* The branch: node-graph edges from the word in progress to Q1 and Q4. */

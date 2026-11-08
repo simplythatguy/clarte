@@ -43,6 +43,8 @@ export type Screen =
    * and a pick accepts the new word (Q1 Options).
    */
   | { kind: 'other'; page: number; pending?: boolean }
+  /** Spell: no dictionary word fits the typed groups; the letters chosen so far, one per group, and the page of the current group's letters. */
+  | { kind: 'spell'; letters: string; page: number }
   /** `origin` is where Back returns to from a settings page opened from the Done page. */
   | { kind: 'menu'; page: MenuPage; origin?: 'done' }
   /** `from` is the screen calibration returns to, by Start, Back or Escape: the conversation or the Done page it was opened from, or the setup report on the first run. */
@@ -214,6 +216,7 @@ export function phaseOf(state: State, prediction: Prediction): string {
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'done') return 'done';
   if (screen.kind === 'other') return screen.pending ? 'options' : 'other-words';
+  if (screen.kind === 'spell') return 'spell';
   if (state.live.kind === 'speaking') return 'speaking';
   const typing = c.words.length > 0 || c.pending.length > 0;
   if (state.hearing) return typing ? 'hearing-typing' : 'hearing';
@@ -221,7 +224,7 @@ export function phaseOf(state: State, prediction: Prediction): string {
   if (c.pending.length) {
     if (conflictOf(state, prediction)) return 'composing-branch';
     if (optionsOf(state, prediction)) return 'composing-options';
-    if (!prediction.words.length) return prediction.fallback ? 'composing-slip' : 'composing-nomatch';
+    if (!prediction.words.length) return prediction.fallback?.kind === 'corrected' ? 'composing-slip' : 'composing-spell';
     return c.reopened ? 'composing-reopened' : 'composing-pending';
   }
   return c.words.length ? 'composing-ready' : 'idle';

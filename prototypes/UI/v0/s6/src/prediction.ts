@@ -74,6 +74,8 @@ export type Prediction = {
   /** The engine's own call on offering `words[1]` in Q4 (round 2); absent when it did not say. */
   branch?: boolean;
   fallback?: Fallback;
+  /** A local answer standing in while a healthy engine is still answering: its "nothing matches" is not final (the engine's lexicon is five times larger). */
+  provisional?: boolean;
 };
 
 export function keyOf(req: PredictRequest): string {
@@ -176,7 +178,11 @@ export function setEngine(next: string | null): void {
 
 /** The answer for `req` now: the cached one, else the local decoder's. Never empty-handed. */
 export function peek(req: PredictRequest): Prediction {
-  return cache.get(keyOf(req)) ?? predictLocal(req, req.limit ?? LIMIT);
+  const hit = cache.get(keyOf(req));
+  // With no engine to wait for, nothing is provisional.
+  if (hit) return hit.provisional && engineDown() ? { ...hit, provisional: false } : hit;
+  const local = predictLocal(req, req.limit ?? LIMIT);
+  return engineDown() ? local : { ...local, provisional: true };
 }
 
 /** Seed an answer (debug phases, tests). */
@@ -270,9 +276,10 @@ export function fetchPrediction(req: PredictRequest): Promise<Prediction> {
   if (running) return running;
   const base = origin;
   // The local answer stands only while nothing better is cached; it never overwrites the engine's.
-  const local = () => cache.get(key) ?? remember(key, predictLocal(req, req.limit ?? LIMIT));
+  // While the engine may still answer, it is provisional: its "nothing matches" is not final.
+  const local = () => cache.get(key) ?? remember(key, { ...predictLocal(req, req.limit ?? LIMIT), provisional: true });
   if (base === null) {
-    const value = local();
+    const value = cache.get(key) ?? remember(key, predictLocal(req, req.limit ?? LIMIT));
     notify();
     return Promise.resolve(value);
   }
@@ -283,6 +290,9 @@ export function fetchPrediction(req: PredictRequest): Promise<Prediction> {
     (value) => { clearTimeout(giveUp); if (origin === base) failures = 0; return value; },
     (error: unknown) => {
       clearTimeout(giveUp);
+      // The engine will not answer this one: the local answer that stands becomes final.
+      const standing = cache.get(key);
+      if (standing?.provisional) { remember(key, { ...standing, provisional: false }); notify(); }
       // One failure is one request's; a run of them means the engine is gone (the probe takes over).
       if (origin === base && ++failures >= FAILURES_TO_LOSE) lost();
       throw error;
