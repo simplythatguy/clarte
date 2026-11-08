@@ -13,7 +13,7 @@ and takes the first route that produces the word:
 node step writes. A word fails when no route produces it or when its cost exceeds spelling from scratch
 (n + 1 + letters).
 
-  ../v0/.venv/bin/python bench/matrix.py WORDS_JSON SPELL_JSON [--port 8766] [--out bench/results/matrix.json]
+  .venv/bin/python bench/matrix.py WORDS_JSON SPELL_JSON [--port 8766] [--out bench/results/matrix.json]
 """
 import argparse
 import json

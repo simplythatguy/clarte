@@ -2,7 +2,7 @@
 
 The engine behind the conversation UI (`prototypes/UI/v0/s6`). It always returns a word: the next word when nothing is typed, and the current word's completion while letter groups are typed. Local only, no network calls at inference.
 
-Server: `python server.py` in this folder, `http://127.0.0.1:8765`. It reuses `../v0` (its `wordpred` package, `models/`, `build/` and `.venv`). The model is loaded and warmed before the port opens, so the first request is as fast as the rest.
+Server: `python server.py` in this folder, `http://127.0.0.1:8765`. It carries the `wordpred` package (the earlier engine, ported from the research workspace), `models/`, `build/` and `.venv` in this folder. The model is loaded and warmed before the port opens, so the first request is as fast as the rest.
 
 ## `POST /api/v1/predict`
 

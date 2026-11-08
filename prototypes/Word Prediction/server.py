@@ -1,6 +1,6 @@
 """Prediction v1 server. Loads and warms every model, then listens (default 127.0.0.1:8765).
 
-Run with the v0 environment:  ../v0/.venv/bin/python server.py [--port 8765] [--rescorer auto|qwen2.5-1.5b|smol135-ft|none]
+Run with the v0 environment:  .venv/bin/python server.py [--port 8765] [--rescorer auto|qwen2.5-1.5b|smol135-ft|none]
 `auto` takes the best rescorer whose weights are present (engine/neural.py PREFERENCE): an MLX model from
 models/ (fetch_models.py), else v0's fine-tuned SmolLM2-135M, else none.
 """

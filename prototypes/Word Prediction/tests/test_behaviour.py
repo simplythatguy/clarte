@@ -8,7 +8,6 @@ from pathlib import Path
 
 V1 = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(V1))
-sys.path.insert(0, str(V1.parent / "v0"))
 
 from wordpred.context import code_of  # noqa: E402
 

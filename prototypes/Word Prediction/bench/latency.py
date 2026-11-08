@@ -1,6 +1,6 @@
 """Latency through the HTTP server: cold start, then p50/p95 per request for empty and typed groups.
 
-  ../v0/.venv/bin/python bench/latency.py [--rescorer auto] [--port 18777] [--requests 200] [--concurrency 1]
+  .venv/bin/python bench/latency.py [--rescorer auto] [--port 18777] [--requests 200] [--concurrency 1]
 
 Starts `server.py` as a subprocess, waits for /api/v1/health (cold start = time to first healthy
 response), then replays realistic contexts from the dd_dev split: for each message position it asks
@@ -19,7 +19,6 @@ from urllib.request import Request, urlopen
 
 HERE = Path(__file__).resolve().parent
 V1 = HERE.parent
-sys.path.insert(0, str(V1.parent / "v0"))
 from wordpred.context import code_of, words_of  # noqa: E402
 
 DATA = Path("/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction/data/bench")

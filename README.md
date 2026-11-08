@@ -15,7 +15,7 @@ cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
 URLs; Ctrl+C stops everything it started. The apps are `ui` (the S0–S6 switcher with the
-prediction engine), `predict`, `autocomplete`, `voice` and `eyes`; `clarte` alone lists them,
+prediction engine), `predict` (the prediction engine and its test page), `voice` and `eyes`; `clarte` alone lists them,
 and `clarte check` starts and smoke-tests every app without a browser (this is what CI runs).
 
 The first run downloads about 1.6 GB (pinned uv, Python, Node, the 880 MB of models and the

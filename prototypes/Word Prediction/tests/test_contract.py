@@ -1,6 +1,6 @@
 """Contract tests: validation and paging with a fake engine (fast), then the live engine over HTTP.
 
-Run:  ../v0/.venv/bin/python -m unittest discover -s tests -v
+Run:  .venv/bin/python -m unittest discover -s tests -v
 Set PREDICT_TESTS=fast to skip the live-engine tests (about one minute of model loading).
 """
 import json
@@ -15,7 +15,6 @@ from urllib.request import Request, urlopen
 
 V1 = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(V1))
-sys.path.insert(0, str(V1.parent / "v0"))
 
 from engine.http import clean_request, serve  # noqa: E402
 from wordpred.context import code_of  # noqa: E402

@@ -17,7 +17,7 @@ tier-1 words), so a plausible rare word comes before an odd one on the same code
 Input: the kaikki.org English Wiktionary extract reduced to `word<TAB>pos<TAB>tags<TAB>forms` lines
 (see README "Lexicon"). Wiktionary content is CC BY-SA 4.0; the added rows carry that licence.
 
-  ../v0/.venv/bin/python add_wiktionary.py WIKTIONARY_TSV [--out data/lexicon.tsv.gz]
+  .venv/bin/python add_wiktionary.py WIKTIONARY_TSV [--out data/lexicon.tsv.gz]
 """
 import argparse
 import gzip

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Builds the fallback decoder's sentence-end table `src/ends.json` from the prediction engine's ARPA
- * 4-gram (`prototypes/Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz`), the way
+ * 4-gram (`prototypes/Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz`), the way
  * `build-bigrams.mjs` builds the next-word table: for the most frequent words, log10 p(</s> | word),
  * how readily a sentence ends after it.
  *
@@ -22,7 +22,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => (a.star
 const WORDS = Number(args.words ?? 6000);
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const arpa = fileURLToPath(new URL('../../../../Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
+const arpa = fileURLToPath(new URL('../../../../Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
 const keep = new Set(JSON.parse(readFileSync(`${here}/../src/lexicon.json`, 'utf8')).slice(0, WORDS).map(([w]) => w));
 
 const out = {};

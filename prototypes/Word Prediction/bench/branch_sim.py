@@ -13,7 +13,7 @@
     page (+1 per extra page), then picks (+1). A word not in that list costs the frozen spelling
     fallback 2n + 5.
 
-  ../v0/.venv/bin/python bench/branch_sim.py RUN_NAME [--splits aac_dev,dd_dev] [--grid] [--rule 1,0.25,0]
+  .venv/bin/python bench/branch_sim.py RUN_NAME [--splits aac_dev,dd_dev] [--grid] [--rule 1,0.25,0]
 """
 import argparse
 import itertools

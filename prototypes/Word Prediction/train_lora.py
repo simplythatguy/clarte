@@ -6,8 +6,8 @@ format ("Partner: ...\\nMe: ...\\nMe:"), completion = " " + the user's words. Da
 share a 4-word turn are one group; groups with sha256 % 20 == 0 are the validation set (DD only), the
 same rule as the research fine-tune (methods/finetune/data.py). The prompt is masked in the loss.
 
-  ../v0/.venv/bin/python train_lora.py prepare                       # data/lora/{train,valid}.jsonl (gitignored)
-  ../v0/.venv/bin/python train_lora.py train qwen2.5-1.5b [--iters 600] [--batch-size 8] [--lr 1e-4] [--layers 16]
+  .venv/bin/python train_lora.py prepare                       # data/lora/{train,valid}.jsonl (gitignored)
+  .venv/bin/python train_lora.py train qwen2.5-1.5b [--iters 600] [--batch-size 8] [--lr 1e-4] [--layers 16]
                                                                      # -> models/adapters/<name>/ (gitignored) + receipt
 """
 import argparse
@@ -21,7 +21,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parent / "v0"))
 RESEARCH = Path("/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction")
 AAC = RESEARCH / "data/raw/aac/unz/aac_comm/sent_train_aac.txt"
 DD = RESEARCH / "data/raw/dailydialog/train.parquet"

@@ -1,6 +1,6 @@
 """Run adversarial.jsonl against the engine (in-process or over HTTP) and report pass/fail per case.
 
-  ../v0/.venv/bin/python adversarial.py [--rescorer auto] [--url http://127.0.0.1:8765] [--out bench/results/adversarial.json]
+  .venv/bin/python adversarial.py [--rescorer auto] [--url http://127.0.0.1:8765] [--out bench/results/adversarial.json]
 
 Each case types the target's code one group at a time and records the target's rank after every
 group. `expect` lists [k, top] pairs: after k groups ("full" = the whole code) the target must be
@@ -15,7 +15,6 @@ from pathlib import Path
 
 V1 = Path(__file__).resolve().parent
 sys.path.insert(0, str(V1))
-sys.path.insert(0, str(V1.parent / "v0"))
 from wordpred.context import code_of  # noqa: E402
 
 

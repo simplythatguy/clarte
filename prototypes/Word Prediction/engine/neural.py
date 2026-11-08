@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 MODELS = Path(__file__).resolve().parents[1] / "models"
-V0_MODELS = Path(__file__).resolve().parents[2] / "v0" / "models"
+V0_MODELS = MODELS
 PUNCT = set(".,!?;:'\")(-…\n")
 
 

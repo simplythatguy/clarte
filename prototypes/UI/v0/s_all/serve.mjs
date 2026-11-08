@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Serves the S0–S8 preview on http://localhost:5100 (PORT overrides it). Starts any of the eight
 // style dev servers (s1–s8 on the eight ports after it, 5101–5108 by default) and the local
-// prediction engine that are not already running: the v1 engine (S6, and S0 through its
-// compatibility route) when `Word Prediction/v1/server.py` exists, else v0.
+// prediction engine (`prototypes/Word Prediction`: S6, and S0 through its compatibility route) when
+// they are not already running.
 //
 // The engine is found by its health, not by an open port: `GET /api/v1/health` must answer
 // `{ ok: true, vocabulary: n }`. If 8765 is held by something else (the owner's research server,
@@ -34,7 +34,7 @@ const listeningOn = (port, host) => new Promise((resolve) => {
 });
 const listening = async (port) => (await listeningOn(port, '127.0.0.1')) || (await listeningOn(port, '::1'));
 
-/** True when a v1 (or v0) prediction engine answers on `origin`. */
+/** True when the prediction engine answers on `origin`. */
 export async function engineHealthy(origin, timeoutMs = 1500) {
   try {
     const res = await fetch(`${origin}/api/v1/health`, { signal: AbortSignal.timeout(timeoutMs) });
@@ -75,11 +75,8 @@ if (isMain) {
     children.push(child);
     console.log(`s${n}: starting on ${port}`);
   }
-  const ENGINE_V0 = join(ROOT, '../../Word Prediction/v0');
-  const ENGINE_V1 = join(ROOT, '../../Word Prediction/v1');
-  // Both engines share v0's virtual environment, models and native build.
-  const PYTHON = join(ENGINE_V0, WINDOWS ? '.venv/Scripts/python.exe' : '.venv/bin/python');
-  const ENGINE = existsSync(join(ENGINE_V1, 'server.py')) ? ENGINE_V1 : ENGINE_V0;
+  const ENGINE = join(ROOT, '../../Word Prediction');
+  const PYTHON = join(ENGINE, WINDOWS ? '.venv/Scripts/python.exe' : '.venv/bin/python');
   /** What `/engine.json` tells the styles: where the engine is (or will be once it has warmed). */
   const engine = { origin: null, started: false };
   try {
@@ -89,10 +86,10 @@ if (isMain) {
     else if (existsSync(PYTHON)) {
       children.push(spawn(PYTHON, ['server.py', '--port', String(port)], { cwd: ENGINE, stdio: ['ignore', 'ignore', 'inherit'] }));
       engine.started = true;
-      console.log(`prediction engine (${ENGINE === ENGINE_V1 ? 'v1' : 'v0'}): starting on ${port} (about 30 s); S0 shows "Engine offline" and S6 decodes locally until it is up`);
+      console.log(`prediction engine: starting on ${port} (about 30 s); S0 shows "Engine offline" and S6 decodes locally until it is up`);
     } else {
       engine.origin = null;
-      console.log(`prediction engine not set up (no ${PYTHON}): S0 will show "Engine offline" and S6 decodes locally. See prototypes/Word Prediction/v0/README.md`);
+      console.log(`prediction engine not set up (no ${PYTHON}): S0 will show "Engine offline" and S6 decodes locally. See prototypes/Word Prediction/README.md`);
     }
   } catch (error) {
     console.log(`${error.message}; S6 decodes locally`);

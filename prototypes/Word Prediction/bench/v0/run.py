@@ -13,7 +13,7 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-ENGINE = Path(__file__).resolve().parents[1]
+ENGINE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ENGINE))
 
 GROUPS = ('abcdef', 'ghijklmn', 'opqrs', 'tuvwxyz')
@@ -55,7 +55,7 @@ def wilson(hits, n):
 
 
 def load_env():
-    path = ENGINE.parents[2] / '.env'
+    path = ENGINE.parents[1] / '.env'
     if path.exists():
         for line in path.read_text(encoding='utf-8').splitlines():
             key, sep, value = line.partition('=')

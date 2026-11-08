@@ -34,7 +34,7 @@ Round 3: the tier column and three drops.
   paging; shown after every tier-1 word unless the conversation mentioned the word.
 - tier 3: single letters other than a and i (the dictionary lists every letter).
 - JUNK: dictionary words that in this product are misspellings of a far more frequent word (wat).
-Re-run: ../v0/.venv/bin/python build_lexicon.py   (macOS only: DictionaryServices, /usr/share/dict)
+Re-run: .venv/bin/python build_lexicon.py   (macOS only: DictionaryServices, /usr/share/dict)
 """
 import ctypes
 import ctypes.util
@@ -45,7 +45,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-V0 = HERE.parent / "v0"
+V0 = HERE
 sys.path.insert(0, str(V0))
 RESEARCH = Path("/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction")
 DAILYDIALOG = RESEARCH / "data/raw/dailydialog/train.parquet"

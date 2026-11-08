@@ -1,7 +1,7 @@
 """Download the optional rescoring model(s) into models/ (gitignored). The server runs without them.
 
-  ../v0/.venv/bin/python fetch_models.py                 # the round-2 finalist (qwen2.5-1.5b)
-  ../v0/.venv/bin/python fetch_models.py qwen3-1.7b qwen2.5-0.5b ...
+  .venv/bin/python fetch_models.py                 # the round-2 finalist (qwen2.5-1.5b)
+  .venv/bin/python fetch_models.py qwen3-1.7b qwen2.5-0.5b ...
 
 Names and folders are engine/mlx_rescorer.CATALOG. Without any of them the server falls back to the
 round-1 rescorer (v0's fine-tuned SmolLM2-135M on torch) and, without that, runs with no rescorer.

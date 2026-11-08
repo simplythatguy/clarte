@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Builds the fallback decoder's two-word context table `src/trigrams.json` from the prediction
- * engine's ARPA 4-gram (`prototypes/Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz`),
+ * engine's ARPA 4-gram (`prototypes/Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz`),
  * the way `build-bigrams.mjs` builds the one-word table: for the most frequent two-word histories
  * (by their joint probability, unigram × bigram, read off the 1-gram and 2-gram sections, with the
  * sentence start `<s>` as a possible first word), the best next words with their log10
@@ -34,7 +34,7 @@ const HUB = Number(args.hub ?? 100);
 const NEXT = Number(args.next ?? 4);
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const arpa = fileURLToPath(new URL('../../../../Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
+const arpa = fileURLToPath(new URL('../../../../Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
 const lexicon = JSON.parse(readFileSync(`${here}/../src/lexicon.json`, 'utf8')).map(([w]) => w);
 const known = new Set(lexicon);
 const last = new Set(lexicon.slice(0, LAST));

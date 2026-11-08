@@ -2,7 +2,7 @@
 whole words and p1/p0 >= ratio, Q1 reads Options; a person who finished the word opens it (1) and picks from
 pages of four (+1 per page, +1 pick). Mid-word they keep typing. Prints the baseline and the cheapest rules.
 
-  ../v0/.venv/bin/python bench/options_sim.py RUN_NAME
+  .venv/bin/python bench/options_sim.py RUN_NAME
 """
 import itertools
 import sys

@@ -1,22 +1,32 @@
-# Word Prediction v1
+# Word Prediction
 
-The engine behind the conversation UI: the next word when nothing is typed, the current word while
-letter groups are typed, from the whole conversation. Round 3 added word tiers, repeat suppression,
-scoped commit learning, slip corrections while typing, display case and a stricter branch rule. Local only. Contract: [CONTRACT.md](CONTRACT.md).
-Measurements: [RESULTS.md](RESULTS.md).
+Clarte's one prediction engine: the next word when nothing is typed, the current word while letter groups
+are typed, from the whole conversation, with gaze-slip correction, word tiers and every dictionary word
+reachable. Local only. Contract: [CONTRACT.md](CONTRACT.md). Measurements: [RESULTS.md](RESULTS.md).
 
-## Run
+This folder is the single, current version. It merges what were separate prototypes: Word Prediction v0
+(the `wordpred` package, its count and neural models and native build, now beside `engine/`; its README is
+[docs/ENGINE-V0.md](docs/ENGINE-V0.md) and its benchmark `bench/v0/`), Word Prediction v1 (`engine/`,
+`server.py`), and Autocomplete v0/v1 (PR 15's request ids and PR 16's two-choice idea, both folded into
+the contract and the UI). New work goes here; there are no further versioned copies.
 
-v1 reuses v0's environment, native build and models (`../v0/.venv`, `../v0/build`, `../v0/models`;
-set them up with v0's README or `./clarte predict` once). Extra packages go into that venv:
+## Set up and run
+
+One environment in this folder (`.venv`), the native build (`build/`) and the trained models in `models/`
+(Git LFS):
 
 ```sh
-cd 'prototypes/Word Prediction/v1'
-../v0/.venv/bin/python -m pip install wordfreq==3.1.1 mlx==0.32.4 mlx-lm==0.32.2
-../v0/.venv/bin/python -m pip install transformers==4.57.3 tokenizers==0.22.2 huggingface-hub==0.36.0   # mlx-lm pulls transformers 5, which breaks v0; pin back
-../v0/.venv/bin/python fetch_models.py                         # Qwen2.5-1.5B (3.1 GB) into models/, gitignored
-../v0/.venv/bin/python server.py                               # http://127.0.0.1:8765, loads + warms first
+cd 'prototypes/Word Prediction'
+python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-gpu.txt && .venv/bin/python -m pip install --no-deps mlx-lm==0.32.2   # Apple Silicon: the GPU rescorer
+.venv/bin/python build.py                                # native ARPA and assignment libraries into build/
+git lfs pull                                             # models/ (count model, 4-gram, SmolLM2-135M fine-tune)
+.venv/bin/python fetch_models.py                         # Qwen2.5-1.5B (3.1 GB) into models/, gitignored
+.venv/bin/python server.py                               # http://127.0.0.1:8765, loads + warms first
 ```
+
+Coming from the versioned folders: move the local, untracked pieces once, `mv v0/.venv .venv; mv v0/build
+build; mv v1/models/Qwen* v1/models/SmolLM2-* models/`, then delete the empty `v0/` and `v1/`.
 
 Options: `--port`, `--host`, `--model light` (no v0 neural prior), `--rescorer auto|qwen2.5-1.5b|qwen3-1.7b|qwen2.5-0.5b|smol135-ft|none`
 (default `auto`: the first of `engine/neural.py PREFERENCE` whose weights are present), `--threads 4`,
@@ -35,14 +45,14 @@ round 1's rescorer, v0's fine-tuned SmolLM2-135M on torch, and without that it s
 ## Tests, coverage, adversarial, benchmarks
 
 ```sh
-../v0/.venv/bin/python -m unittest discover -s tests -v          # contract + tiers + live HTTP (PREDICT_TESTS=fast skips the live engine)
-../v0/.venv/bin/python adversarial.py                             # 100 hostile-demo cases (30 conversational), pass/fail per case
-../v0/.venv/bin/python coverage.py --exact --sample 2000 --templates 3   # every-word reachability (+ chooser rank, tier order); context test on a sample
-../v0/.venv/bin/python bench/latency.py [--pace 1.0 --complete-every 2]  # cold start, p50/p95 through HTTP, back-to-back or paced
-../v0/.venv/bin/python bench/harness.py run --system v1 --name NAME       # frozen dev splits, both policies (+ per-k top-2 probabilities)
-../v0/.venv/bin/python bench/harness.py compare v0_deployable NAME --metric ui
-../v0/.venv/bin/python bench/branch_sim.py NAME                           # replay the UI on a run's records: branch-rule trade-off curve
-../v0/.venv/bin/python train_lora.py prepare                              # LoRA data from the allowed training text (training: see RESULTS.md)
+.venv/bin/python -m unittest discover -s tests -v          # contract + tiers + live HTTP (PREDICT_TESTS=fast skips the live engine)
+.venv/bin/python adversarial.py                             # 100 hostile-demo cases (30 conversational), pass/fail per case
+.venv/bin/python coverage.py --exact --sample 2000 --templates 3   # every-word reachability (+ chooser rank, tier order); context test on a sample
+.venv/bin/python bench/latency.py [--pace 1.0 --complete-every 2]  # cold start, p50/p95 through HTTP, back-to-back or paced
+.venv/bin/python bench/harness.py run --system v1 --name NAME       # frozen dev splits, both policies (+ per-k top-2 probabilities)
+.venv/bin/python bench/harness.py compare v0_deployable NAME --metric ui
+.venv/bin/python bench/branch_sim.py NAME                           # replay the UI on a run's records: branch-rule trade-off curve
+.venv/bin/python train_lora.py prepare                              # LoRA data from the allowed training text (training: see RESULTS.md)
 ```
 
 ## Results in one paragraph
@@ -95,7 +105,7 @@ request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 
   tier 2 (below every common word) with their wordfreq probability when wordfreq has seen them, else a
   1e-12 floor scaled by a letter 4-gram's view of the spelling. Rebuild after `build_lexicon.py`:
   `curl -sSL https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz | gunzip |
-  python3 wiktionary_extract.py wiktionary-english.tsv && ../v0/.venv/bin/python add_wiktionary.py
+  python3 wiktionary_extract.py wiktionary-english.tsv && .venv/bin/python add_wiktionary.py
   wiktionary-english.tsv`. The prefix index is one sorted array (`engine/lexicon.py` `PrefixIndex`):
   the lexicon takes 196 MB and 3.2 s to load.
 - **Word tiers** (round 3, the `tier` column; rules in `build_lexicon.py`): tier 1 is every word a real

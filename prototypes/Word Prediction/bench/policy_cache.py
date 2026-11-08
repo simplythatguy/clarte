@@ -9,7 +9,7 @@ Two samples:
 For each word: the first page (limit 8, with `rare`, `complete`, `branch`) after 0..n typed groups, and the
 whole-word chooser list at the full code (complete: true, up to 128 words).
 
-  ../v0/.venv/bin/python bench/policy_cache.py MATRIX_WORDS_JSON OUT_JSON [--port 8766] [--every 9]
+  .venv/bin/python bench/policy_cache.py MATRIX_WORDS_JSON OUT_JSON [--port 8766] [--every 9]
 """
 import argparse
 import json

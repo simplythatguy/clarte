@@ -27,7 +27,7 @@ Precedence when rules collide, highest first:
 | Conversation UI (listen, compose, speak) | `prototypes/UI/v0/` (`s0` to `s6`, `shared/`) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
 | Eye tracking and calibration | `prototypes/Eye Tracking/` | webcam gaze: a steady look, then blinks to preview and confirm; mouse, touch and keys as alternates | the person; testers recording sessions |
 | Making a voice | `prototypes/Voice/` | pointer, touch and keyboard (Space records) | the person or someone helping them; designed for tremor, fatigue and low vision |
-| Prediction engines | `prototypes/Word Prediction/v0/`, `prototypes/Autocomplete/v0/` | Python API and plain test pages | developers |
+| Prediction engine | `prototypes/Word Prediction/` (word prediction and autocomplete in one) | HTTP API and a plain test page | developers |
 
 A rule written for one input model does not transfer to another by default. Gaze surfaces have no hover and no press. The voice surface does have both, but it serves hands with tremor.
 
@@ -74,7 +74,7 @@ Durations over 300 ms that are deliberate and must not be flagged: dwell progres
 | UI v0 | `node prototypes/UI/v0/shared/selftest.ts`; `node prototypes/UI/v0/shared/check-layout.mjs http://localhost:PORT out-dir` at 1440×900 and 1280×720, zero violations in every phase; preview all styles with `node prototypes/UI/v0/s_all/serve.mjs` |
 | Eye Tracking | the Verify list in `prototypes/Eye Tracking/README.md` (`npm test`, `typecheck`, `build`, `check:privacy`, `check:import`, `check:model`, `scripts/fingerprint.mjs --verify`), plus session replay for any tracker change |
 | Voice | `npm test && npm run typecheck`; `server/.venv/bin/python -m pytest -q tests`; `scripts/evaluate.py` for similarity, rate and WER |
-| Word Prediction, Autocomplete | the run and check steps in their READMEs; Light must work without neural artifacts |
+| Word Prediction | the run and check steps in its README; Light must work without neural artifacts |
 
 Screenshots are opened and looked at before they are reported. Gaze screens are checked at 1440×900 and 1280×720 and at 200% text, with `?onboarding=off`.
 

@@ -1,3 +1,5 @@
+> Moved from `prototypes/Word Prediction/v0/README.md` when the prediction prototypes were merged into one folder (`../README.md`). Paths below that say `prototypes/Word Prediction/v0` now mean `prototypes/Word Prediction`; its `server.py` is replaced by the merged `server.py`, which keeps `POST /api/predict`.
+
 # Word Prediction v0
 
 Local decoding of the tapped groups G1 ABCDEF, G2 GHIJKLMN, G3 OPQRS,

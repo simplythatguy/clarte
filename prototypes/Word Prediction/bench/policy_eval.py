@@ -10,7 +10,7 @@ of Delete. The person who knows their word takes the first route that produces i
 sample (dev conversations) and on the matrix (every kind of word), how many matrix words cost more than
 spelling from scratch (n + 1 + letters), and the share of typed states where Q4 hides Delete.
 
-  ../v0/.venv/bin/python bench/policy_eval.py CACHE_JSON LETTERS_JSON
+  .venv/bin/python bench/policy_eval.py CACHE_JSON LETTERS_JSON
 """
 import argparse
 import itertools

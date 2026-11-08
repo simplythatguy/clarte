@@ -8,7 +8,7 @@
 (c) names not in the lexicon, mentioned by the partner, must be top 2 at full code.
 (d) a committed word is learned for the session.
 
-  ../v0/.venv/bin/python coverage.py [--sample 5000] [--templates 1] [--rescorer auto] --out coverage.json
+  .venv/bin/python coverage.py [--sample 5000] [--templates 1] [--rescorer auto] --out coverage.json
 """
 import argparse
 import json

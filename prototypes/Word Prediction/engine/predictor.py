@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-V0 = Path(__file__).resolve().parents[2] / "v0"
+V0 = Path(__file__).resolve().parents[1]   # the wordpred package (the v0 engine) lives beside engine/
 if str(V0) not in sys.path:
     sys.path.insert(0, str(V0))
 

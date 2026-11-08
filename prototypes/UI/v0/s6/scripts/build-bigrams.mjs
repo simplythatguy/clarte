@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Builds the fallback decoder's next-word table `src/bigrams.json` from the prediction engine's
- * ARPA 4-gram (`prototypes/Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz`): for the
+ * ARPA 4-gram (`prototypes/Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz`): for the
  * most frequent previous words (by unigram log probability) and for the sentence start (`<s>`),
  * the best next words with their log10 probabilities, read off the model's 2-gram section.
  *
@@ -22,7 +22,7 @@ const PREVIOUS = Number(args.previous ?? 3000);
 const NEXT = Number(args.next ?? 8);
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const arpa = fileURLToPath(new URL('../../../../Word Prediction/v0/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
+const arpa = fileURLToPath(new URL('../../../../Word Prediction/models/lm_mix_top3_4gram_abs0.0.arpa.gz', import.meta.url));
 const known = new Set(JSON.parse(readFileSync(`${here}/../src/lexicon.json`, 'utf8')).map(([w]) => w));
 
 const unigram = new Map();

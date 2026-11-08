@@ -23,7 +23,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 V1 = HERE.parent
 sys.path.insert(0, str(V1))
-sys.path.insert(0, str(V1.parent / "v0"))
 RESEARCH = Path("/Users/aamia/.t3/scratch/2026-11-06-build-and-fully-verify-an-e4b71fc3/research/four-zone-prediction")
 DATA = RESEARCH / "data" / "bench"
 RESULTS = HERE / "results"
