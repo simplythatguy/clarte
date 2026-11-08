@@ -59,7 +59,7 @@ const ECHO = pred([['hello', 0.5, true], ['how', 0.3, true], ['there', 0.1, true
 check('Q1 never repeats the word just accepted: the next distinct word, with its rank', same(primaryFor(hello, ECHO), { kind: 'word', word: 'how', rank: 1, complete: true }));
 check('the repeat guard is case-blind', nextWordIndex({ ...talk, composition: message(['Hello']) }, ECHO) === 1);
 check('the repeat guard leaves a one-word answer alone (Q1 is never empty)', primaryFor(hello, pred([['hello', 1, true]])).kind === 'word');
-check('the repeat guard does not apply while typing (typing the code again is deliberate)', same(primaryFor({ ...talk, composition: typing(message(['no']), 'no') }, pred([['no', 0.9, true], ['on', 0.1, true]])), { kind: 'word', word: 'no', rank: 0, complete: true }));
+check('the repeat guard does not apply while typing (typing the code again is deliberate)', same(primaryFor({ ...talk, composition: typing(message(['no']), 'no') }, pred([['no', 0.99999, true], ['on', 0.000001, true]])), { kind: 'word', word: 'no', rank: 0, complete: true }));
 {
   const named = primaryFor(talk, { ...NEXT, words: [{ word: 'priya', p: 0.9, complete: false, display: 'Priya' }] });
   check('Q1 carries the engine\'s display form', named.kind === 'word' && named.word === 'priya' && named.display === 'Priya' && named.rank === 0);
@@ -93,6 +93,22 @@ check('Q4 2. not when the first word is unsure (p below 0.2, the engine\'s round
 check('Q4 2. not on a slip page (corrected words)', secondaryFor(branching, { ...pred([['might', 0.4, true], ['night', 0.3, true]]), words: [{ word: 'might', p: 0.4, complete: true, corrected: true }, { word: 'night', p: 0.3, complete: true }] }).kind === 'delete');
 check('Q4 2. the second word carries its display form', (secondaryFor(branching, { ...BRANCH, words: [BRANCH.words[0], { ...BRANCH.words[1], display: 'Night' }, BRANCH.words[2]] }) as { display?: string }).display === 'Night');
 check('Q4 2. not after a reopen', secondaryFor({ ...branching, composition: { ...branching.composition, reopened: true, candidateIndex: 1 } }, BRANCH).kind === 'delete');
+
+// ── Q1 Options: several whole words fit and none is close enough to branch on (owner, 2026-11-08) ──
+const hosting: State = { ...talk, composition: typing(message(['computer', 'science', 'is']), 'hosting') };
+const AMBIGUOUS = pred([['growing', 0.9998, true], ['hosting', 0.00024, true], ['issuing', 0.0001, true]], { branch: false });
+check('Q1 Options: growing and hosting share the code, the engine is sure of neither branch', primaryFor(hosting, AMBIGUOUS).kind === 'options');
+check('Q1 Options: Q4 stays Delete', secondaryFor(hosting, AMBIGUOUS).kind === 'delete');
+check('Q1 Options: phase', phaseOf(hosting, AMBIGUOUS) === 'composing-options');
+check('Q1 Options: not when the second whole word is far below 1e-4 of the first', primaryFor(hosting, pred([['growing', 0.99999, true], ['hosting', 0.00000005, true]], { branch: false })).kind === 'word');
+check('Q1 Options: not when the second word is not whole (typing more decides)', primaryFor(hosting, pred([['growing', 0.6, true], ['growingly', 0.3, false]], { branch: false })).kind === 'word');
+check('Q1 Options: not when the best word is not whole', primaryFor(hosting, pred([['grow', 0.6, false], ['growing', 0.3, true], ['hosting', 0.1, true]], { branch: false })).kind === 'word');
+check('Q1 Options: not when the engine branches (Q4 offers the second word)', primaryFor(branching, BRANCH).kind === 'word' && secondaryFor(branching, BRANCH).kind === 'second');
+check('Q1 Options: not with nothing typed', primaryFor({ ...talk, composition: message(['computer', 'science', 'is']) }, AMBIGUOUS).kind === 'word');
+check('Q1 Options: not after a reopen', primaryFor({ ...hosting, composition: { ...hosting.composition, reopened: true, candidateIndex: 1 } }, AMBIGUOUS).kind === 'word');
+check('Q1 Options: not on a slip page', primaryFor(hosting, { ...AMBIGUOUS, words: AMBIGUOUS.words.map((w) => ({ ...w, corrected: true })) }).kind === 'word');
+check('Q1 Options: the chooser asks for whole words of the typed code, the message unchanged', (() => { const r = chooserRequestOf({ ...hosting, screen: { kind: 'other', page: 1, pending: true } }, 1); return r.groups === '2334222' && r.complete === true && r.offset === 4 && r.message.join(' ') === 'computer science is'; })());
+check('Q1 Options: phase of the open page', phaseOf({ ...hosting, screen: { kind: 'other', page: 0, pending: true } }, AMBIGUOUS) === 'options');
 check('Q4 3. groups pending: Delete', same(secondaryFor({ ...talk, composition: typing(message(['i']), 'outs') }, COMPLETION), { kind: 'delete', word: false }));
 check('Q4 3. reopened: Delete word', same(secondaryFor({ ...talk, composition: { ...message(['i']), pending: signatureOf('go'), candidateIndex: 1, reopened: true } }, NEXT), { kind: 'delete', word: true }));
 check('Q4 3. pending while the partner is heard: still Delete', secondaryFor({ ...talk, hearing: 'It is', composition: typing(EMPTY_COMPOSITION, 'outs') }, COMPLETION).kind === 'delete');

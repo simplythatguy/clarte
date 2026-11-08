@@ -54,7 +54,7 @@ import { Orb, type OrbMood } from './Orb.tsx';
 import { Branch } from './Branch.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { commit, discover, engineDown, engineOrigin, fetchPrediction, keyOf, peek, seed, setEngine, subscribe, type PredictRequest, type Prediction } from './prediction.ts';
-import { Again, ArrowRight, Check, Erase, MenuLines, StopSquare } from './icons.tsx';
+import { Again, ArrowRight, Check, Ellipsis, Erase, MenuLines, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
 const STORE = 'clarte.style6.v2';
@@ -218,6 +218,7 @@ function primaryFace(fn: PrimaryFn, index: number): CardFace {
   switch (fn.kind) {
     case 'word': return { icon: <Check />, label: <WordLabel word={fn.word} display={fn.display} index={index} /> };
     case 'no-match': return { icon: <Check />, label: 'No word' };
+    case 'options': return { icon: <Ellipsis />, label: 'Options' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
   }
 }
@@ -462,6 +463,7 @@ export function App() {
     switch (fn.kind) {
       case 'word': accept(fn.word, fn.rank, fn.display); return;
       case 'no-match': return;
+      case 'options': dispatch({ type: 'screen', screen: { kind: 'other', page: 0, pending: true } }); play('control'); return;
       case 'stop-speaking': stopSpeakingNow(); return;
     }
   }, [accept, stopSpeakingNow]);
@@ -544,12 +546,15 @@ export function App() {
     if (s.screen.kind === 'other') {
       const { words, total } = shownRef.current.other.value;
       const pages = Math.max(1, Math.ceil(total / CHOOSER_PAGE));
+      const pending = Boolean(s.screen.pending);
       if (action === 'back') go({ kind: 'talk' });
       // More was chosen: the new page shows at once, under the gaze that chose it.
-      else if (action === 'more') { go({ kind: 'other', page: (s.screen.page + 1) % pages }); resync('other'); }
+      else if (action === 'more') { go({ kind: 'other', page: (s.screen.page + 1) % pages, pending }); resync('other'); }
       else if (/^other-[0-3]$/.test(action)) {
         const i = Number(action.slice(-1));
-        if (words[i]) replaceWord(words[i], s.screen.page * CHOOSER_PAGE + i);
+        const rank = s.screen.page * CHOOSER_PAGE + i;
+        if (words[i] && pending) { accept(words[i].text, rank, words[i].display); dispatch({ type: 'screen', screen: { kind: 'talk' } }); resync('primary'); }
+        else if (words[i]) replaceWord(words[i], rank);
       }
       return;
     }
@@ -579,7 +584,7 @@ export function App() {
       dispatch({ type: 'group', group: action as GroupId });
       play('commit');
     }
-  }, [calibrate, exitCalibration, finishCalibration, hearLine, replaceWord, resync, runPrimary, runSecondary, startSpeaking]);
+  }, [accept, calibrate, exitCalibration, finishCalibration, hearLine, replaceWord, resync, runPrimary, runSecondary, startSpeaking]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;
@@ -707,10 +712,11 @@ export function App() {
   } else if (screen.kind === 'other') {
     // The message stays, with the word about to give way marked as the selected object.
     const { words, total } = otherShown.value;
-    slotViews = otherSlots(words, Math.max(0, state.composition.words.length - 1), screen.page, Math.max(1, Math.ceil(total / CHOOSER_PAGE)));
+    const at = screen.pending ? state.composition.words.length : Math.max(0, state.composition.words.length - 1);
+    slotViews = otherSlots(words, at, screen.page, Math.max(1, Math.ceil(total / CHOOSER_PAGE)));
     restKey = 'thread';
-    boardKey = `other-${screen.page}`;
-    rest = thread(status, true);
+    boardKey = `other-${screen.pending ? 'options' : 'words'}-${screen.page}`;
+    rest = thread(status, !screen.pending);
   } else {
     const pFace = primaryFace(primary.value.fn, primary.value.index);
     const sFace = secondaryFace(secondary.value.fn, secondary.value.index);

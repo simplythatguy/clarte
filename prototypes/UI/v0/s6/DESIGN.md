@@ -4,7 +4,7 @@ The owner's concept of 2026-11-07, built on style 5 · Dialogue. The grid stays 
 
 The second round of references (owner, 2026-11-07, three Pinterest pins) made it simpler: frosted glass cards with a plain icon and words at the lower left that turn white as they are looked at, a light-orange orb, the menu opening over the blurred conversation, and the word in progress drawn as a selected object with two handles. The owner then took the page back to plain white: the orb's light orange is the only orange on the screen.
 
-The always-on word and always-on listening (owner, 2026-11-07) changed what the two top cards do, not where anything is: Q1 is always the predicted word, Q4 is whatever is most needed at that moment, the microphone runs whenever the device is not speaking, and the conversation screen is wired to the prediction engine (`prototypes/Word Prediction/v1/CONTRACT.md`) with a local fallback. The Phrases page, the "One moment" floor-holder, the Listen button and the stand-in whole-reply suggestion are gone.
+The always-on word and always-on listening (owner, 2026-11-07) changed what the two top cards do, not where anything is: Q1 is always the predicted word (or Options, when several whole words fit the code), Q4 is whatever is most needed at that moment, the microphone runs whenever the device is not speaking, and the conversation screen is wired to the prediction engine (`prototypes/Word Prediction/v1/CONTRACT.md`) with a local fallback. The Phrases page, the "One moment" floor-holder, the Listen button and the stand-in whole-reply suggestion are gone.
 
 The third round (2026-11-07) put it on the real engine (`prototypes/Word Prediction/v1`), found by its health rather than by an open port, with the local decoder standing in while the engine warms or is away; added **Other words** to the Done page, a chooser that lists every exact-length word for the last word's code four at a time; and hardened the screen against a hostile demo (`scripts/hostile.mjs`, fifteen cases, each ending with a word in Q1 and no error, loading text or blank card).
 
@@ -123,6 +123,12 @@ The factor 3 was measured. Typing every prefix of all 1,256 vocabulary words, a 
 **Motion.** A branch appears after a group is committed, a few dozen times a day, so each line draws once over 480 ms on the ease-out curve. A small head dot travels the line's front, and the end port fades in as it arrives. Nothing moves afterwards. The owner's note said the line "keeps moving until it reaches a new tracking point". Here it moves until it reaches the place to look, then stops, because a line that kept flowing while the person decides would be idle motion beside an armed target. Leaving is a 150 ms fade. Under reduced motion the finished drawing fades in.
 
 **Recovery.** Typing another group continues the word and the branch goes. Delete is not reachable during a branch. To undo, accept either word, then Done → Delete word, which reopens it with the next candidate. A screen-reader status line says "Two words fit: might or night."
+
+## Options (`src/conflict.ts` `optionsFor`, owner 2026-11-08)
+
+When several whole words fit the typed groups and none is close enough to branch on, Q1 does not guess: it reads **Options** (an ellipsis icon) and Q4 stays Delete. The owner's case: "computer science is hosting" read as "growing"; both are 2334222, as are issuing and looting, and the engine is sure of neither branch. Options opens the Other words page for the code being typed: Q1 Back (to the word in progress, groups intact), Q4 More, Q5–Q8 the top four whole words; a pick accepts the word and returns to the message. The word in progress shows as dots while Options stands, since no single word is on offer.
+
+The rule: the two best words are both whole words, neither is a gaze-slip correction, the engine did not branch, and p(second) / p(first) ≥ 1e-4. The ratio is that low because the engine multiplies two context models and is overconfident (hosting/growing is 2.4e-4 after the full code). Replayed on the round-3 dev records, with the branch kept for close pairs: 2.9632 selections per word vs 2.9608 for the branch alone and 2.9832 with neither; Options shows in about 2% of typed states. Hostile case 32 drives the owner's sentence on the real engine.
 
 ## Setup (`src/Setup.tsx`)
 

@@ -428,7 +428,8 @@ body {
 .word { white-space: nowrap; }
 /* A run of dots (no known word, or groups typed past the word offered) may wrap, so a long
    unknown name never runs off the edge; letters never break (there is no break between them). */
-.word.in-progress:is(.dots, .tail) { white-space: normal; }
+/* The dotted word moves to the next line whole, and breaks inside only when it is wider than the line. */
+.word.in-progress:is(.dots, .tail) { white-space: normal; display: inline-block; max-width: 100%; }
 .settle { transition: color var(--dur-settle) var(--ease-state); @starting-style { color: var(--gt); } }
 .keep-colour .settle { color: var(--gt); }
 .glyph { transition: color var(--dur-cue) var(--ease-state), opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }

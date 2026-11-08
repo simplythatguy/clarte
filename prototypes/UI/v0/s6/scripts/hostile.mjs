@@ -955,6 +955,39 @@ await run('31 accessible names match the visible text: More, and the dimmed Menu
   note(`More "${more?.name}" / "${more?.text}"; Q4 while speaking "${q4.name ?? q4.text}" (aria-disabled ${q4.disabled})`);
 });
 
+await run('32 an ambiguous code: Q1 offers Options, and the right word is one look away ("computer science is hosting")', async () => {
+  await fresh(); await rest();
+  for (const w of ['computer', 'science', 'is']) {
+    await type(w, 100); await settle();
+    const shown = (await labelOf('.cell-q1')).toLowerCase();
+    if (shown !== w) problem(`typing "${w}" shows "${shown}" in Q1`);
+    await press('1', 150); await settle();
+  }
+  await type('hosting', 100); await settle();
+  const q1 = await labelOf('.cell-q1'), q4 = await labelOf('.cell-q4');
+  if (q1 !== 'Options') problem(`after "computer science is" + the code of hosting, Q1 reads "${q1}", not Options`);
+  if (q4 !== 'Delete') problem(`Q4 reads "${q4}", not Delete`);
+  await shot('32a-options-in-q1');
+  await press('1', 300); await settle();
+  const page1 = await evaluate(() => [5, 6, 7, 8].map((q) => document.querySelector(`.cell-q${q} .card-swap:not(.card-leaving) .card-label`)?.textContent?.trim().toLowerCase() ?? ''));
+  const back = await labelOf('.cell-q1');
+  if (back !== 'Back') problem(`the Options page has "${back}" in Q1, not Back`);
+  const at = page1.indexOf('hosting');
+  if (at < 0) problem(`hosting is not among the first four options: ${page1.join(', ')}`);
+  await shot('32b-options-page');
+  // Back returns to the word in progress, untouched.
+  await press('1', 300); await settle();
+  if ((await look()).pending !== 7) problem('Back from Options lost the typed groups');
+  await press('1', 300); await settle();
+  if (at >= 0) await press(String(5 + at), 300);
+  await settle();
+  const v = await look();
+  if (v.words.join(' ') !== 'computer science is hosting' || v.pending !== 0) problem(`message is "${v.words.join(' ')}" with ${v.pending} pending`);
+  await shot('32c-hosting-picked');
+  note(`Q1 "${q1}" / Q4 "${q4}"; options ${page1.join(', ')}; message "${v.words.join(' ')}"`);
+  await sane();
+});
+
 // ── Report ──
 
 await browser.close();

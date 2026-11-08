@@ -9,7 +9,9 @@
  * suppress it too; this is the screen's own guard against "hello hello"): the next distinct word
  * takes its place. When nothing matches the typed groups it shows the engine's top correction
  * (one digit off) or the best word for the longest matching prefix, marked `slip`, so Q1 is never
- * empty. Accepting it appends it. While the device speaks, Q1 is Stop.
+ * empty. Accepting it appends it. When several whole words fit the typed groups and no two are
+ * close enough to branch on, Q1 is Options instead: it shows the top four in Q5–Q8 (owner,
+ * 2026-11-08). While the device speaks, Q1 is Stop.
  *
  * Q4 offers whatever is most needed at that moment, in this priority order:
  *   1. speaking: unavailable (dimmed, named);
@@ -19,7 +21,7 @@
  *   5. just spoken: Say again, for a few seconds;
  *   6. the message is empty: Menu.
  */
-import { conflictFor, type Conflict } from './conflict.ts';
+import { conflictFor, optionsFor, type Conflict } from './conflict.ts';
 import type { State } from './model.ts';
 import type { Prediction } from './prediction.ts';
 
@@ -29,6 +31,8 @@ export type PrimaryFn =
   | { kind: 'word'; word: string; display?: string; rank: number; complete: boolean; slip?: boolean }
   /** Groups are pending and nothing fits them, not even one digit off. */
   | { kind: 'no-match' }
+  /** Several whole words fit the typed groups: open them in Q5–Q8 rather than guess (conflict.ts `optionsFor`). */
+  | { kind: 'options' }
   | { kind: 'stop-speaking' };
 
 /** Q4, the white card. */
@@ -51,6 +55,7 @@ export function nextWordIndex(state: State, prediction: Prediction): number {
 
 export function primaryFor(state: State, prediction: Prediction): PrimaryFn {
   if (state.live.kind === 'speaking') return { kind: 'stop-speaking' };
+  if (optionsOf(state, prediction)) return { kind: 'options' };
   const i = nextWordIndex(state, prediction);
   const top = prediction.words[i];
   if (top) {
@@ -66,6 +71,13 @@ export function primaryFor(state: State, prediction: Prediction): PrimaryFn {
     return fn;
   }
   return { kind: 'no-match' };
+}
+
+/** Options, when several whole words fit the typed groups and none is close enough to branch on. */
+export function optionsOf(state: State, prediction: Prediction): boolean {
+  const c = state.composition;
+  if (state.live.kind === 'speaking' || !c.pending.length || c.reopened) return false;
+  return !conflictFor(prediction, c.pending.length) && optionsFor(prediction);
 }
 
 /** The branch, when the typed groups spell two whole words about equally well. */

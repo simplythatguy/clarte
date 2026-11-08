@@ -17,7 +17,7 @@ import {
 } from '../../shared/composer.ts';
 import { signatureOf, type GroupId } from '../../shared/decoder.ts';
 import type { Conflict } from './conflict.ts';
-import { conflictOf, primaryFor, secondaryFor, type PrimaryFn, type SecondaryFn } from './policy.ts';
+import { conflictOf, optionsOf, primaryFor, secondaryFor, type PrimaryFn, type SecondaryFn } from './policy.ts';
 import type { PredictRequest, Prediction, Role } from './prediction.ts';
 import type { PartnerSource } from './voice.ts';
 
@@ -37,8 +37,12 @@ export type Screen =
   | { kind: 'talk' }
   /** The page Done opens: the message to review, Speak where Done was, and the message's actions. */
   | { kind: 'done' }
-  /** Other words: every exact-length word for the last word's code, four per page, to replace it. */
-  | { kind: 'other'; page: number }
+  /**
+   * Other words: every exact-length word for a code, four per page. Without `pending` it is the last
+   * word's code and a pick replaces that word (Done page); with `pending` it is the code being typed
+   * and a pick accepts the new word (Q1 Options).
+   */
+  | { kind: 'other'; page: number; pending?: boolean }
   /** `origin` is where Back returns to from a settings page opened from the Done page. */
   | { kind: 'menu'; page: MenuPage; origin?: 'done' }
   /** `from` is the screen calibration returns to, by Start, Back or Escape: the conversation or the Done page it was opened from, or the setup report on the first run. */
@@ -159,6 +163,9 @@ export function chooserCode(state: State): string {
 /** The Other words page: exact-length words for the last word's code, without that word in the message. */
 export function chooserRequestOf(state: State, page: number): PredictRequest {
   const words = state.composition.words.map((w) => w.text);
+  if (state.screen.kind === 'other' && state.screen.pending) {
+    return { history: historyOf(state), message: words, groups: groupsOf(state.composition.pending), offset: page * CHOOSER_PAGE, complete: true, limit: CHOOSER_PAGE };
+  }
   return { history: historyOf(state), message: words.slice(0, -1), groups: chooserCode(state), offset: page * CHOOSER_PAGE, complete: true, limit: CHOOSER_PAGE };
 }
 
@@ -206,13 +213,14 @@ export function phaseOf(state: State, prediction: Prediction): string {
   if (screen.kind === 'setup') return `setup-${screen.step}`;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'done') return 'done';
-  if (screen.kind === 'other') return 'other-words';
+  if (screen.kind === 'other') return screen.pending ? 'options' : 'other-words';
   if (state.live.kind === 'speaking') return 'speaking';
   const typing = c.words.length > 0 || c.pending.length > 0;
   if (state.hearing) return typing ? 'hearing-typing' : 'hearing';
   if (state.live.kind === 'spoken') return 'spoken';
   if (c.pending.length) {
     if (conflictOf(state, prediction)) return 'composing-branch';
+    if (optionsOf(state, prediction)) return 'composing-options';
     if (!prediction.words.length) return prediction.fallback ? 'composing-slip' : 'composing-nomatch';
     return c.reopened ? 'composing-reopened' : 'composing-pending';
   }
