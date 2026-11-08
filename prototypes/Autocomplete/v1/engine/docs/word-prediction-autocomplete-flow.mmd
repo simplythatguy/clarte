@@ -1,0 +1,17 @@
+graph TD
+  UI["Gaze board<br/>tap group tiles 1-4"] -->|"history + message + groups"| WP["POST /api/predict<br/>Word Prediction"]
+  UI -->|"same request"| AC["POST /api/complete<br/>Autocomplete"]
+  WP --> CTX["Build context<br/>partner turns + words so far"]
+  AC -->|"calls the same engine"| CTX
+  CTX --> NG["Word-count model<br/>Kneser-Ney + AAC 4-gram"]
+  CTX --> NN["Neural model<br/>fine-tuned SmolLM2-135M"]
+  CTX --> RB["Recent-word boost<br/>partner and user words"]
+  JEV["Jev Choice API<br/>optional, async"] -.->|"25% re-rank"| MIX
+  NG --> MIX["Mix the models<br/>neural 87.5% if partner spoke, else 37.5%"]
+  NN --> MIX
+  RB --> MIX
+  MIX -->|"P(word) for 66,501 words<br/>once per word, ~60 ms"| FIL["Filter by typed groups<br/>~5-10 ms per tap"]
+  FIL -->|"likely, choose, short"| LISTS["Ranked word lists<br/>Accept card + chooser"]
+  FIL -->|"top word + share of probability"| TOP["Single completion<br/>word + probability"]
+  LISTS -->|"Accept or pick, then next word"| UI
+  TOP -->|"AC card"| UI
