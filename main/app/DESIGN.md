@@ -8,13 +8,21 @@ It now lives in `main/app` as the app itself (owner, 2026-11-08), with v0's shar
 
 The primary card always sits in Q4 (top right) and the second card in Q1 (top left), so each action keeps one place. The primary card is dark and holds Listen, Stop, Speak, the predicted word, a suggested reply, Say again or Options. The second card holds Menu, Wait!, Delete or Not now. Listen turns into Stop, and Speak into Stop, where they were. Menu opens where the menu's Back button will be. This replaces DEC-100's "Q1 always holds the predicted word"; the word now sits in Q4. Each card keeps its own tone wherever it sits: dark for the primary card, grey glass for the second, and white for Menu (owner, 2026-11-08). The Menu card steps back so it leaves the centre of attention and the screen feels less crowded. It uses the page's own white, has no shadow, and its icon and label are secondary ink (`--ink-2`, 9.4:1 on white, against 17:1 for full ink). A 10% edge keeps it findable as a card on the white page. While it is looked at it darkens to full ink.
 
-## Demo word selection (Omer, 2026-11-08)
+## Pinned first choice comparison (Omer, 2026-11-08)
+
+This branch keeps the always-open Options flow and pins its first displayed prediction in the dark Q4 card. Opening Options and accepting that first word use the same button position. The first word is excluded from the bottom row, which shows up to four alternatives directly in Q5–Q8. Five or more alternatives use the existing two-word strip in Q5–Q6 and arrows in Q7–Q8. Paging never moves or replaces the pinned word. Q1 remains Back and Q2–Q3 remain reading/rest space.
+
+Two clicks at the same position open and accept. A fresh Space or Enter confirmation can accept the pinned word while gaze stays in Q4. Holding a key does not count as a second confirmation, and continuing a dwell does not automatically accept or speak. In dwell-only use the existing leave-and-return guard remains; stationary acceptance needs a deliberate click, key, or compatible explicit confirmation. No blink or sound detector is added by this change.
+
+The snapshot and candidate ordering from the demo below remain unchanged. This is a separate comparison branch and PR; PR #33 retains the original bottom-first chooser. Fewer eye movements are a design goal, not a measured fatigue or speed result.
+
+## Demo word selection baseline (Omer, 2026-11-08)
 
 During grouped typing the Q4 card always opens **Options**, even when the model strongly favours one word or has only one candidate. Nothing is accepted until a word is selected in the chooser. Q1 remains Delete, Q2–Q3 remain the reading/rest area, and Q5–Q8 remain the letter groups. This replaces the close-conflict trigger described below for the demo; it does not add the explored Q3 Other words control.
 
 The current inline guess comes first, followed by the fetched exact-length alternatives and the other fetched completions, with duplicates removed. The list is copied when Options opens and stays fixed until Back or acceptance. Candidate-list changes also invalidate an armed preview, so a late result cannot silently change the action being selected. Back preserves the pending groups; choosing a word returns to the draft without speaking.
 
-The existing five-card/two-card paging layout stays in place. Fetching beyond the existing candidate bounds and exact spelling remain follow-ups, rather than promises of full vocabulary coverage.
+The baseline five-card/two-card layout is recorded below; the pinned-first variant above reserves Q4 and pages only the remaining alternatives. Fetching beyond the existing candidate bounds and exact spelling remain follow-ups, rather than promises of full vocabulary coverage.
 
 ## Original Options design (owner, 2026-11-08)
 

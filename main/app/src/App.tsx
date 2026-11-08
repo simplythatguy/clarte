@@ -308,20 +308,27 @@ export function App() {
     // Enter or Space on a focused tile activates that tile; elsewhere they confirm a preview.
     const onKeyCapture = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      // A held key is not a second deliberate confirmation after the screen changes.
+      if (e.repeat) { e.preventDefault(); e.stopPropagation(); return; }
       // Confirming a preview by key is a keyboard action: no bloom, no transitions.
       if (engine.snapshot.state === 'previewed') { noteKeyActivation(true); suppressMotionBriefly(); }
-      const el = e.target as HTMLElement | null;
       const tile = el?.closest?.('[data-action]');
       const action = tile?.getAttribute('data-action');
+      const pinned = stateRef.current.screen.kind === 'options'
+        && engine.snapshot.quadrant === 'Q4' && engine.snapshot.looked === 'pick-0';
       // A keyboard-focused tile takes the key; a preview waiting for confirmation always wins,
       // and a tile that merely kept focus after a click does not steal the confirm.
-      if (action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed') {
+      const confirmed = action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed'
+        ? action : pinned ? 'pick-0' : null;
+      if (confirmed) {
         e.preventDefault();
         e.stopPropagation();
-        userActivation.current = action;
+        userActivation.current = confirmed;
         noteKeyActivation(true);
         suppressMotionBriefly();
-        engine.activate(action, e.timeStamp);
+        engine.activate(confirmed, e.timeStamp);
       }
     };
     window.addEventListener('keydown', onKeyCapture, true);
@@ -737,13 +744,15 @@ export function App() {
       title = TITLES[screen.page];
       trail = trailOf(screen.page);
     } else {
-      // Options (owner, 2026-11-08): the most likely word in Q5, then Q6, Q7, Q8, and a fifth in Q4.
+      // Keep the first prediction where Options was opened; page only the alternatives below.
       const views = screen.words.map((word, i): SlotView => ({
         action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
         body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
       }));
-      const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8', 'q4']);
+      const [first, ...alternatives] = views;
+      const paged = pageList(alternatives, screen.at, ['q5', 'q6', 'q7', 'q8']);
       slotViews = { q1: backCard('Home'), ...paged.slots };
+      if (first) slotViews.q4 = { ...first, tone: 'ink' };
       strip = paged.strip;
       title = 'Options';
     }

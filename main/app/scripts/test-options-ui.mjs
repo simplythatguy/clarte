@@ -30,6 +30,8 @@ try {
   await page.screenshot({ path: path.join(out, 'want-options.png') });
   await primary().click();
   await page.waitForFunction(() => window.clarteDebug.phase() === 'options');
+  assert.equal(await page.locator('.cell-q4 [data-action]').getAttribute('data-action'), 'pick-0',
+    'the first prediction must stay in the top-right quadrant');
   assert.equal(await page.locator('.rest-entering .word:not(.in-progress)').count(), 0, 'opening Options must not accept anything');
   await page.locator('[data-action="back"]').click();
   await page.getByRole('button', { name: /^Options:/ }).waitFor();
