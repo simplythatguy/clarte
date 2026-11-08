@@ -4,6 +4,10 @@ A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching
 
 In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
 
+## Letter cards (owner, 2026-11-08)
+
+The letter-group cards use the same grey glass as every other card. Only their letters carry colour, now vibrant: blue `#0A66E8`, violet `#7B2FF7`, green `#00873F` and orange `#D9480F`, in place of style 6's muted inks on pastel tints. The typed word's letters use the same inks, so each letter still matches its card. On the grey glass, blue is 4.7:1 and violet 5.3:1. Green (4.2:1) and orange (3.9:1) pass the 3:1 bar for large text (the letters are 36 px semibold); a green or orange vivid enough to read as vibrant cannot reach 4.5:1 on that grey. The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
+
 ## The grid (owner, 2026-11-08)
 
 One space, 32 px, everywhere. It is the gap from the screen's edges to the cards, and between cards across and down. Each card fills its quadrant less those spaces: four columns share five spaces and two rows share three. Cards are 25vw − 40 px wide and 50vh − 48 px tall, which is 320 × 402 px at 1440×900, 280 × 312 px at 1280×720 and 440 × 492 px at 1920×1080. Measured at all three sizes, every gap is exactly 32 px. In CSS (`.cell`), a card in column c sits 32 × (1 − c/4) px into its quadrant and a card in row r sits 32 × (1 − r/2) px down. That keeps every card inside its own backend quadrant, and `check-layout.mjs` reports zero violations in every phase at 1440×900 and 1280×720. The setup reports use the same full-size cards. The thread keeps its own 40 px gaze inset from the row boundary.
@@ -64,4 +68,4 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarte speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium), `listening-wait` (Wait! while listening), `composing` (the word in progress in group colours).

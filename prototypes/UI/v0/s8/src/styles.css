@@ -32,11 +32,13 @@
   /* The selection box around the word in progress (editor reference). */
   --select-line: #C9C6CF;
   --report-hairline: #DAD7DF;
-  /* Letter groups: group ink on glass */
-  --g1-ink: #1E5A82;
-  --g2-ink: #59409A;
-  --g3-ink: #2B6A4C;
-  --g4-ink: #8A4A22;
+  /* Letter groups (owner, 2026-11-08): vibrant letters on the same grey glass as every other card.
+     On the grey, blue and violet keep at least 4.5:1; green 4.2:1 and orange 3.9:1, above the
+     3:1 for large text (the letters are 36 px semibold). */
+  --g1-ink: #0A66E8;
+  --g2-ink: #7B2FF7;
+  --g3-ink: #00873F;
+  --g4-ink: #D9480F;
   /* Group inks for glyphs set on the canvas (the word in progress) */
   --g1-text: var(--g1-ink); --g2-text: var(--g2-ink); --g3-text: var(--g3-ink); --g4-text: var(--g4-ink);
   /* Conversation state: the pill is white glass; only its dot carries the state's colour. */
@@ -171,8 +173,6 @@ body {
 .card:is(.card-surface, .card-group):is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--glass-focus); border-color: var(--glass-edge-focus); }
 /* Letter cards (owner, 2026-11-07): each in a very light tint of its own group colour, with an
    edge in the same hue; the look still fills it with white. */
-.card-group { --tint: color-mix(in oklab, var(--gi) 8%, #FFFFFF); background: var(--tint); border-color: color-mix(in oklab, var(--gi) 14%, transparent); }
-.card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 4%, #FFFFFF); border-color: color-mix(in oklab, var(--gi) 32%, transparent); }
 .card-ink:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: var(--ink-focus); }
 /* A selection: solid white with the accent edge while gaze remains. */
 .card[data-gaze='done'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -675,6 +675,13 @@ body {
   :root[data-large] .metric-value { font-size: min(calc(36px * var(--scale)), 44px); }
 }
 
+:root[data-palette='vibrant'] {
+  /* White letters on solid group colours: the deeper inks keep their contrast. */
+  --g1-ink: #1E5A82;
+  --g2-ink: #59409A;
+  --g3-ink: #2B6A4C;
+  --g4-ink: #8A4A22;
+}
 :root[data-palette='vibrant'] .card-group { background: var(--gi); border-color: transparent; color: #FFFFFF; }
 /* The look deepens the colour (a dark wash rises), so white letters only gain contrast. */
 :root[data-palette='vibrant'] .card-group:is([data-gaze='focus'], [data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 92%, #000); border-color: transparent; }
