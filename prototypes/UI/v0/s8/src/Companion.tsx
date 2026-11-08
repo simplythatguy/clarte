@@ -51,7 +51,7 @@ export function Companion({ visible, listening, reaction, mood, pulse, still, th
   if (visible) shownKind.current = kind;
   return (
     <Orb mood={mood} pulse={pulse} still={still} theme={theme} palette={PALETTE} visible={visible}>
-      <SketchFace kind={visible ? kind : shownKind.current} visible={visible} enterDelay={260} />
+      <SketchFace kind={visible ? kind : shownKind.current} visible={visible} enterDelay={260} alive={!still} />
     </Orb>
   );
 }

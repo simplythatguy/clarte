@@ -719,10 +719,11 @@ body {
   width: var(--face-size, 140px);
   height: var(--face-size, 140px);
   margin: calc(var(--face-size, 140px) / -2) 0 0 calc(var(--face-size, 140px) / -2);
-  will-change: transform;
+  /* No will-change (NAT-26): a cached layer is rescaled as the orb swells and turns, which softens
+     the ink. Left alone, the 140 px face re-renders crisp every frame at negligible cost. */
 }
 
-/* Hand-drawn strokes (SketchFace.tsx): draw at a pen's pace, erase in reverse. */
+/* Hand-drawn strokes (SketchFace.tsx): crisp ink drawn at a pen's pace, erased in reverse. */
 .sketch {
   display: block;
   width: 100%;
@@ -730,30 +731,124 @@ body {
   overflow: visible;
   fill: none;
   stroke: var(--sketch-ink, var(--ink));
-  stroke-width: 3.4px;
+  stroke-width: 3.2px;
   stroke-linecap: round;
   stroke-linejoin: round;
+  shape-rendering: geometricPrecision;
 }
 .sketch path { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
-.sketch[data-mode='draw'] path { animation: sketch-draw var(--dur, 300ms) cubic-bezier(0.45, 0, 0.25, 1) var(--delay, 0ms) both; }
+/* A pen's bell-shaped speed: it eases off the start, sweeps, and settles into the end. */
+.sketch[data-mode='draw'] path { animation: sketch-draw var(--dur, 300ms) cubic-bezier(0.42, 0, 0.32, 1) var(--delay, 0ms) both; }
 .sketch[data-mode='erase'] path { animation: sketch-erase var(--dur, 140ms) cubic-bezier(0.5, 0, 0.75, 0) var(--delay, 0ms) both; }
 /* Opacity hides a round cap's dot where a stroke has not begun or has fully retracted. */
 @keyframes sketch-draw { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes sketch-erase { 0% { stroke-dashoffset: 0; opacity: 1; } 99% { opacity: 1; } 100% { stroke-dashoffset: 1; opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .sketch path { animation: none !important; stroke-dashoffset: 0; }
-  .sketch[data-mode='draw'] { transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
-  .sketch[data-mode='erase'] { opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); }
+
+/* Alive once drawn (NAT-26). Every part turns and scales about its own centre. Motions start at
+   --life-delay (set when the pen lifts) plus a part's --offset, and keep running through the
+   erase so nothing snaps back as the face leaves. */
+.sketch :is(.sketch-face, .sketch-part, .sketch-blink) { transform-box: fill-box; transform-origin: 50% 50%; }
+.sketch[data-alive] :is(.sketch-face, .sketch-part)[data-life] {
+  animation-delay: calc(var(--life-delay, 0ms) + var(--offset, 0ms));
+  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
 }
 
-/* ── Palettes (variant.ts) ──
-   Soft is style 6. Vibrant fills the letter cards with their group colour and sets the letters in
-   white: blue 5.2:1, purple 5.7:1, green 3.3:1, orange 3.6:1 (36 px bold, so large text, 3:1). */
-:root[data-palette='vibrant']:not([data-theme='dark']) {
-  --g1-ink: #2563EB; --g2-ink: #7C3AED; --g3-ink: #16A34A; --g4-ink: #EA580C;
-  --orb-opacity: 0.72;
-  --ink-2: #3F3B45;
-  --ink-3: #5E5966;
+/* The blink: the lid closes fast and opens a touch slower, as real eyelids do. */
+.sketch[data-alive][data-blink] .sketch-part[data-eye] .sketch-blink { animation: sketch-blink 190ms cubic-bezier(0.3, 0, 0.3, 1); }
+@keyframes sketch-blink { 0% { transform: scaleY(1); } 35%, 50% { transform: scaleY(0.1); } 100% { transform: scaleY(1); } }
+
+/* Drops fall from where they hang, fade, then a new one wells up. */
+.sketch[data-alive] .sketch-part:is([data-life='tear'], [data-life='sweat'], [data-life='drool']) { transform-origin: 50% 0%; }
+.sketch[data-alive] .sketch-part[data-life='tear'] { animation-name: sketch-life-fall; animation-duration: 3200ms; animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5); --fall: 9px; }
+.sketch[data-alive] .sketch-part[data-life='sweat'] { animation-name: sketch-life-fall; animation-duration: 4200ms; animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5); --fall: 6px; }
+@keyframes sketch-life-fall {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  45% { transform: translateY(var(--fall)) scale(0.92, 1.12); opacity: 0; }
+  46% { transform: translateY(0) scale(0.2); opacity: 0; }
+  70%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.sketch[data-alive] .sketch-part[data-life='drool'] { animation-name: sketch-life-stretch; animation-duration: 2600ms; }
+@keyframes sketch-life-stretch { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.28) translateY(0.5px); } }
+
+/* Hearts beat: lub-dub, then rest. */
+.sketch[data-alive] .sketch-part[data-life='beat'] { animation-name: sketch-life-beat; animation-duration: 1300ms; animation-timing-function: ease-out; }
+@keyframes sketch-life-beat { 0% { transform: scale(1); } 12% { transform: scale(1.14); } 26% { transform: scale(1); } 38% { transform: scale(1.08); } 56%, 100% { transform: scale(1); } }
+
+/* Sparkles twinkle: shrink and turn, then flash back. */
+.sketch[data-alive] .sketch-part[data-life='twinkle'] { animation-name: sketch-life-twinkle; animation-duration: 1800ms; }
+@keyframes sketch-life-twinkle { 0%, 60%, 100% { transform: scale(1) rotate(0deg); opacity: 1; } 30% { transform: scale(0.5) rotate(45deg); opacity: 0.55; } }
+
+/* The Z drifts up and away, then a new one appears. */
+.sketch[data-alive] .sketch-part[data-life='float'] { animation-name: sketch-life-float; animation-duration: 3600ms; animation-timing-function: ease-out; }
+@keyframes sketch-life-float {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  55% { transform: translate(4px, -9px) scale(0.8); opacity: 0; }
+  56% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  80%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+}
+
+/* Steam puffs up from the bottom of its curl. */
+.sketch[data-alive] .sketch-part[data-life='steam'] { animation-name: sketch-life-steam; animation-duration: 1500ms; transform-origin: 50% 100%; }
+@keyframes sketch-life-steam { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-2px) scale(0.92, 1.15); } }
+
+/* The question mark rocks on its base; the snowflake turns slowly. */
+.sketch[data-alive] .sketch-part[data-life='rock'] { animation-name: sketch-life-rock; animation-duration: 2400ms; transform-origin: 50% 100%; }
+@keyframes sketch-life-rock { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+.sketch[data-alive] .sketch-part[data-life='spin'] { animation-name: sketch-life-spin; animation-duration: 7000ms; animation-timing-function: linear; }
+@keyframes sketch-life-spin { to { transform: rotate(360deg); } }
+
+/* Teeth chatter in bursts. */
+.sketch[data-alive] .sketch-part[data-life='chatter'] { animation-name: sketch-life-chatter; animation-duration: 2200ms; animation-timing-function: linear; }
+@keyframes sketch-life-chatter {
+  0%, 4%, 12%, 20%, 28%, 36% { transform: translate(0, 0); }
+  8%, 24% { transform: translate(0.8px, 0.3px); }
+  16%, 32% { transform: translate(-0.8px, -0.2px); }
+  40%, 100% { transform: translate(0, 0); }
+}
+
+/* A tongue wags from its root. */
+.sketch[data-alive] .sketch-part[data-life='wiggle'] { animation-name: sketch-life-wiggle; animation-duration: 1700ms; transform-origin: 50% 0%; }
+@keyframes sketch-life-wiggle { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+
+/* One-off beats: wide eyes pop, brows lift and stay. */
+.sketch[data-alive] .sketch-part[data-life='pop'] { animation-name: sketch-life-pop; animation-duration: 520ms; animation-iteration-count: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes sketch-life-pop { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.sketch[data-alive] .sketch-part[data-life='lift'] { animation-name: sketch-life-lift; animation-duration: 600ms; animation-iteration-count: 1; animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1); }
+@keyframes sketch-life-lift { from { transform: translateY(0); } to { transform: translateY(-1.8px); } }
+
+/* Whole-face motions. */
+.sketch[data-alive] .sketch-face[data-life='chuckle'] { animation-name: sketch-face-chuckle; animation-duration: 2000ms; animation-timing-function: ease-out; }
+@keyframes sketch-face-chuckle {
+  0%, 48%, 100% { transform: translateY(0) rotate(0deg); }
+  8% { transform: translateY(-2.4px) rotate(-1.5deg); } 16% { transform: translateY(0) rotate(0deg); }
+  24% { transform: translateY(-2px) rotate(1.2deg); } 32% { transform: translateY(0); }
+  40% { transform: translateY(-1.2px); }
+}
+.sketch[data-alive] .sketch-face[data-life='hop'] { animation-name: sketch-face-hop; animation-duration: 700ms; animation-iteration-count: 1; animation-timing-function: ease-out; }
+.sketch[data-alive] .sketch-face[data-life='bounce'] { animation-name: sketch-face-hop; animation-duration: 640ms; animation-iteration-count: 3; animation-timing-function: ease-out; }
+@keyframes sketch-face-hop { 0%, 100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-3.5px) scale(1.03, 0.98); } 60% { transform: translateY(0.6px) scale(0.99, 1.02); } }
+.sketch[data-alive] .sketch-face[data-life='tilt'] { animation-name: sketch-face-tilt; animation-duration: 700ms; animation-iteration-count: 1; animation-timing-function: cubic-bezier(0.34, 1.3, 0.64, 1); }
+@keyframes sketch-face-tilt { from { transform: rotate(0deg); } to { transform: rotate(-6deg) translateY(-0.6px); } }
+.sketch[data-alive] .sketch-face[data-life='nod'] { animation-name: sketch-face-nod; animation-duration: 900ms; animation-iteration-count: 1; }
+@keyframes sketch-face-nod { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(1.8px); } }
+.sketch[data-alive] .sketch-face[data-life='wince'] { animation-name: sketch-face-wince; animation-duration: 2800ms; animation-timing-function: linear; }
+@keyframes sketch-face-wince { 0%, 16%, 100% { transform: translate(0, 0) scale(1); } 3% { transform: translate(-0.7px, 0) scale(0.97); } 7% { transform: translate(0.7px, 0) scale(0.97); } 11% { transform: translate(-0.4px, 0) scale(0.98); } }
+.sketch[data-alive] .sketch-face[data-life='queasy'] { animation-name: sketch-face-queasy; animation-duration: 3600ms; }
+@keyframes sketch-face-queasy { 0%, 100% { transform: rotate(-2.5deg) translateX(-0.6px); } 50% { transform: rotate(2.5deg) translateX(0.6px); } }
+.sketch[data-alive] .sketch-face[data-life='sigh'] { animation-name: sketch-face-sigh; animation-duration: 4200ms; }
+@keyframes sketch-face-sigh { 0%, 100% { transform: translateY(0) scaleY(1); } 40% { transform: translateY(1.6px) scaleY(0.98); } }
+.sketch[data-alive] .sketch-face[data-life='shake'] { animation-name: sketch-face-shake; animation-duration: 3000ms; animation-timing-function: linear; }
+@keyframes sketch-face-shake { 0%, 14%, 100% { transform: translateX(0); } 2% { transform: translateX(-1px); } 5% { transform: translateX(1px); } 8% { transform: translateX(-0.8px); } 11% { transform: translateX(0.6px); } }
+.sketch[data-alive] .sketch-face[data-life='shiver'] { animation-name: sketch-face-shiver; animation-duration: 2200ms; animation-timing-function: linear; }
+@keyframes sketch-face-shiver { 0%, 36%, 100% { transform: translateX(0); } 6%, 18%, 30% { transform: translateX(0.6px); } 12%, 24% { transform: translateX(-0.6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sketch path { animation: none !important; stroke-dashoffset: 0; }
+  .sketch :is(.sketch-face, .sketch-part, .sketch-blink) { animation: none !important; }
+  .sketch[data-mode='draw'] { transition: opacity var(--dur-cue) var(--ease-out); @starting-style { opacity: 0; } }
+  .sketch[data-mode='erase'] { opacity: 0; transition: opacity var(--dur-cue) var(--ease-out); }
 }
 :root[data-palette='vibrant'] .card-group { background: var(--gi); border-color: transparent; color: #FFFFFF; }
 /* The look deepens the colour (a dark wash rises), so white letters only gain contrast. */
