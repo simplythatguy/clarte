@@ -178,7 +178,6 @@ function EyesReport({ settings, calibratedAt }: { settings: Settings; calibrated
           <PlacesChart seen={seen} />
         </div>
       </section>
-      {!calibratedAt && <Note title="Not calibrated">Looks may land in the wrong place until you calibrate.</Note>}
     </>
   );
 }
