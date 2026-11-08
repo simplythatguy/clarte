@@ -277,6 +277,8 @@ body {
 .card-label.is-quote { font-size: max(20px, calc(min(calc(32px * var(--scale)), calc(140cqi / var(--len, 8))) * var(--fit, 1))); }
 /* At the floor and still too long (a 22-letter word on a 128 px card): the word wraps inside itself, every letter visible, rather than shrink or be cut. */
 .card[data-overflow] :is(.card-label, .setting-value, .phrase) { overflow-wrap: anywhere; text-wrap: wrap; }
+.card-label.card-arrow { display: block; line-height: 0; }
+.card-label.card-arrow .icon { width: max(48px, min(30cqi, 96px)); height: max(48px, min(30cqi, 96px)); stroke-width: 1.5; }
 .card-hint { font-size: max(20px, min(var(--fs-hint), 18cqi)); font-weight: 500; line-height: 1.2; color: var(--ink-2); }
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }

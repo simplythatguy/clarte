@@ -151,8 +151,8 @@ export function requestOf(state: State): PredictRequest {
   return { history: historyOf(state), message: c.words.map((w) => w.text), groups: groupsOf(c.pending), offset: c.pending.length ? c.candidateIndex : 0 };
 }
 
-/** Words per page of the Other words chooser: one per letter-group quadrant. */
-export const CHOOSER_PAGE = 4;
+/** Words per page of the chooser: Q5–Q7, with the arrow to the next three in Q8. */
+export const CHOOSER_PAGE = 3;
 
 /** The code the chooser reopens: the last word's own letters, so exact-length words are its peers. */
 export function chooserCode(state: State): string {

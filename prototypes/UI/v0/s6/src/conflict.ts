@@ -40,12 +40,27 @@ export type Conflict = { first: string; second: string };
  * 2.9608 for the branch alone and 2.9832 with neither; Options shows in about 2% of typed states.
  */
 export const OPTIONS_RATIO = 1e-4;
+/** A whole word further down the first page is a rival when it is at least this share of the word Q1 would show. */
+export const OPTIONS_RIVAL = 0.3;
 
-export function optionsFor(prediction: Prediction): boolean {
+/**
+ * `shown` is the word Q1 would offer (policy.ts: the top word, or the exact-length word preferred to
+ * a longer completion). Options stands in for it when it is a whole word and either
+ *  - it is the top word and the second word is whole too, at least OPTIONS_RATIO as likely (the
+ *    replayed rule: growing / hosting), or
+ *  - another whole word on the first page is at least OPTIONS_RIVAL as likely (owner, 2026-11-08:
+ *    "the hero" showed "less", with hero at 0.047 against less at 0.056 behind two longer words).
+ * A rival anywhere on the page at the loose ratio would open Options on nearly every short word
+ * ("is" against go, no, ho), so the loose ratio applies to the top two only.
+ */
+export function optionsFor(prediction: Prediction, shown = 0): boolean {
   if (prediction.offset !== 0 || prediction.fallback) return false;
-  const [a, b] = prediction.words;
-  if (!a || !b || !a.complete || !b.complete || a.corrected || b.corrected || a.p <= 0) return false;
-  return b.p / a.p >= OPTIONS_RATIO;
+  const a = prediction.words[shown];
+  if (!a || !a.complete || a.corrected || a.p <= 0) return false;
+  const whole = (w: Prediction['words'][number] | undefined) => Boolean(w && w.complete && !w.corrected);
+  const next = prediction.words[1];
+  if (shown === 0 && whole(next) && next.p >= OPTIONS_RATIO * a.p) return true;
+  return prediction.words.some((w, i) => i !== shown && whole(w) && w.p >= OPTIONS_RIVAL * a.p);
 }
 
 export function conflictFor(prediction: Prediction, typed: number): Conflict | null {

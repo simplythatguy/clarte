@@ -95,7 +95,7 @@ export function primaryFor(state: State, prediction: Prediction): PrimaryFn {
 export function optionsOf(state: State, prediction: Prediction): boolean {
   const c = state.composition;
   if (state.live.kind === 'speaking' || !c.pending.length || c.reopened) return false;
-  return !conflictFor(prediction, c.pending.length) && optionsFor(prediction);
+  return !conflictFor(prediction, c.pending.length) && optionsFor(prediction, nextWordIndex(state, prediction));
 }
 
 /** The branch, when the typed groups spell two whole words about equally well. */

@@ -127,20 +127,21 @@ export function doneSlots(): Slots {
   };
 }
 
-export const WORD_SLOTS: SlotName[] = ['q5', 'q6', 'q7', 'q8'];
+export const WORD_SLOTS: SlotName[] = ['q5', 'q6', 'q7'];
 
 /**
- * The Other words page. `words` is this page's list (at most four, each with its written form when
- * the engine sent one), `index` the replaced word's place in the message (for its capital), `page`
- * and `pages` the position for More. More's accessible name is its visible text ("More, Page 1 of 22").
+ * The word chooser (Options and Other words; owner, 2026-11-08): three words in Q5–Q7 and, while
+ * more remain, a right arrow in Q8 that swaps in the next three. On the last page the arrow is gone;
+ * Back (Q1) leaves. `words` is this page's list (each with its written form when the engine sent
+ * one), `index` the word's place in the message (for its capital), `page` and `pages` the position.
  */
 export function otherSlots(words: Shown[], index: number, page: number, pages: number): Slots {
   const slots: Slots = { q1: item('back', 'Back', <Back />, 'ink') };
-  if (pages > 1) {
+  if (page + 1 < pages) {
     const at = `Page ${page + 1} of ${pages}`;
-    slots.q4 = {
-      action: 'more', tone: 'surface', icon: <Next />, label: `More, ${at}`, bodyKey: `more:${page}`,
-      body: <><span className="card-label" style={longest('More')}>More</span><span className="card-hint">{at}</span></>,
+    slots.q8 = {
+      action: 'more', tone: 'surface', label: `More words, ${at}`, bodyKey: `more:${page}`,
+      body: <><span className="card-label card-arrow" aria-hidden="true"><Next /></span><span className="card-hint">{at}</span></>,
     };
   }
   words.forEach((word, i) => {

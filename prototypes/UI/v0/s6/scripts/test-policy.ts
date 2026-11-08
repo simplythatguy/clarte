@@ -110,12 +110,14 @@ check('Q1 Options: Q4 stays Delete', secondaryFor(hosting, AMBIGUOUS).kind === '
 check('Q1 Options: phase', phaseOf(hosting, AMBIGUOUS) === 'composing-options');
 check('Q1 Options: not when the second whole word is far below 1e-4 of the first', primaryFor(hosting, pred([['growing', 0.99999, true], ['hosting', 0.00000005, true]], { branch: false })).kind === 'word');
 check('Q1 Options: not when the second word is not whole (typing more decides)', primaryFor(hosting, pred([['growing', 0.6, true], ['growingly', 0.3, false]], { branch: false })).kind === 'word');
-check('Q1 Options: not when the best word is not whole', primaryFor(hosting, pred([['grow', 0.6, false], ['growing', 0.3, true], ['hosting', 0.1, true]], { branch: false })).kind === 'word');
+check('Q1 Options: also when the exact-length word Q1 would show has a whole-word rival further down (the hero / less)', primaryFor(hosting, pred([['message', 0.44, false], ['happy', 0.22, false], ['less', 0.056, true], ['hero', 0.047, true]], { branch: false })).kind === 'options');
+check('Q1 Options: not when a longer completion is shown (no whole word is close enough to it)', primaryFor(hosting, pred([['grow', 0.9, false], ['growing', 0.05, true], ['hosting', 0.04, true]], { branch: false })).kind === 'word');
+check('Q1 Options: not when the only whole word is the one shown', primaryFor(hosting, pred([['message', 0.44, false], ['less', 0.3, true], ['happy', 0.2, false]], { branch: false })).kind === 'word');
 check('Q1 Options: not when the engine branches (Q4 offers the second word)', primaryFor(branching, BRANCH).kind === 'word' && secondaryFor(branching, BRANCH).kind === 'second');
 check('Q1 Options: not with nothing typed', primaryFor({ ...talk, composition: message(['computer', 'science', 'is']) }, AMBIGUOUS).kind === 'word');
 check('Q1 Options: not after a reopen', primaryFor({ ...hosting, composition: { ...hosting.composition, reopened: true, candidateIndex: 1 } }, AMBIGUOUS).kind === 'word');
 check('Q1 Options: not on a slip page', primaryFor(hosting, { ...AMBIGUOUS, words: AMBIGUOUS.words.map((w) => ({ ...w, corrected: true })) }).kind === 'word');
-check('Q1 Options: the chooser asks for whole words of the typed code, the message unchanged', (() => { const r = chooserRequestOf({ ...hosting, screen: { kind: 'other', page: 1, pending: true } }, 1); return r.groups === '2334222' && r.complete === true && r.offset === 4 && r.message.join(' ') === 'computer science is'; })());
+check('Q1 Options: the chooser asks for whole words of the typed code, the message unchanged', (() => { const r = chooserRequestOf({ ...hosting, screen: { kind: 'other', page: 1, pending: true } }, 1); return r.groups === '2334222' && r.complete === true && r.offset === CHOOSER_PAGE && r.message.join(' ') === 'computer science is'; })());
 check('Q1 Options: phase of the open page', phaseOf({ ...hosting, screen: { kind: 'other', page: 0, pending: true } }, AMBIGUOUS) === 'options');
 check('Q4 3. groups pending: Delete', same(secondaryFor({ ...talk, composition: typing(message(['i']), 'outs') }, COMPLETION), { kind: 'delete', word: false }));
 check('Q4 3. reopened: Delete word', same(secondaryFor({ ...talk, composition: { ...message(['i']), pending: signatureOf('go'), candidateIndex: 1, reopened: true } }, NEXT), { kind: 'delete', word: true }));
@@ -157,8 +159,8 @@ check('accepting a completion keeps the typed groups (unchanged)', s.composition
 const ready: State = { ...talk, composition: message(['i', 'would', 'love', 'to', 'go']) };
 check('the chooser reopens the last word\'s own code', chooserCode(ready) === '23');
 const req0 = chooserRequestOf(ready, 0);
-check('page 1 asks for exact-length words, four at a time, without the word itself in the message', req0.complete === true && req0.limit === CHOOSER_PAGE && req0.offset === 0 && req0.groups === '23' && same(req0.message, ['i', 'would', 'love', 'to']));
-check('page 3 starts at offset 8', chooserRequestOf(ready, 2).offset === 8);
+check('page 1 asks for exact-length words, three at a time, without the word itself in the message', req0.complete === true && req0.limit === CHOOSER_PAGE && req0.offset === 0 && req0.groups === '23' && same(req0.message, ['i', 'would', 'love', 'to']));
+check('page 3 starts at offset 6 (three words a page)', chooserRequestOf(ready, 2).offset === 6);
 check('the chooser code of an empty message is empty', chooserCode(talk) === '');
 s = reducer(ready, { type: 'screen', screen: { kind: 'other', page: 0 } });
 check('the chooser phase', phaseOf(s, NEXT) === 'other-words');

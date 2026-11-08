@@ -184,7 +184,7 @@ function useChooser(state: State): { req: PredictRequest; prediction: Prediction
   useEffect(() => {
     if (!req) return;
     void fetchPrediction(req);
-    if (pages > 1) void fetchPrediction({ ...req, offset: ((req.offset / CHOOSER_PAGE + 1) % pages) * CHOOSER_PAGE });
+    if (req.offset / CHOOSER_PAGE + 1 < pages) void fetchPrediction({ ...req, offset: req.offset + CHOOSER_PAGE });
   }, [key, pages]); // eslint-disable-line react-hooks/exhaustive-deps
   return req && prediction ? { req, prediction } : null;
 }
@@ -549,7 +549,7 @@ export function App() {
       const pending = Boolean(s.screen.pending);
       if (action === 'back') go({ kind: 'talk' });
       // More was chosen: the new page shows at once, under the gaze that chose it.
-      else if (action === 'more') { go({ kind: 'other', page: (s.screen.page + 1) % pages, pending }); resync('other'); }
+      else if (action === 'more' && s.screen.page + 1 < pages) { go({ kind: 'other', page: s.screen.page + 1, pending }); resync('other'); }
       else if (/^other-[0-3]$/.test(action)) {
         const i = Number(action.slice(-1));
         const rank = s.screen.page * CHOOSER_PAGE + i;

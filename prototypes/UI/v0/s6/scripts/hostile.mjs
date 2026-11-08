@@ -441,32 +441,39 @@ await run('13 speaking an empty message', async () => {
   note('nothing happens');
 });
 
-await run('14 Other words: pages, More past the end, picking', async () => {
+await run('14 Other words: three a page, the arrow to the end, picking', async () => {
   await fresh();
   await heard('Where would you like to go for dinner tonight?');
-  for (let i = 0; i < 5; i++) await press('1', 150);
+  for (let i = 0; i < 5; i++) { await press('1', 150); await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 3000); await sleep(200); }
   const start = await look();
   await press('4', 300); // Done
   await press('7', 400); // Other words
+  await waitFor(() => window.clarteDebug.chooser()?.source === 'engine', null, 8000);
+  await sleep(200);
   let v = await sane('page 1');
   if (v.screen !== 'other') problem(`opened ${v.screen}`);
   const chooser = await evaluate(() => window.clarteDebug.chooser());
-  const pages = Math.max(1, Math.ceil(chooser.total / 4));
+  const pages = Math.max(1, Math.ceil(chooser.total / 3));
   const page1 = v.cards.filter((c) => c.action.startsWith('other-')).map((c) => c.text);
-  if (!page1.length) problem('no words on page 1');
+  if (!page1.length || page1.length > 3) problem(`page 1 shows ${page1.length} words`);
+  const arrow = () => evaluate(() => Boolean(document.querySelector('.cell-q8 .card[data-action="more"]')));
+  if (pages > 1 && !(await arrow())) problem('no arrow in Q8 though more words remain');
+  if (await evaluate(() => Boolean(document.querySelector('.cell-q4 .card[data-action]')))) problem('Q4 holds an action on the chooser');
   await shot('14a-other-words-page-1');
   if (pages > 1) {
-    await press('4', 400); // More
+    await press('8', 400); // the arrow
     v = await sane('page 2');
     const page2 = v.cards.filter((c) => c.action.startsWith('other-')).map((c) => c.text);
-    if (page2.join() === page1.join()) problem('More showed the same page');
+    if (page2.join() === page1.join()) problem('the arrow showed the same page');
     await shot('14b-other-words-page-2');
     if (pages <= 12) {
-      for (let i = 1; i < pages; i++) await press('4', 200);
-      v = await sane('wrapped');
+      for (let i = 2; i < pages; i++) await press('8', 250);
       const at = await evaluate(() => window.clarteDebug.state().screen.page);
-      const again = v.cards.filter((c) => c.action.startsWith('other-')).map((c) => c.text);
-      if (at !== 0 || !again.length) problem(`More past the last page did not start again (page ${at + 1}: ${again.join(' ')})`);
+      if (at !== pages - 1) problem(`the arrow stopped on page ${at + 1} of ${pages}`);
+      if (await arrow()) problem('the arrow is still there on the last page');
+      await press('8', 250);
+      if ((await evaluate(() => window.clarteDebug.state().screen.page)) !== pages - 1) problem('Q8 on the last page changed the page');
+      await press('1', 300); await press('4', 300); await press('7', 400); // Back, Done, Other words: page 1 again
     }
   }
   await press('6', 300); // the second word of the page
@@ -713,7 +720,14 @@ await run('24 display case: names from the engine on the card, in the message an
   await heard('Your sister Priya is coming at four with Marcus.'); await settle();
   const s = await evaluate(() => window.clarteDebug.state());
   const history = s.turns.map((t) => [t.who === 'partner' ? 'partner' : 'user', t.text]);
-  await type('is', 100); await settle(); await press('1', 150); await settle();
+  await type('is', 100); await settle();
+  if ((await labelOf('.cell-q1')) === 'Options') {
+    // "is" and "no" are both likely whole words here (no at a third of is): pick is from Options.
+    await press('1', 300); await settle();
+    const page1 = await evaluate(() => [5, 6, 7].map((q) => document.querySelector(`.cell-q${q} .card-swap:not(.card-leaving) .card-label`)?.textContent?.trim().toLowerCase() ?? ''));
+    await press(String(5 + Math.max(0, page1.indexOf('is'))), 300);
+  } else await press('1', 150);
+  await settle();
   const first = (await words())[0];
   const expected = `${first.charAt(0).toUpperCase()}${first.slice(1)} Priya`;
   // The engine's answer for "pr" after the first word: Priya, written as the partner wrote it.
@@ -768,7 +782,7 @@ await run('26 at 200% text and 1280x720 the partner\'s question stays whole, two
   await fresh(); await page.setViewportSize({ width: 1280, height: 720 }); await rest();
   await evaluate(() => window.clarteDebug.settings({ textScale: 2 })); await sleep(300);
   await heard('Where would you like to go for dinner tonight?'); await settle();
-  for (let i = 0; i < 5; i++) { await press('1', 150); await settle(); }
+  for (let i = 0; i < 5; i++) { await press('1', 150); await waitFor(() => window.clarteDebug.prediction().source === 'engine', null, 3000); await sleep(200); }
   const r = await evaluate(() => {
     const t = document.querySelector('.history .turn:last-child .turn-text');
     const rect = t.getBoundingClientRect(); const line = parseFloat(getComputedStyle(t).lineHeight);
@@ -998,6 +1012,25 @@ await run('33 a word typed in full shows that word before a longer completion ("
   const v = await look();
   if (v.words.join(' ') !== 'the') problem(`accepted "${v.words.join(' ')}"`);
   note(`Q1 "${q1}"; message "${v.words.join(' ')}"`);
+  await sane();
+});
+
+await run('34 a whole-word rival further down the list still opens Options ("the hero", not "less")', async () => {
+  await fresh(); await rest();
+  await type('the', 100); await settle(); await press('1', 150); await settle();
+  await type('hero', 100); await settle();
+  const q1 = await labelOf('.cell-q1');
+  if (q1 !== 'Options') problem(`"the" + the code of hero shows "${q1}" in Q1, not Options`);
+  await press('1', 300); await settle();
+  const page1 = await evaluate(() => [5, 6, 7].map((q) => document.querySelector(`.cell-q${q} .card-swap:not(.card-leaving) .card-label`)?.textContent?.trim().toLowerCase() ?? ''));
+  const at = page1.indexOf('hero');
+  if (at < 0) problem(`hero is not among the first three options: ${page1.join(', ')}`);
+  await shot('34-the-hero-options');
+  if (at >= 0) await press(String(5 + at), 300);
+  await settle();
+  const v = await look();
+  if (v.words.join(' ') !== 'the hero') problem(`message is "${v.words.join(' ')}"`);
+  note(`Q1 "${q1}"; options ${page1.join(', ')}; message "${v.words.join(' ')}"`);
   await sane();
 });
 
