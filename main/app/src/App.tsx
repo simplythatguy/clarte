@@ -50,6 +50,7 @@ import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { OptionsFace } from './OptionsFace.tsx';
 import { OnboardingPage, onboardingSlots, tallCard } from './Onboarding.tsx';
 import { GuideOrb } from './GuideOrb.tsx';
+import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
 import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
@@ -68,10 +69,13 @@ function loadStored(): State {
   try {
     const raw = localStorage.getItem(STORE);
     if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
-    const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean };
+    const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean; selection?: number };
+    const settings = migrate({ ...INITIAL_STATE.settings, ...saved.settings });
+    // Look + sound became the default on 2026-11-08; settings saved before then carry the old Dwell default.
+    if (saved.selection !== 2) { settings.mode = INITIAL_STATE.settings.mode; store({ selection: 2 }); }
     return {
       ...INITIAL_STATE,
-      settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }),
+      settings,
       screen: saved.setupDone || skip ? { kind: 'talk' } : INITIAL_STATE.screen,
     };
   } catch {
@@ -91,7 +95,7 @@ function setupDone(): boolean {
   try { return Boolean(JSON.parse(localStorage.getItem(STORE) ?? '{}').setupDone); } catch { return false; }
 }
 
-function store(patch: { settings?: Settings; setupDone?: boolean }): void {
+function store(patch: { settings?: Settings; setupDone?: boolean; selection?: number }): void {
   try {
     const current = JSON.parse(localStorage.getItem(STORE) ?? '{}');
     localStorage.setItem(STORE, JSON.stringify({ ...current, ...patch }));
@@ -263,15 +267,30 @@ export function App() {
   }, [noMatch]);
   const second = useSettled('delete', secondKey(slots.second), slots.second, looked, syncs);
 
+  // Look + sound (owner, 2026-11-08): a look closes the line round a card and a sound selects it.
+  // While the partner is heard or the device speaks, a sound could be theirs or its own, so looks
+  // select by dwell then; and without a microphone, always.
+  const [micReady, setMicReady] = useState(false);
+  useEffect(() => {
+    if (settings.mode !== 'confirm') return;
+    let sound: SoundSelect | null = null;
+    let stopped = false;
+    const onSound = () => { noteKeyActivation(false); engine.confirm(); };
+    const enabled = () => stateRef.current.live.kind !== 'listening' && stateRef.current.live.kind !== 'speaking';
+    startSoundSelect(onSound, enabled).then((s) => { if (stopped) s.stop(); else { sound = s; setMicReady(true); } }, () => setMicReady(false));
+    return () => { stopped = true; sound?.stop(); setMicReady(false); };
+  }, [settings.mode]);
+  const soundSelects = settings.mode === 'confirm' && micReady && live.kind !== 'listening' && live.kind !== 'speaking';
+
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {
-    engine.configure({ mode: settings.mode, noiseSigma: settings.noise ? 0.06 : 0 });
+    engine.configure({ mode: soundSelects ? 'confirm' : 'dwell', noiseSigma: settings.noise ? 0.06 : 0 });
     setDwellClasses(settings.letterDwell, settings.controlDwell, screen.kind === 'talk', settings.repeat);
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
     configureSound({ level: settings.sound, volume: settings.volume });
     store({ settings });
-  }, [settings, screen.kind]);
+  }, [settings, screen.kind, soundSelects]);
 
   // Card text fits its card after every render (cheap when nothing changed), on resize and once
   // the webfont arrives.

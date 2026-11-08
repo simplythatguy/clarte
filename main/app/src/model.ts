@@ -70,7 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   textScale: 1,
   sound: 'all',
   volume: 0.75,
-  mode: 'dwell',
+  mode: 'confirm',
   wordColours: false,
   suggestions: true,
   noise: false,

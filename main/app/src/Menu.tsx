@@ -30,7 +30,7 @@ const CYCLES = {
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
   sound: { key: 'sound', name: 'Sounds', values: ['all', 'fewer', 'off'], format: (v: string) => ({ all: 'All', fewer: 'Fewer', off: 'Off' })[v] ?? v },
   volume: { key: 'volume', name: 'Volume', values: [0.25, 0.5, 0.75, 1], format: (v: number) => `${Math.round(v * 100)}%` },
-  mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
+  mode: { key: 'mode', name: 'Selection', values: ['confirm', 'dwell'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Look + sound') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
   suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },

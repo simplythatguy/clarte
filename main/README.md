@@ -30,7 +30,8 @@ On later launches the app opens on the conversation screen and restores the save
 
 ## Input
 
-- **Eyes**, by default. Looks come from the webcam tracker. While the tracker is not calibrated, the mouse stands in.
+- **Eyes, then a sound**, by default (Menu › Settings › Dwell › Selection: **Look + sound**). A look closes the line round a card and waits. A short vocal sound (an "ah", a hum, a word) then selects it, so looking around never selects anything. The microphone runs with noise suppression, and the noise floor follows the room, so steady background noise does not select. While the partner is heard or Clarté speaks, and when the microphone is blocked, looks select by dwell instead. **Dwell** makes a long enough look select, as before.
+- **Eyes** drive looks from the webcam tracker. While the tracker is not calibrated, the mouse stands in.
 - **Mouse.** Add `?input=mouse` for no camera. Pointer position is the look. **Use the mouse** after a camera failure does the same for the session.
 - **Keys and clicks**, always. Keys 1 to 8 select the quadrant with that number, and a click selects a card.
 
@@ -43,6 +44,7 @@ Run these in `main/app` while `./clarte ui` runs:
 - `node scripts/selftest.ts` checks the gaze engine, the quadrant rules and the composer.
 - `npm run check` puts every debug phase through the backend-quadrant layout check at four window sizes.
 - `node scripts/e2e-first-run.mjs` drives the first run in Chromium on a fake camera. It needs Gaze Lab's face fixture (`npm run fixture` in `prototypes/Gaze Lab`). A photo cannot move its eyes, so this check proves the plumbing, not gaze accuracy.
+- `node scripts/e2e-sound-select.mjs` checks Look + sound on a fake microphone: a look arms a card, steady noise does not select, and a short "ah" does.
 - `npx tsc --noEmit -p tsconfig.json` typechecks the app.
 
 ## Where things live in the app
