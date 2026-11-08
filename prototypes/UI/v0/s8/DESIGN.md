@@ -10,9 +10,7 @@ The Listening, Replying and Speaking pill is gone from the screen. A hidden live
 
 ## Letter cards (owner, 2026-11-08)
 
-The letters sit centred on the card in two rows, the first taking the extra letter: ABC over DEF, GHIJ over KLMN, OPQ over RS, TUVW over XYZ. They are the Menu label's size, 44 px at 100% text (was 36 px). At larger text they are capped at 28% of the card's width, which keeps the widest row (GHIJ, TUVW) at least 25 px inside the card at 200% text on 1280×720.
-
-The letter-group cards use the same grey glass as every other card. Only their letters carry colour, now vibrant: blue `#0A66E8`, violet `#7B2FF7`, green `#00873F` and orange `#D9480F`, in place of style 6's muted inks on pastel tints. The typed word's letters use the same inks, so each letter still matches its card. On the grey glass, blue is 4.7:1 and violet 5.3:1. Green (4.2:1) and orange (3.9:1) pass the 3:1 bar for large text (the letters are 36 px semibold); a green or orange vivid enough to read as vibrant cannot reach 4.5:1 on that grey. The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
+The letter-group cards use the same grey glass as every other card. Their letters stay 36 px, bottom left, in one row. Centred two-row letters at the Menu label's size were tried and undone at the owner's request. Only their letters carry colour, now vibrant: blue `#0A66E8`, violet `#7B2FF7`, green `#00873F` and orange `#D9480F`, in place of style 6's muted inks on pastel tints. The typed word's letters use the same inks, so each letter still matches its card. On the grey glass, blue is 4.7:1 and violet 5.3:1. Green (4.2:1) and orange (3.9:1) pass the 3:1 bar for large text (the letters are 36 px semibold); a green or orange vivid enough to read as vibrant cannot reach 4.5:1 on that grey. The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
 
 ## The grid (owner, 2026-11-08)
 

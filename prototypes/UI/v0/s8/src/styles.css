@@ -61,6 +61,7 @@
   --fs-message: calc(52px * var(--scale));
   --fs-live: calc(40px * var(--scale));
   --fs-turn: calc(26px * var(--scale));
+  --fs-letters: calc(36px * var(--scale));
   --fs-label: calc(44px * var(--scale));
   --fs-hint: calc(20px * var(--scale));
 
@@ -242,22 +243,20 @@ body {
 .card-ink .card-hint { color: var(--on-ink-2); }
 .card-ink .card-label.is-quote { color: rgb(255 255 255 / 0.86); }
 
-/* Letter groups (owner, 2026-11-08): the letters sit centred on the card in two rows (App.tsx
-   `halves`: ABC over DEF), at the Menu label's size. 28cqi caps them so four letters always fit
-   the card's width at large text sizes. */
-.card-group { justify-content: center; align-items: center; }
-.card-group .card-body { margin-top: 0; justify-items: center; align-content: center; --gap: 12px; }
-.card-group .card-swap { align-items: center; }
+/* Letter groups: the letters are the label, then the count glyph. */
 .letters {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: min(var(--fs-label), 28cqi);
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  font-size: max(24px, min(var(--fs-letters), 15cqi));
   font-weight: 650;
-  line-height: 1.12;
+  line-height: 1.1;
   letter-spacing: 0.1em;
   margin-right: -0.1em; /* optical centring: tracking adds space after the last letter */
 }
+/* Above 100% text the row may break into two rows of four rather than shrink (BRIEF). */
+:root[data-large] .letters { font-size: max(24px, min(var(--fs-letters), 28cqi)); line-height: 1.05; }
+.card-group .card-body { --gap: 12px; }
 
 /* Thread: the rest zone Q2–Q3 */
 .thread {
