@@ -5,3 +5,5 @@ node_modules/
 # clarte launcher: local secrets and the downloaded toolchains
 .env
 .tools/
+.env.*
+!.env.example
