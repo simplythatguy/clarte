@@ -14,6 +14,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.setDefaultNavigationTimeout(60000);
   page.on('pageerror', e => errors.push(e.message));
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().includes('[backend quadrants]')) errors.push(message.text());
+  });
   await page.addInitScript(() => {
     window.__spoken = 0;
     window.speechSynthesis.speak = () => { window.__spoken += 1; };
@@ -90,6 +93,9 @@ try {
       }
       assert.equal(await page.getByRole('button', { name: 'Next', exact: true }).getAttribute('aria-disabled'), 'true');
       assert.equal(await page.getByRole('button', { name: 'Previous', exact: true }).getAttribute('aria-disabled'), null);
+      await page.getByRole('button', { name: 'Previous', exact: true }).click();
+      await page.waitForTimeout(400);
+      assert.equal(await q4.getAttribute('aria-label'), 'Accept want');
     }
     assert.deepEqual(await page.evaluate(() => window.clarteDebug.validate()), []);
     await page.mouse.move(700, 200);
@@ -113,6 +119,7 @@ try {
   assert.equal(await page.evaluate(() => window.__spoken), 0);
   results.push('Two fresh Space confirmations from a gaze preview open and accept in Q4; holding the first key does not.');
   assert.deepEqual(errors, []);
+  results.push('Normal-motion forward and backward paging emitted no transient backend-quadrant collisions.');
   await writeFile(path.join(out, 'pinned-results.json'), JSON.stringify({ results, errors }, null, 2));
   console.log(results.join('\n'));
 } catch (error) {

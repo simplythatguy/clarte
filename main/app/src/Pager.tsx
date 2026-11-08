@@ -55,7 +55,7 @@ export function PagedStrip({ strip, activate }: { strip: Strip; activate: (actio
     return () => clearTimeout(t);
   }, [strip.at]);
   return (
-    <div className="pager" inert={sliding || undefined}>
+    <div className="pager" inert={sliding || shownAt.current !== strip.at || undefined}>
       <div className="pager-view">
         <div className="pager-track" style={{ ['--at' as string]: strip.at }}>
           {strip.views.map((v, i) => (
