@@ -4,10 +4,11 @@ A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching
 
 In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
 
-## The grid (owner, 2026-11-07)
+## The grid (owner, 2026-11-08)
 
-Style 8 first tried six equal cards on an even 16 px grid (340 × 426 px each, merged in PR #18), then a shorter letter row with Listen and Menu stretched down to meet it. Both are undone at the owner's request ("those are not the normal sizes, I mean the sizes in s6–s7"). The cards are style 6 and 7's again: 296 × 338 px at 1440×900, 64 px gutters and 40 px from the screen edge. `check-layout.mjs` reports zero violations in every phase at 1440×900 and 1280×720, for both palettes.
+One space, 32 px, everywhere. It is the gap from the screen's edges to the cards, and between cards across and down. Each card fills its quadrant less those spaces: four columns share five spaces and two rows share three. Cards are 25vw − 40 px wide and 50vh − 48 px tall, which is 320 × 402 px at 1440×900, 280 × 312 px at 1280×720 and 440 × 492 px at 1920×1080. Measured at all three sizes, every gap is exactly 32 px. In CSS (`.cell`), a card in column c sits 32 × (1 − c/4) px into its quadrant and a card in row r sits 32 × (1 − r/2) px down. That keeps every card inside its own backend quadrant, and `check-layout.mjs` reports zero violations in every phase at 1440×900 and 1280×720. The setup reports use the same full-size cards. The thread keeps its own 40 px gaze inset from the row boundary.
 
+Earlier grids, in order: six equal cards on a 16 px grid (PR #18); a shorter letter row; then style 6 and 7's 296 × 338 px cards with 64 px gutters, 32 px from the side edges and 40 px from the top and bottom (owner, 2026-11-07).
 ## Speaking (owner, 2026-11-07)
 
 The Cloud turns green and livelier while Clarte speaks, as in style 6. Style 7 hid it whenever text filled the middle, and the spoken sentence counted, so the green was never seen. In style 8 the Cloud stays while Clarte speaks, with the sentence over it. Its face steps aside (it erases at Speak and redraws when the speech ends), so it never sits under the words.
@@ -48,7 +49,7 @@ Removed with the Cloud: its 20 reaction faces, the mood colours, the word pulse,
 
 ### Docking (owner, 2026-11-08)
 
-The ball floats at the centre only while the middle holds no text at all. Any text there sends it to the top-left of Q2, where it docks as a 44 px mark beside the state pill, which steps 48 px right to make room. That includes the conversation history (owner, 2026-11-08: "even for this"), as well as words heard, the message typed, the sentence spoken and a menu title. In practice it sits at the centre at the start of a conversation and flies back only when the middle is empty again.
+The ball floats at the centre of the top row, halfway between the top of the screen and 50% (owner, 2026-11-08), only while the middle holds no text at all. Its float rises 8 px, so it rests 4 px low and floats ±4 px about that centre. Any text there sends it to the top-left of Q2, where it docks as a 44 px mark beside the state pill, which steps 48 px right to make room. That includes the conversation history (owner, 2026-11-08: "even for this"), as well as words heard, the message typed, the sentence spoken and a menu title. In practice it sits at the centre at the start of a conversation and flies back only when the middle is empty again.
 
 - **Path.** One curve that rises first and then drifts left along the top. It clears the new words instead of crossing them, and stays 40 px inside Q2, away from Q1. Going home it retraces the same curve.
 - **Timing.** Leaving makes room for words being read, so it launches at once and glides in over 620 ms (`--ease-state`). Coming home, nothing is waiting on it, so it eases out and in over 680 ms (`--ease-move`). It shrinks early on the way out and grows late on the way back.

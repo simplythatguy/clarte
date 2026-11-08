@@ -66,11 +66,14 @@
   --fs-hint: calc(20px * var(--scale));
   --fs-pill: min(calc(26px * var(--scale)), 34px);
 
-  /* Geometry: cards float inside their quadrant (README rule 1), on an 8 px grid */
+  /* Geometry (owner, 2026-11-08): one space everywhere. The screen edge to a card, and a card to
+     the next card across or down, are all --space. Each card stays inside its own quadrant
+     (README rule 1): four columns share five spaces, two rows share three. */
   --radius-card: 40px;
-  --card-w: calc(25vw - 64px);           /* 64 px gutter between neighbouring cards */
-  --card-h: min(calc(50vh - 112px), 344px);
-  --edge-y: 40px;                         /* top cards from the top, bottom cards from the bottom */
+  --space: 32px;
+  --card-w: calc(25vw - var(--space) * 5 / 4);
+  --card-h: calc(50vh - var(--space) * 3 / 2);
+  --edge-y: var(--space);                 /* page content from the top and bottom of the screen */
   --scale: 1;
 
   color-scheme: light;
@@ -112,13 +115,23 @@ body {
 .rest-leaving > .thread { z-index: 0; }
 .card-gone { opacity: 0; pointer-events: none; }
 
-.cell { position: relative; display: flex; justify-content: center; min-width: 0; min-height: 0; }
-.cell-q1 { grid-area: 1 / 1; align-items: flex-start; padding-top: var(--edge-y); }
-.cell-q4 { grid-area: 1 / 4; align-items: flex-start; padding-top: var(--edge-y); }
-.cell-q5 { grid-area: 2 / 1; align-items: flex-end; padding-bottom: var(--edge-y); }
-.cell-q6 { grid-area: 2 / 2; align-items: flex-end; padding-bottom: var(--edge-y); }
-.cell-q7 { grid-area: 2 / 3; align-items: flex-end; padding-bottom: var(--edge-y); }
-.cell-q8 { grid-area: 2 / 4; align-items: flex-end; padding-bottom: var(--edge-y); }
+/* A card in column c (0–3) sits --space × (1 − c/4) into its quadrant, and in row r (0–1)
+   --space × (1 − r/2) down, which puts exactly --space between every card and at every edge. */
+.cell {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--space) * (1 - var(--row) / 2)) 0 0 calc(var(--space) * (1 - var(--col) / 4));
+}
+.cell-q1 { grid-area: 1 / 1; --col: 0; --row: 0; }
+.cell-q4 { grid-area: 1 / 4; --col: 3; --row: 0; }
+.cell-q5 { grid-area: 2 / 1; --col: 0; --row: 1; }
+.cell-q6 { grid-area: 2 / 2; --col: 1; --row: 1; }
+.cell-q7 { grid-area: 2 / 3; --col: 2; --row: 1; }
+.cell-q8 { grid-area: 2 / 4; --col: 3; --row: 1; }
 
 /* Cards: frosted glass tiles, icon top left, words bottom left (glass-tiles reference). */
 .card {
@@ -255,7 +268,7 @@ body {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: var(--edge-y) 40px var(--edge-y);
+  padding: var(--edge-y) 40px 40px;
 }
 /* Everything readable stays inside Q2–Q3, inset 40 px from the row boundary: the backend classifies
    where the eye is, not what is drawn, so text in the row gutter would be read as a look at Q5–Q8.
@@ -445,29 +458,33 @@ body {
 .cell { z-index: 2; }
 .thread { position: relative; z-index: 1; }
 
-/* The companion (Companion.tsx) sits behind the thread in the top rest zone (Q2–Q3), its feet a
-   little above the letter row. It is light, not a target: nothing actionable is drawn there. When
-   text arrives it flies to Q2's top-left (Companion.tsx sets the transform on .companion-flight). */
+/* The companion (Companion.tsx) sits behind the thread in the top rest zone (Q2–Q3). It is light,
+   not a target: nothing actionable is drawn there. When text arrives it flies to Q2's top-left
+   (Companion.tsx sets the transform on .companion-flight). */
 .companion {
   position: absolute;
   z-index: 0;
   left: 25%;
   width: 50%;
   top: 0;
-  height: calc(50% + 120px);
+  height: 50%;
   pointer-events: none;
   color: var(--ink);
 }
+/* Centred on the top row (owner, 2026-11-08): halfway between the top of the screen and 50%. Its
+   float rises 8 px, so it rests 4 px low and floats ±4 px about the exact centre. */
 .companion-body {
   position: absolute;
   left: 50%;
-  bottom: 60px;
+  top: calc(50% + 4px);
   width: min(232px, 17vw);
-  translate: -50% 0;
+  translate: -50% -50%;
   transition: opacity 500ms var(--ease-out);
   @starting-style { opacity: 0; }
 }
 .companion-flight { transform-origin: 50% 50%; will-change: transform; }
+/* Block, so no line box adds space under the ball and its box centre is the ball's centre. */
+.companion-flight svg { display: block; }
 /* Docked, the ghost takes the pill's place, so the pill steps right by the ghost's width and a gap. */
 .state-row { transition: translate var(--dur-phase) var(--ease-state); }
 .companion[data-pose='dock'] ~ * .state-row { translate: 48px 0; }
@@ -532,8 +549,7 @@ body {
 @media (prefers-reduced-motion: reduce) { .thread-behind > .thread { transition-property: opacity; } }
 
 /* ── Setup reports ── */
-:root { --card-h-report: min(calc(50vh - 112px), 232px); }
-.layer[data-surface='report'] .card { height: var(--card-h-report); padding: 22px 26px 24px; gap: 12px; }
+.layer[data-surface='report'] .card { padding: 22px 26px 24px; gap: 12px; }
 
 .report {
   grid-area: 1 / 2 / 3 / 4;
@@ -620,7 +636,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  max-width: calc(25vw - 64px);
+  max-width: var(--card-w);
   padding-bottom: calc(var(--edge-y) + 8px);
   text-align: center;
   font-size: calc(20px * var(--scale));
