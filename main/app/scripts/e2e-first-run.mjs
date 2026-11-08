@@ -23,7 +23,7 @@ await mkdir(OUT, { recursive: true });
 const failures = [];
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` (${detail})` : ''}`); if (!ok) failures.push(name); };
 
-const browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA}`, '--use-fake-ui-for-media-stream', '--use-gl=angle'] });
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA}`, '--use-fake-ui-for-media-stream', '--use-gl=angle'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['camera'] });
 const page = await context.newPage();
 page.on('pageerror', (e) => console.error('page error:', e.message));

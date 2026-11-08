@@ -7,7 +7,7 @@ import path from 'node:path';
 const origin = process.argv[2] ?? 'http://127.0.0.1:5200';
 const out = process.argv[3] ?? 'evidence/options';
 await mkdir(out, { recursive: true });
-const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio'], channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
 const errors = [];
 const results = [];
 try {

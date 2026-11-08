@@ -7,7 +7,7 @@ import path from 'node:path';
 const origin = process.argv[2] ?? 'http://127.0.0.1:5200';
 const out = process.argv[3] ?? 'evidence/pinned-options';
 await mkdir(out, { recursive: true });
-const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio'], channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
 const results = [];
 const errors = [];
 try {
@@ -20,7 +20,8 @@ try {
     localStorage.setItem('clarte.v1', JSON.stringify({ setupDone: true, settings: { sound: 'off', mode: sessionStorage.getItem('pinned-test-mode') ?? 'dwell' } }));
   });
   const open = async () => {
-    await page.goto(`${origin}/?input=mouse&onboarding=off&engine=off`, { waitUntil: 'domcontentloaded' });
+    // No ?input=mouse: with onboarding off and no camera the pointer stands in for the eyes (#31, #32).
+    await page.goto(`${origin}/?onboarding=off&engine=off`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => Boolean(window.clarteDebug), null, { timeout: 60000 });
     await page.mouse.move(700, 200);
     for (const key of ['8', '5', '6', '8']) await page.keyboard.press(key);
@@ -38,16 +39,21 @@ try {
   assert.equal(await page.evaluate(() => window.__spoken), 0);
   results.push('Two clicks at the same Q4 coordinates open Options and accept the first word exactly once, without speech.');
 
-  // Real dwell opens Options; continuing to look must not count as the second activation.
+  // No dwell (#32): a look only previews. A confirmation opens Options; continuing to look must not
+  // count as the second activation.
   await open();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForFunction(() => window.clarteDebug.engine.snapshot.state === 'previewed');
+  await page.waitForTimeout(1500);
+  assert.notEqual(await page.evaluate(() => window.clarteDebug.phase()), 'options', 'a look alone must not open Options');
+  await page.keyboard.press('Space');
   await page.waitForFunction(() => window.clarteDebug.phase() === 'options');
   await page.waitForTimeout(2200);
   assert.equal(await page.evaluate(() => window.clarteDebug.phase()), 'options');
   assert.equal(await q4.getAttribute('data-action'), 'pick-0');
   assert.equal(await q4.getAttribute('aria-label'), 'Accept want');
   assert.equal(await page.evaluate(() => window.__spoken), 0);
-  results.push('A continuous gaze opens the chooser once and cannot auto-accept the pinned word.');
+  results.push('A look previews Q4 without opening it; one confirmation opens the chooser, and continuing to look cannot auto-accept the pinned word.');
 
   // A switch sending Space can make a fresh confirmation without moving gaze out of Q4.
   await page.keyboard.down('Space');
