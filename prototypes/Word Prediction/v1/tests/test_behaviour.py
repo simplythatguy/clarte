@@ -27,7 +27,7 @@ class Learnable(unittest.TestCase):
         self.assertTrue(learn("okonkwo"))
         for w in ["fucking", "hello", "priya", "the", "ll", "gm"]:        # lexicon words are never learned
             self.assertFalse(learn(w), w)
-        for w in ["zzqx", "x", "fuckingg", "fuckers"]:                    # junk and profanity are never learned
+        for w in ["zzqx", "x", "fuckingg", "fuckers", "fuckingshit", "bullshitting"]:   # junk and profanity are never learned
             self.assertFalse(learn(w), w)
 
 

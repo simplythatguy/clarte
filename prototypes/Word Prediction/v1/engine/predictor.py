@@ -45,6 +45,8 @@ DEFAULTS = dict(
 )
 PROFANITY = set("fuck fucking fucked fucker motherfucker shit shitty bullshit cunt bitch asshole arsehole dick cock pussy wanker "
                 "bastard nigger nigga faggot retard slut whore twat".split())
+# A learned word is refused when any of these is inside it ("fuckingshit"), not only when it is one of them.
+PROFANITY_ROOTS = ("fuck", "shit", "cunt", "bitch", "asshole", "arsehole", "motherf", "wanker", "nigg", "fagg", "retard", "slut", "whore", "twat", "pussy", "bastard")
 WORDLIKE = re.compile(r"^[a-z]*[aeiouy][a-z']*$")
 MESSAGE_TOKEN = re.compile(r"[a-z]+(?:'[a-z]+)*|[0-9]+(?:[.:][0-9]+)?")
 
@@ -107,7 +109,7 @@ class Engine:
         """Commit teaches the engine words the lexicon does not know (new names), never lexicon words
         (history already covers their recency), profanity or junk tokens."""
         return (word not in self.lex.index and len(word) > 1 and WORDLIKE.match(word) is not None
-                and word not in PROFANITY and word.rstrip("s").rstrip("ing").rstrip("er") not in PROFANITY)
+                and not any(root in word for root in PROFANITY_ROOTS))
 
     def commit(self, word, history=(), message=()):
         raw = str(word).strip()

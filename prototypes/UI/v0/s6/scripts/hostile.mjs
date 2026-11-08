@@ -717,7 +717,7 @@ await run('24 display case: names from the engine on the card, in the message an
   const first = (await words())[0];
   const expected = `${first.charAt(0).toUpperCase()}${first.slice(1)} Priya`;
   // The engine's answer for "pr" after the first word: Priya, written as the partner wrote it.
-  await evaluate(({ history, first }) => window.clarteDebug.seed({ history, message: [first], groups: '33', offset: 0 }, { words: [{ word: 'priya', p: 0.8, complete: false, display: 'Priya' }, { word: 'so', p: 0.1, complete: true }], total: 2, longer: 0.8, offset: 0, source: 'engine' }), { history, first });
+  await evaluate(({ history, first }) => window.clarteDebug.seed({ history, message: [first], groups: '33', offset: 0 }, { words: [{ word: 'priya', p: 0.8, complete: false, display: 'Priya' }, { word: 'so', p: 0.01, complete: true }], total: 2, longer: 0.8, offset: 0, source: 'engine' }), { history, first });
   await type('pr', 100); await sleep(250);
   let v = await sane('typing pr');
   if (v.q1 !== 'Priya') problem(`Q1 shows "${v.q1}", not "Priya"`);
@@ -985,6 +985,19 @@ await run('32 an ambiguous code: Q1 offers Options, and the right word is one lo
   if (v.words.join(' ') !== 'computer science is hosting' || v.pending !== 0) problem(`message is "${v.words.join(' ')}" with ${v.pending} pending`);
   await shot('32c-hosting-picked');
   note(`Q1 "${q1}" / Q4 "${q4}"; options ${page1.join(', ')}; message "${v.words.join(' ')}"`);
+  await sane();
+});
+
+await run('33 a word typed in full shows that word before a longer completion ("the", not "what")', async () => {
+  await fresh(); await rest();
+  await type('the', 100); await settle();
+  const q1 = await labelOf('.cell-q1');
+  if (q1 !== 'The') problem(`"the" typed in full as the first word shows "${q1}"`);
+  await shot('33-the-typed');
+  await press('1', 150); await settle();
+  const v = await look();
+  if (v.words.join(' ') !== 'the') problem(`accepted "${v.words.join(' ')}"`);
+  note(`Q1 "${q1}"; message "${v.words.join(' ')}"`);
   await sane();
 });
 

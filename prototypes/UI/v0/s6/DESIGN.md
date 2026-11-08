@@ -124,6 +124,10 @@ The factor 3 was measured. Typing every prefix of all 1,256 vocabulary words, a 
 
 **Recovery.** Typing another group continues the word and the branch goes. Delete is not reachable during a branch. To undo, accept either word, then Done → Delete word, which reopens it with the next candidate. A screen-reader status line says "Two words fit: might or night."
 
+## Exact length first (`src/policy.ts` `EXACT_FIRST`, owner 2026-11-08)
+
+While typing, Q1 prefers a word exactly as long as the groups typed over a longer completion when the whole word is at least a tenth as likely. The owner's case: "the" typed in full as the first word showed "What" (what 0.76, the 0.12, with no context to favour either). Completions still show while no whole word of that length is likely, so "w", "wh" still offer What. Replayed on the round-3 dev records: 2.9194 selections per word vs 2.9632 for completion first (1.5% fewer); showing only exact-length words, as first asked, would cost about 4.96, because no word could be finished early. Hostile case 33.
+
 ## Options (`src/conflict.ts` `optionsFor`, owner 2026-11-08)
 
 When several whole words fit the typed groups and none is close enough to branch on, Q1 does not guess: it reads **Options** (an ellipsis icon) and Q4 stays Delete. The owner's case: "computer science is hosting" read as "growing"; both are 2334222, as are issuing and looting, and the engine is sure of neither branch. Options opens the Other words page for the code being typed: Q1 Back (to the word in progress, groups intact), Q4 More, Q5–Q8 the top four whole words; a pick accepts the word and returns to the message. The word in progress shows as dots while Options stands, since no single word is on offer.

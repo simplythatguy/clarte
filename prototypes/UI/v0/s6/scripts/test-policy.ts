@@ -94,6 +94,14 @@ check('Q4 2. not on a slip page (corrected words)', secondaryFor(branching, { ..
 check('Q4 2. the second word carries its display form', (secondaryFor(branching, { ...BRANCH, words: [BRANCH.words[0], { ...BRANCH.words[1], display: 'Night' }, BRANCH.words[2]] }) as { display?: string }).display === 'Night');
 check('Q4 2. not after a reopen', secondaryFor({ ...branching, composition: { ...branching.composition, reopened: true, candidateIndex: 1 } }, BRANCH).kind === 'delete');
 
+// ── Q1 exact length first (owner, 2026-11-08: "the" typed in full showed "what") ──
+const theTyped: State = { ...talk, composition: typing(message([]), 'the') };
+const WHAT_THE = pred([['what', 0.764, false], ['the', 0.122, true], ['where', 0.026, false]], { branch: false });
+check('Q1 exact length first: "the" typed in full shows the, not what', same(primaryFor(theTyped, WHAT_THE), { kind: 'word', word: 'the', rank: 1, complete: true }));
+check('Q1 exact length first: not when the whole word is under a tenth of the completion', (primaryFor(theTyped, pred([['what', 0.9, false], ['the', 0.05, true]], { branch: false })) as { word?: string }).word === 'what');
+check('Q1 exact length first: a slip correction is never preferred', (primaryFor(theTyped, { ...WHAT_THE, words: [WHAT_THE.words[0], { ...WHAT_THE.words[1], corrected: true }] }) as { word?: string }).word === 'what');
+check('Q1 exact length first: not after a reopen (Delete word pages the ranking)', (primaryFor({ ...theTyped, composition: { ...theTyped.composition, reopened: true, candidateIndex: 1 } }, WHAT_THE) as { word?: string }).word === 'what');
+
 // ── Q1 Options: several whole words fit and none is close enough to branch on (owner, 2026-11-08) ──
 const hosting: State = { ...talk, composition: typing(message(['computer', 'science', 'is']), 'hosting') };
 const AMBIGUOUS = pred([['growing', 0.9998, true], ['hosting', 0.00024, true], ['issuing', 0.0001, true]], { branch: false });

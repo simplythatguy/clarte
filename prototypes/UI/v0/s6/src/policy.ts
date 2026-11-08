@@ -9,7 +9,8 @@
  * suppress it too; this is the screen's own guard against "hello hello"): the next distinct word
  * takes its place. When nothing matches the typed groups it shows the engine's top correction
  * (one digit off) or the best word for the longest matching prefix, marked `slip`, so Q1 is never
- * empty. Accepting it appends it. When several whole words fit the typed groups and no two are
+ * empty. While typing, a word exactly as long as the groups typed comes before a longer completion
+ * when it is at least a tenth as likely (`EXACT_FIRST`). Accepting it appends it. When several whole words fit the typed groups and no two are
  * close enough to branch on, Q1 is Options instead: it shows the top four in Q5–Q8 (owner,
  * 2026-11-08). While the device speaks, Q1 is Stop.
  *
@@ -44,9 +45,26 @@ export type SecondaryFn =
   | { kind: 'say-again'; turnId: number }
   | { kind: 'menu' };
 
+/**
+ * While typing, a word whose length is exactly the groups typed is preferred to a longer completion
+ * when it is at least this share of the completion's probability (owner, 2026-11-08: "the" typed in
+ * full showed "what"). Replayed on the round-3 dev records with the branch and Options: 2.9194
+ * selections per word vs 2.9632 for completion first; showing only exact-length words would cost
+ * about 4.96, since nothing could be completed early.
+ */
+export const EXACT_FIRST = 0.1;
+
 /** The word Q1 offers from `prediction`: the first that is not the word just accepted (next word only). */
 export function nextWordIndex(state: State, prediction: Prediction): number {
   const c = state.composition;
+  if (c.pending.length && !c.reopened && prediction.offset === 0) {
+    const [top] = prediction.words;
+    if (top && !top.complete) {
+      const exact = prediction.words.findIndex((w) => w.complete && !w.corrected);
+      if (exact > 0 && prediction.words[exact].p >= EXACT_FIRST * top.p) return exact;
+    }
+    return 0;
+  }
   const last = c.pending.length ? null : c.words[c.words.length - 1]?.text.toLowerCase() ?? null;
   if (last === null) return 0;
   const i = prediction.words.findIndex((w) => w.word.toLowerCase() !== last);
