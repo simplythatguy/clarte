@@ -647,7 +647,8 @@ export function App() {
     }
     if (s.screen.kind === 'voice') { voiceAction(action); return; }
     if (s.screen.kind === 'options') {
-      if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
+      // Back, or Options itself again (Q4 keeps it), closes Options.
+      if (action === 'back' || action === 'primary') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
       if (action === 'page-prev' || action === 'page-next') {
         dispatch({ type: 'screen', screen: { ...s.screen, at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
         play('control');
@@ -761,7 +762,7 @@ export function App() {
   // partner sees a reply is coming before the first letter (BRIEF "Partner awareness").
   const status: StateName | null = live.kind === 'listening' ? 'listening'
     : live.kind === 'speaking' ? 'speaking'
-    : screen.kind === 'talk' && (state.composition.words.length || state.composition.pending.length || (live.kind === 'quiet' && owedTurn(state))) ? 'composing'
+    : (screen.kind === 'talk' || screen.kind === 'options') && (state.composition.words.length || state.composition.pending.length || (live.kind === 'quiet' && owedTurn(state))) ? 'composing'
     : null;
 
   let slotViews: Slots;
@@ -806,29 +807,32 @@ export function App() {
     slotViews = voiceSlots(view);
     restKey = `voice-${screen.step}`;
     rest = <VoicePage {...view} />;
-  } else if (screen.kind === 'menu' || screen.kind === 'options') {
-    // The menu and Options open over the conversation, which stays in place, blurred.
-    let title: string;
-    let trail: string[] = [];
-    if (screen.kind === 'menu') {
-      const paged = menuSlots(screen.page, settings, screen.at);
-      slotViews = paged.slots;
-      strip = paged.strip;
-      title = TITLES[screen.page];
-      trail = trailOf(screen.page);
-    } else {
-      // Keep the first prediction where Options was opened; page only the alternatives below.
-      const views = screen.words.map((word, i): SlotView => ({
-        action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
-        body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
-      }));
-      const [first, ...alternatives] = views;
-      const paged = pageList(alternatives, screen.at, ['q5', 'q6', 'q7', 'q8']);
-      slotViews = { q1: backCard('Home'), ...paged.slots };
-      if (first) slotViews.q4 = { ...first, tone: 'ink' };
-      strip = paged.strip;
-      title = 'Options';
-    }
+  } else if (screen.kind === 'options') {
+    // Options (owner, 2026-11-08) changes only Q1 and the bottom row: Back in Q1, and the words,
+    // most likely first, in Q5–Q8 (paged when there are more). Q4 keeps the very card that opened
+    // Options (same key, so it does not even re-animate); selecting it again closes Options. The
+    // conversation stays exactly as it is, under the same key, so nothing blurs, moves or re-renders.
+    const views = screen.words.map((word, i): SlotView => ({
+      action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
+      body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
+    }));
+    const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
+    const pFace = primaryFace(primary.value);
+    slotViews = {
+      q1: backCard('Home'),
+      q4: { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, bodyKey: primary.key, body: <FaceBody face={pFace} /> },
+      ...paged.slots,
+    };
+    strip = paged.strip;
+    restKey = 'thread';
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />;
+  } else if (screen.kind === 'menu') {
+    // The menu opens over the conversation, which stays in place, blurred.
+    const paged = menuSlots(screen.page, settings, screen.at);
+    slotViews = paged.slots;
+    strip = paged.strip;
+    const title = TITLES[screen.page];
+    const trail = trailOf(screen.page);
     restKey = `title-${title}`;
     rest = (
       <>

@@ -48,7 +48,6 @@ Run these in `main/app` while `./clarte ui` runs:
 - `node scripts/selftest.ts` checks the gaze engine, the quadrant rules and the composer.
 - `npm test` runs those checks plus the always-open Options regression tests.
 - `npm run test:ui -- http://localhost:5200` checks the Options flow, late prediction updates, and all debug layouts at both supported sizes and 200% text against a running Vite dev server. Set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead of Playwright's Chromium.
-- `npm run test:ui:pinned -- http://localhost:5200` checks the pinned first prediction, same-position double click, stationary explicit confirmation, held-input safety, and bottom-row paging boundaries.
 - `npm run check` puts every debug phase through the backend-quadrant layout check at four window sizes.
 - `node scripts/e2e-first-run.mjs` drives the first run and a second launch in Chromium on a fake camera. It needs Gaze Lab's face fixture (`npm run fixture` in `prototypes/Gaze Lab`). A photo cannot move its eyes, so this check proves the plumbing, not gaze accuracy.
 - `node scripts/e2e-sound-select.mjs` checks the generic sound rule on a fake microphone: a look arms a card, steady noise does not select, and a short "ah" does.
@@ -69,4 +68,4 @@ Run these in `main/app` while `./clarte ui` runs:
 
 The demo keeps the current fetched candidate bounds: up to 20 exact-length alternatives, plus the fetched prediction page and its current best completion. Confidence no longer hides the chooser, and longer completions remain selectable. Full-vocabulary API paging and a literal spelling screen are separate follow-ups; this change does not claim that every possible word is reachable.
 
-On the pinned-first comparison branch, the first displayed prediction stays in Q4 after Options opens. Other choices use the bottom row; more than four alternatives page two at a time with arrows. Two deliberate clicks in Q4 open and accept without moving the pointer. Space or Enter can confirm the pinned word while gaze stays in Q4. Continuous dwell and key repeat do not count as a second selection. Dwell-only use still requires the existing leave-and-return gesture. PR #33 preserves the earlier chooser for comparison.
+Opening Options changes only Q1 (Back) and the bottom row, where the words appear, most likely first; more than four page two at a time with arrows. Q4 keeps the Options card, and selecting it again closes Options. The conversation stays exactly as it was, with no blur and no title (owner, 2026-11-08).
