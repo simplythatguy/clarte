@@ -44,9 +44,7 @@ export function MeshGradientSVG() {
     }
   }, [mousePosition])
 
-  // The gradient runs from pastel pink to near-black, so no single eye colour reads on all of it
-  // (measured: ink eyes fall to 1.3:1, white to 1.8:1). A white ring under the ink fill keeps
-  // the eyes' edge at 16:1 wherever the gradient drifts.
+  // White eyes (owner, 2026-11-08): currentColor is Clarte's dark ink, which sank into the navy.
   return (
     <motion.div
       className="relative w-full max-w-sm mx-auto p-8 rounded-lg"
@@ -77,10 +75,7 @@ export function MeshGradientSVG() {
         <motion.ellipse
           rx="20"
           ry="30"
-          fill="currentColor"
-          stroke="#FFFFFF"
-          strokeWidth="8"
-          paintOrder="stroke"
+          fill="#FFFFFF"
           className="animate-blink"
           animate={{
             cx: 80 + eyeOffset.x,
@@ -91,10 +86,7 @@ export function MeshGradientSVG() {
         <motion.ellipse
           rx="20"
           ry="30"
-          fill="currentColor"
-          stroke="#FFFFFF"
-          strokeWidth="8"
-          paintOrder="stroke"
+          fill="#FFFFFF"
           className="animate-blink"
           animate={{
             cx: 150 + eyeOffset.x,
