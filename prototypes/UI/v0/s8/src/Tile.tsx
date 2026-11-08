@@ -30,7 +30,7 @@ function iconKey(icon: ReactNode): string {
   return id;
 }
 
-export type Tone = 'group' | 'surface' | 'ink';
+export type Tone = 'group' | 'surface' | 'white' | 'ink';
 
 /** What one quadrant's card shows on the current screen. */
 export type SlotView = {

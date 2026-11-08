@@ -487,7 +487,8 @@ export function App() {
     const pFace = primaryFace(primary.value);
     const sFace = secondFace(second.value, state.composition.pending.length);
     const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
-    const secondView: SlotView = { action: 'delete', tone: 'surface', icon: sFace.icon ?? undefined, label: sFace.name, disabled: second.value.kind === 'none', bodyKey: second.key, body: <FaceBody face={sFace} /> };
+    // Menu is white (owner, 2026-11-08); every other light card stays grey glass.
+    const secondView: SlotView = { action: 'delete', tone: second.value.kind === 'menu' ? 'white' : 'surface', icon: sFace.icon ?? undefined, label: sFace.name, disabled: second.value.kind === 'none', bodyKey: second.key, body: <FaceBody face={sFace} /> };
     // Owner, 2026-11-08: Menu lives in Q1 and the Listen toggle in Q4, so each keeps one place: Listen
     // turns into Stop where it was, and Menu opens where its Back button will be.
     const swapped = primary.value.kind === 'listen' || primary.value.kind === 'stop-listening' || second.value.kind === 'menu';
