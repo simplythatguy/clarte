@@ -7,7 +7,8 @@
  *  - trace: the glass brightens a step and the line runs round the edge, linear, so its length is
  *    the time left;
  *  - commit: a solid circle of the card's own vivid colour grows from the centre until it covers
- *    the card (260 ms), then fades (280 ms, overlapping the circle's last 40 ms). Inside the circle
+ *    the card (260 ms) and holds a beat (120 ms); then the filled card, its line and its words fade
+ *    out together, as one piece, to the card as it was (280 ms). Inside the circle
  *    the card's words and icon turn to the colour that reads on it (white, or ink on a white fill),
  *    exactly as far as the circle has reached: a copy of the content in that colour, clipped to the
  *    same circle. The card is back at rest about half a second after the selection, even while gaze
@@ -69,10 +70,11 @@ type Props = {
 };
 
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
-/** The commit: the circle grows over the card, then the fill fades. Together about half a second. */
+/** The commit: the circle grows over the card, holds a beat, then fades as one piece. About 0.66 s. */
 const FLOOD_MS = 260;
+const HOLD_MS = 120;
 const FADE_MS = 280;
-const FADE_AT = FLOOD_MS - 40;
+const FADE_AT = FLOOD_MS + HOLD_MS;
 const EASE_STATE = 'cubic-bezier(0.2, 0, 0, 1)';
 const RETRACT_MS = 150;
 
@@ -94,6 +96,7 @@ function traceController(svg: SVGSVGElement, layer: HTMLElement) {
   const reset = () => {
     line.style.strokeDashoffset = '1';
     line.style.opacity = '0';
+    svg.style.opacity = '1';
     layer.style.opacity = '0';
     layer.replaceChildren();
   };
@@ -140,7 +143,10 @@ function traceController(svg: SVGSVGElement, layer: HTMLElement) {
       layer.style.opacity = '1';
       layer.style.clipPath = reach;
       if (!reduce) play(layer, [{ clipPath: 'circle(0px at 50% 50%)' }, { clipPath: reach }], FLOOD_MS, EASE_STATE);
-      const fade = play(layer, [{ opacity: 1 }, { opacity: 0 }], reduce ? 200 : FADE_MS, EASE_OUT, reduce ? 0 : FADE_AT);
+      // Filled, the card and its line are one piece: they fade out together, nothing runs backwards.
+      const [ms, at] = reduce ? [200, 0] : [FADE_MS, FADE_AT];
+      const fade = play(layer, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT, at);
+      play(svg, [{ opacity: 1 }, { opacity: 0 }], ms, EASE_OUT, at);
       floodEnds = fade.finished.then(() => { stop(); reset(); }, () => {});
     },
     clear() { stop(); reset(); },
