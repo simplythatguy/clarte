@@ -1,0 +1,7 @@
+# Downloaded rescorer models and LoRA adapters (RESCORERS.md) and transient files. The trained models
+# in this folder are in git through LFS.
+Qwen*
+SmolLM2-*
+adapters
+model-provenance.json
+**/*.partial

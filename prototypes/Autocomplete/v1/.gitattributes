@@ -1,2 +1,0 @@
-# Preserve the exact bytes recorded in COPY_PROVENANCE.json across checkouts.
-* -text whitespace=cr-at-eol

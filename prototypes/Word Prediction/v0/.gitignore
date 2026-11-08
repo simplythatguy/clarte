@@ -1,8 +1,0 @@
-build/
-*.dylib
-*.so
-__pycache__/
-.venv/
-*.dll
-models/model-provenance.json
-models/**/*.partial
