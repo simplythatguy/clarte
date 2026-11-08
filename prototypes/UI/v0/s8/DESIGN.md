@@ -42,6 +42,10 @@ The first round was rejected: solid vibrant cards were "too vibrant" and the lig
 - **History over the Cloud** carries a soft dark halo in the page's own colour.
 - **Fixed:** the Vibrant palette's darker secondary grey no longer applies in the dark theme. It had made partner turns almost invisible there, and style 7 (v2) still has this bug.
 
+## Sound (NAT-24)
+
+Style 8 plays the shared sound system ([../SOUND.md](../SOUND.md)) instead of style 7's bright clicks, which were 1.3 kHz triangle blips with a 6 ms attack. The cues are soft chords in F that fade in and out, and every cue ducks while Clarte speaks. Choosing a letter group is silent, and a short "not yet" plays a second after "No word" appears. Sounds and Volume now share a third settings page, **Sound**: Sounds cycles All, Fewer and Off, and Volume cycles 25–100%. Sounds' old place on the second settings page (Q5) is a rest zone. Settings saved as Sounds On or Off carry over as All or Off. Every cue is at `sounds.html`.
+
 ## Open questions for the owner
 
 1. Should the tracker's row split move down to about 61% so the taller Listen and Menu are valid, or should the top cards stop at the halfway line?

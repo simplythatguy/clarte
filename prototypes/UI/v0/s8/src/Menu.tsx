@@ -15,7 +15,7 @@ type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[
 /** A quiet glyph inside each setting's dwell ring, so the ring never reads as an empty radio button. */
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
   letterDwell: Timer, controlDwell: Timer, textScale: TextSize, theme: Sun, sound: Speaker, mode: Target,
-  wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob,
+  wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob, volume: Speaker,
 };
 
 const seconds = (ms: number) => `${+(ms / 1000).toFixed(2)} s`;
@@ -26,7 +26,8 @@ const CYCLES = {
   controlDwell: { key: 'controlDwell', name: 'Button dwell', values: [300, 600, 900, 1200, 1500, 2000], format: seconds },
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
   theme: { key: 'theme', name: 'Theme', values: ['light', 'dark'], format: (v: string) => (v === 'light' ? 'Light' : 'Dark') },
-  sound: { key: 'sound', name: 'Sounds', values: [true, false], format: onOff },
+  sound: { key: 'sound', name: 'Sounds', values: ['all', 'fewer', 'off'], format: (v: string) => ({ all: 'All', fewer: 'Fewer', off: 'Off' })[v] ?? v },
+  volume: { key: 'volume', name: 'Volume', values: [0.25, 0.5, 0.75, 1], format: (v: number) => `${Math.round(v * 100)}%` },
   mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
   suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
@@ -46,7 +47,9 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
 
 const PAGES: Record<Exclude<MenuPage, 'main'>, (SettingKey | null)[]> = {
   settings: ['letterDwell', 'controlDwell', 'textScale', 'theme'],
-  'settings-2': ['sound', 'mode', 'orbMotion', 'suggestions'],
+  // NAT-24: Sounds moved to its own page beside Volume; its old place is a rest zone.
+  'settings-2': [null, 'mode', 'orbMotion', 'suggestions'],
+  'settings-3': ['sound', 'volume', null, null],
   demo: ['noise', 'repeat', 'partner', 'wordColours'],
 };
 
@@ -54,6 +57,7 @@ export const TITLES: Record<MenuPage, string> = {
   main: 'Menu',
   settings: 'Settings',
   'settings-2': 'Settings',
+  'settings-3': 'Sound',
   demo: 'Demo',
 };
 
@@ -93,10 +97,12 @@ export function menuSlots(page: MenuPage, settings: Settings): Slots {
     };
   }
   const slots: Slots = { q1: back };
-  if (page === 'settings' || page === 'settings-2') {
+  const pages = ['settings', 'settings-2', 'settings-3'] as const;
+  const at = pages.indexOf(page as (typeof pages)[number]);
+  if (at >= 0) {
     slots.q4 = {
-      action: 'more', tone: 'surface', icon: <Next />, label: `More, page ${page === 'settings' ? 1 : 2} of 2`, bodyKey: 'more',
-      body: <><span className="card-label" style={longest('More')}>More</span><span className="pager" aria-hidden="true"><i data-on={page === 'settings' || undefined} /><i data-on={page === 'settings-2' || undefined} /></span></>,
+      action: 'more', tone: 'surface', icon: <Next />, label: `More, page ${at + 1} of ${pages.length}`, bodyKey: 'more',
+      body: <><span className="card-label" style={longest('More')}>More</span><span className="pager" aria-hidden="true">{pages.map((p) => <i key={p} data-on={p === page || undefined} />)}</span></>,
     };
   }
   PAGES[page].forEach((k, i) => { if (k) slots[`q${i + 5}` as SlotName] = setting(k); });

@@ -11,6 +11,7 @@ import {
   type Composition,
 } from '../../shared/composer.ts';
 import type { GroupId } from '../../shared/decoder.ts';
+import type { SoundLevel } from '../../shared/sound.ts';
 import { suggestReply } from './suggest.ts';
 import { conflictFor, type Conflict } from './conflict.ts';
 import { candidates } from '../../shared/composer.ts';
@@ -24,7 +25,7 @@ export type Turn = {
   holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'settings' | 'settings-2' | 'demo';
+export type MenuPage = 'main' | 'settings' | 'settings-2' | 'settings-3' | 'demo';
 export type CalibrationStep = 'position' | 'points' | 'validate' | 'ready';
 /** The first-run setup pages (owner concept: a report per step). */
 export type SetupStep = 'eyes' | 'voice' | 'ready';
@@ -48,7 +49,10 @@ export type Settings = {
   controlDwell: number;
   textScale: number;
   theme: 'light' | 'dark';
-  sound: boolean;
+  /** Which cues play (SOUND.md): all of them, the fewer important ones, or none. */
+  sound: SoundLevel;
+  /** Cue volume, 0–1. */
+  volume: number;
   mode: 'dwell' | 'confirm';
   wordColours: boolean;
   suggestions: boolean;
@@ -64,7 +68,8 @@ export const DEFAULT_SETTINGS: Settings = {
   controlDwell: 900,
   textScale: 1,
   theme: 'light',
-  sound: true,
+  sound: 'all',
+  volume: 0.75,
   mode: 'dwell',
   wordColours: false,
   suggestions: true,

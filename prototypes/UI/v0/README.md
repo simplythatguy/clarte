@@ -71,6 +71,7 @@ Controls named in the first prototype idea: **R1/R2** (Record → Respond mode b
 | `composer.ts` | The message model: committed words, pending groups, candidate index, and the reducer for group / accept / next / delete / clear / phrase |
 | `speech.ts` | Listening (Web Speech API in Chrome, scripted fallback elsewhere) and speaking (speech synthesis) |
 | `overlay.ts` | Developer overlay and live actionable tracking |
+| `sound.ts` | The sound system: calm, generated cues in one key, with levels, volume and ducking under the voice ([SOUND.md](SOUND.md)) |
 | `selftest.ts` | Headless checks, run with Node |
 
 The shared folder is owned by the v0 brief, not by any one style. A style that needs a change proposes it in its report rather than editing `shared/`.
@@ -101,6 +102,10 @@ The engine is the ported prototype in `prototypes/Word Prediction/v0`. Set up it
 Then open http://localhost:5100. Each of `s1`–`s8` is a self-contained Vite + React + TypeScript app with its own `package.json` (`npm install && npm run dev` inside its folder). Each has a `DESIGN.md` with its brief; `s1`–`s5` also have a `REPORT.md` written by their builders with evidence, council scores and open questions.
 
 **Onboarding is out of scope for v0.** The product keeps the calibration and onboarding flow from `prototypes/Eye Tracking`. The styles still contain the simulated calibration they were built with, but `?onboarding=off` opens any of them straight into the app, and `s_all` always loads them that way.
+
+## Sound
+
+[SOUND.md](SOUND.md) holds the sound rules, the cue map and the measurements. Style 8 plays the cues; its dev server also serves a listening page with every cue side by side at http://localhost:5108/sounds.html.
 
 ## Reference material
 
