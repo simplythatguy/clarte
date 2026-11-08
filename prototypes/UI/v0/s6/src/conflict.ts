@@ -1,25 +1,28 @@
 /**
  * Word conflicts: when the typed groups spell two whole words about equally well, the screen
  * branches instead of guessing (owner concept, 2026-11-07). Q1 keeps the first word and Q4 offers
- * the second; lines draw from the word in progress to both.
+ * the second; lines draw from the word in progress to both (Branch.tsx).
  *
- * Contract for the language model: `conflictFor` returns the two words when both are whole words
- * for the typed groups, the second is close to the first (p(second) / p(first) ≥ CLOSE), and the
- * word more likely ends here than continues (p(first) + p(second) ≥ ENDS_HERE × the summed
- * probability of longer words with the same start). Otherwise null.
- *
- * The stand-in decoder scores by frequency rank, so probability is approximated by Zipf's law,
- * p ∝ 1 / rank. A word the conversation already used gets the decoder's context boost and is
- * never in conflict with one it did not use.
+ * The engine decides (CONTRACT.md, round 2): a response with `branch: true` means offer `words[1]`
+ * in Q4; `branch: false` means do not. Its rule (round 4: only when two complete words are close
+ * and the best word is not a likely slip) was tuned on the benchmark's dev splits under this UI's
+ * policy, so it is followed as sent. The local decoder (and an engine that does not say) uses the
+ * rule below, kept as strict as the engine's and read off the answer's shape (`p` renormalised
+ * over every matching word, `complete` for exact-length words, `longer` for the summed p of longer
+ * words): the two best words are both whole words (not merely the two best whole words somewhere
+ * down the list), neither is a gaze-slip correction, the first is sure enough (p(first) ≥ SURE),
+ * the second is close to it (p(second) / p(first) ≥ CLOSE), and the word more likely ends here than
+ * continues (p(first) + p(second) ≥ ENDS_HERE × longer). Otherwise null, and Q4 keeps Delete.
  */
-import { decode, type Candidate } from '../../shared/decoder.ts';
-import type { Composition } from '../../shared/composer.ts';
+import type { Prediction } from './prediction.ts';
 
 export const CLOSE = 0.6;
+/** The first word must carry at least this much of the matching mass (the engine's round-3 rule). */
+export const SURE = 0.2;
 /**
  * The word must be this many times more likely to end here than to continue. Measured on the
  * stand-in vocabulary (1256 words, every prefix typed): 1 → 161 conflicts on whole words and 240
- * mid-word; 3 → 98 whole-word and 38 mid-word. Mid-word branches cost Delete for a look, so 3.
+ * mid-word; 3 → 98 whole-word and 38 mid-word. Mid-word branches cost a look, so 3.
  */
 export const ENDS_HERE = 3;
 /** Branching from two groups on: a single group is never a word decision. */
@@ -27,29 +30,16 @@ export const CONFLICT_FROM = 2;
 
 export type Conflict = { first: string; second: string };
 
-const CONTEXT_BOOST = 20000;
-const COMPLETE_BONUS = 50000;
-const TOP = 100000;
-
-/** Zipf probability (unnormalised) from the stand-in decoder's score. */
-function zipf(c: Candidate, extraPerLetter = 400, length = 0): { p: number; context: boolean } {
-  let raw = TOP - c.score + (c.complete ? COMPLETE_BONUS : -extraPerLetter * length);
-  const context = raw < 0;
-  if (context) raw += CONTEXT_BOOST;
-  return { p: 1 / (Math.max(0, raw) + 1), context };
-}
-
-export function conflictFor(c: Composition, context: readonly string[] = []): Conflict | null {
-  if (c.reopened || c.pending.length < CONFLICT_FROM) return null;
-  const list = decode(c.pending, { limit: 60, context });
-  const whole = list.filter((x) => x.complete);
-  if (whole.length < 2) return null;
-  const [a, b] = whole;
-  const pa = zipf(a), pb = zipf(b);
-  if (pa.context !== pb.context) return null;
-  if (pb.p / pa.p < CLOSE) return null;
-  let longer = 0;
-  for (const x of list) if (!x.complete) longer += zipf(x, 400, x.word.length - c.pending.length).p;
-  if (pa.p + pb.p < ENDS_HERE * longer) return null;
+export function conflictFor(prediction: Prediction, typed: number): Conflict | null {
+  if (prediction.offset !== 0 || prediction.fallback) return null;
+  if (prediction.source === 'engine' && typeof prediction.branch === 'boolean') {
+    const [a, b] = prediction.words;
+    return prediction.branch && a && b ? { first: a.word, second: b.word } : null;
+  }
+  if (typed < CONFLICT_FROM) return null;
+  const [a, b] = prediction.words;
+  if (!a || !b || !a.complete || !b.complete || a.corrected || b.corrected) return null;
+  if (a.p < SURE || b.p / a.p < CLOSE) return null;
+  if (a.p + b.p < ENDS_HERE * prediction.longer) return null;
   return { first: a.word, second: b.word };
 }

@@ -16,15 +16,13 @@ export const Mic = () => <Icon><rect x="9" y="3" width="6" height="11" rx="3" />
 export const StopSquare = () => <Icon><rect x="6.5" y="6.5" width="11" height="11" rx="2" /></Icon>;
 export const Speaker = () => <Icon><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path d="M15.5 9a4 4 0 0 1 0 6" /><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11" /></Icon>;
 export const Again = () => <Icon><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><path d="M4.5 4.5v4h4" /></Icon>;
-export const Backspace = () => <Icon><path d="M9 5.5h10a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9L3.5 12z" /><path d="M11.5 9.5l5 5M16.5 9.5l-5 5" /></Icon>;
 /** Delete, in the destructive red (as in the editor reference's toolbar). */
 export const Erase = () => <Icon destructive><path d="M9 5.5h10a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9L3.5 12z" /><path d="M11.5 9.5l5 5M16.5 9.5l-5 5" /></Icon>;
-export const Hand = () => <Icon><path d="M8 12V6.5a1.5 1.5 0 0 1 3 0V11" /><path d="M11 10.5V5a1.5 1.5 0 0 1 3 0v5.5" /><path d="M14 10.5V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.6a5.5 5.5 0 0 1-4.3-2.1L4 15.2a1.5 1.5 0 0 1 2.2-2L8 15" /></Icon>;
+/** Clear the message: a bin, in the destructive red like Delete. */
+export const Trash = () => <Icon destructive><path d="M4.5 7h15" /><path d="M9.5 7V4.5h5V7" /><path d="M6.5 7l.8 11.2A1.5 1.5 0 0 0 8.8 19.5h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7" /><path d="M10 10.5v6M14 10.5v6" /></Icon>;
 export const MenuLines = () => <Icon><path d="M4.5 7h15M4.5 12h15M4.5 17h15" /></Icon>;
-export const Close = () => <Icon><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></Icon>;
 export const Back = () => <Icon><path d="M19 12H5.5" /><path d="M11 6l-6 6 6 6" /></Icon>;
 export const Next = () => <Icon><path d="M5 12h13.5" /><path d="M13 6l6 6-6 6" /></Icon>;
-export const Sparkle = () => <Icon><path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2L5 10.5l5.2-1.8z" /><path d="M18.5 16v4M16.5 18h4" /></Icon>;
 export const Bubble = () => <Icon><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z" /><path d="M8 10h8M8 13h5" /></Icon>;
 export const Sliders = () => <Icon><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></Icon>;
 export const Target = () => <Icon><circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></Icon>;
@@ -41,4 +39,6 @@ export const Blob = () => <Icon><path d="M13.2 4.2c3.4.4 6.6 3 6.3 6.9-.3 3.6-2.
 export const Eye = () => <Icon><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></Icon>;
 export const Waveform = () => <Icon><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3" /></Icon>;
 export const Alert = () => <Icon><path d="M12 4l9 15.5H3z" /><path d="M12 10v4.5" /><circle cx="12" cy="17" r="0.6" fill="currentColor" /></Icon>;
+/** Other words: two arrows exchanging places (the word gives way to another). */
+export const Exchange = () => <Icon><path d="M4.5 8.5h14" /><path d="M14.5 4.5l4 4-4 4" /><path d="M19.5 15.5h-14" /><path d="M9.5 11.5l-4 4 4 4" /></Icon>;
 export const Wave = () => <Icon><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" /></Icon>;

@@ -150,36 +150,38 @@ function PlacesChart({ seen }: { seen: Set<QuadrantId> }) {
           </span>
         ))}
       </div>
-      <figcaption className="chart-caption"><span>Seen</span><span className="chart-key"><i data-seen /> {seen.size}</span><span className="chart-key"><i /> {8 - seen.size}</span></figcaption>
+      <figcaption className="chart-caption"><span className="chart-key"><i data-seen /> Seen</span></figcaption>
     </figure>
   );
 }
 
+/**
+ * Eyes: the tracking check. The metrics are settings' values (minimal-ui: no readout for a state
+ * that a card already carries, so calibration shows only as Calibrate / Calibrate again in Q8).
+ * The figure counts the places a look has reached and appears with the first one (no zero count);
+ * the 2 × 4 map fills as the person looks around, so no sentence explains it.
+ */
 function EyesReport({ settings, calibratedAt }: { settings: Settings; calibratedAt: number | null }) {
   const seen = useSeen();
   return (
-    <>
-      <section className="report report-tall" aria-label="Eyes">
-        <div className="report-upper">
-          <header className="report-top"><Counter step="eyes" /><span className="report-where">Setup</span></header>
-          <Heading name="Eyes" detail="Tracking check" />
-          <div className="metrics">
-            <Metric caption="Gaze from" value="Mouse" />
-            <Metric caption="Calibration" value={calibratedAt ? 'Done' : 'Not yet'} />
-            <Metric caption="Selection" value={settings.mode === 'dwell' ? 'Dwell' : 'Confirm'} />
-            <Metric caption="Letter dwell" value={(settings.letterDwell / 1000).toFixed(1)} unit="s" />
-          </div>
-          <div className="rule-line" aria-hidden="true"><i style={{ width: `${(seen.size / 8) * 100}%` }} /></div>
+    <section className="report report-tall" aria-label="Eyes">
+      <div className="report-upper">
+        <header className="report-top"><Counter step="eyes" /><span className="report-where">Setup</span></header>
+        <Heading name="Eyes" detail={calibratedAt ? 'Calibrated' : 'Tracking check'} />
+        <div className="metrics">
+          <Metric caption="Selection" value={settings.mode === 'dwell' ? 'Dwell' : 'Confirm'} />
+          <Metric caption="Letter dwell" value={(settings.letterDwell / 1000).toFixed(1)} unit="s" />
+          <Metric caption="Button dwell" value={(settings.controlDwell / 1000).toFixed(1)} unit="s" />
         </div>
-        <div className="report-lower">
-          <div className="report-column">
-            <Figure value={seen.size} unit="of 8" caption={<><b>Places</b> your look has reached</>} />
-          </div>
-          <PlacesChart seen={seen} />
+        <div className="rule-line" aria-hidden="true"><i style={{ width: `${(seen.size / 8) * 100}%` }} /></div>
+      </div>
+      <div className="report-lower">
+        <div className="report-column">
+          {seen.size > 0 && <Figure value={seen.size} unit="of 8" caption={<b>Places seen</b>} />}
         </div>
-      </section>
-      {!calibratedAt && <Note title="Not calibrated">Looks may land in the wrong place until you calibrate.</Note>}
-    </>
+        <PlacesChart seen={seen} />
+      </div>
+    </section>
   );
 }
 
@@ -206,7 +208,7 @@ function Strip({ report }: { report: Extract<VoiceReport, { kind: 'voice' }> }) 
 }
 
 function VoiceReportView({ report }: { report: VoiceReport }) {
-  let figure: ReactNode;
+  let figure: ReactNode = null;
   let metrics: ReactNode;
   let rows: ReactNode = null;
   let note: ReactNode = null;
@@ -215,15 +217,16 @@ function VoiceReportView({ report }: { report: VoiceReport }) {
     const v = report.voice;
     const kept = v.segments.filter((s) => s.selected);
     const others = v.segments.filter((s) => s.other_speaker).length;
+    // Counts of zero are not shown (minimal-ui): a voice with no other speaker has no "Other voices" metric.
     metrics = (
       <div className="metrics">
         <Metric caption="From" value={v.source === 'past' ? 'Before' : 'Today'} />
         <Metric caption="Pieces" value={kept.length} unit={`of ${v.segments.length}`} />
-        <Metric caption="Other voices" value={others} />
+        {others > 0 && <Metric caption="Other voices" value={others} />}
         <Metric caption="Status" value={v.status === 'ready' ? 'Ready' : 'Needs more'} />
       </div>
     );
-    figure = <Figure value={Math.round(v.reference.seconds)} unit="s" caption={<><b>Clear speech</b> of the 60 s recommended</>} />;
+    figure = <Figure value={Math.round(v.reference.seconds)} unit="s" caption={<b>Clear speech</b>} />;
     chart = <Strip report={report} />;
     rows = (
       <ul className="rows">
@@ -240,15 +243,15 @@ function VoiceReportView({ report }: { report: VoiceReport }) {
       </ul>
     );
   } else {
+    // No voice yet: one status, no placeholder dashes and no zero-second figure (minimal-ui). When the
+    // local voice service is not running the corner note says so, in the report's warning spot.
     metrics = (
       <div className="metrics">
-        <Metric caption="From" value="—" />
-        <Metric caption="Pieces" value="—" />
-        <Metric caption="Status" value={report.kind === 'loading' ? 'Checking' : report.kind === 'none' ? 'No voice yet' : 'Unavailable'} />
+        <Metric caption="Voice" value={report.kind === 'loading' ? 'Checking' : report.kind === 'none' ? 'None yet' : 'System voice'} />
       </div>
     );
-    figure = <Figure value="0" unit="s" caption={<><b>Clear speech</b> of the 60 s recommended</>} />;
-    if (report.kind === 'offline') note = <Note title="Voice service">Clarte cannot reach the voice service on this computer.</Note>;
+    figure = null;
+    if (report.kind === 'offline') note = <Note title="Voice service">Not running</Note>;
   }
   return (
     <>
@@ -273,9 +276,10 @@ function VoiceReportView({ report }: { report: VoiceReport }) {
 }
 
 function ReadyReport({ settings, calibratedAt, voice }: { settings: Settings; calibratedAt: number | null; voice: VoiceReport }) {
-  // What setup found; the settings themselves are the cards below (Q5–Q8).
+  // What setup found; the settings themselves are the cards below (Q5–Q8). A step not taken (no
+  // calibration) is not reported as a negative (minimal-ui): the Eyes row appears once it is done.
   const items = [
-    { name: 'Eyes', value: calibratedAt ? 'Calibrated' : 'Not calibrated' },
+    ...(calibratedAt ? [{ name: 'Eyes', value: 'Calibrated' }] : []),
     { name: 'Voice', value: voice.kind === 'voice' && voice.voice.status === 'ready' ? (voice.sample ? 'Sample' : 'Your voice') : 'System voice' },
     settingText('mode', settings),
     settingText('sound', settings),

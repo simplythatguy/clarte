@@ -1,25 +1,30 @@
 /**
  * Seeds for every distinct screen state, so `check-layout.mjs` can walk them all through
  * `window.clarteDebug.setPhase(name)`. Seeds use real conversational content and the real
- * composer and decoder, never a hand-built message.
+ * composer. The word shown comes from the engine (or the local decoder); a phase that depends on
+ * a particular answer (a branch, no match) seeds the prediction cache for its request.
  */
-import { EMPTY_COMPOSITION, candidates, reduce, type Composition } from '../../shared/composer.ts';
-import { signatureOf } from '../../shared/decoder.ts';
-import { contextWords, type State, type Turn } from './model.ts';
+import { EMPTY_COMPOSITION, reduce, type Composition } from '../../shared/composer.ts';
+import { signatureOf, type GroupId } from '../../shared/decoder.ts';
+import { chooserRequestOf, requestOf, type State, type Turn } from './model.ts';
+import { seed } from './prediction.ts';
 
 export const PHASES = [
   'idle',
-  'listening',
-  'suggested',
+  'hearing',
+  'hearing-typing',
   'composing-pending',
   'composing-reopened',
   'composing-branch',
   'composing-nomatch',
+  'composing-slip',
   'composing-ready',
+  'done',
+  'other-words',
+  'other-words-few',
   'speaking',
   'spoken',
   'menu',
-  'menu-phrases',
   'menu-settings',
   'menu-settings-2',
   'menu-demo',
@@ -51,59 +56,85 @@ const WORST: Omit<Turn, 'id'>[] = [
 ];
 
 const OUTSIDE: Omit<Turn, 'id'> = { who: 'partner', text: 'Do you want to go outside for a bit? It is sunny.' };
+const HEARING = 'Do you want to go outside for a bit? It is';
 
 function withTurns(base: State, turns: Omit<Turn, 'id'>[]): State {
   return { ...base, turns: turns.map((t, i) => ({ ...t, id: i + 1 })), nextId: turns.length + 1 };
 }
 
-/** Type a word through the four groups and accept it, cycling to it if it is not the top guess. */
-function typeWord(c: Composition, word: string, context: string[]): Composition {
-  let next = c;
-  for (const g of signatureOf(word)) next = reduce(next, { type: 'group', group: g }, context);
-  const index = candidates(next, context).findIndex((x) => x.word === word);
-  if (index < 0) return reduce(next, { type: 'accept' }, context);
-  return reduce({ ...next, candidateIndex: index }, { type: 'accept' }, context);
+/** A message of accepted words, each remembering the groups that typed it. */
+function message(words: string[]): Composition {
+  return { words: words.map((text) => ({ text, groups: signatureOf(text), candidateIndex: 0, source: 'decoded' as const })), pending: [], candidateIndex: 0, reopened: false };
 }
 
-function typeGroupsOf(c: Composition, word: string, context: string[]): Composition {
+function typeGroupsOf(c: Composition, word: string): Composition {
   let next = c;
-  for (const g of signatureOf(word)) next = reduce(next, { type: 'group', group: g }, context);
+  for (const g of signatureOf(word)) next = reduce(next, { type: 'group', group: g });
   return next;
 }
 
 export function seedFor(name: PhaseName, base: State): State {
-  const clean: State = { ...base, screen: { kind: 'talk' }, live: { kind: 'quiet' }, composition: EMPTY_COMPOSITION, dismissed: null };
+  const clean: State = { ...base, screen: { kind: 'talk' }, live: { kind: 'quiet' }, hearing: '', composition: EMPTY_COMPOSITION };
   const talk = withTurns(clean, [...HISTORY, OUTSIDE]);
-  const context = contextWords(talk);
-  const message = (words: string[]) => words.reduce((c, w) => typeWord(c, w, context), EMPTY_COMPOSITION);
   switch (name) {
     case 'idle':
       return withTurns(clean, HISTORY);
-    case 'listening':
-      return { ...withTurns(clean, HISTORY), live: { kind: 'listening', transcript: 'Do you want to go outside for a bit? It is', token: 0 } };
-    case 'suggested':
-      return talk;
+    case 'hearing':
+      return { ...withTurns(clean, HISTORY), hearing: HEARING };
+    case 'hearing-typing':
+      return { ...withTurns(clean, HISTORY), hearing: HEARING, composition: typeGroupsOf(message(['yes']), 'ple') };
     case 'composing-pending':
-      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i', 'would', 'love', 'to', 'go']), 'outs', context) };
+      return { ...talk, composition: typeGroupsOf(message(['i', 'would', 'love', 'to', 'go']), 'outs') };
     case 'composing-reopened':
-      return { ...talk, dismissed: talk.nextId - 1, composition: reduce(message(['i', 'would', 'love', 'to', 'go']), { type: 'delete' }, context) };
-    case 'composing-branch':
-      // "I might" / "I night": two whole words, close in frequency, neither used in the conversation.
-      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'might', context) };
-    case 'composing-nomatch':
-      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['ask']), 'suzy', context) };
+      return { ...talk, composition: { ...message(['i', 'would', 'love', 'to']), pending: signatureOf('go'), candidateIndex: 1, reopened: true } };
+    case 'composing-branch': {
+      // "I might" / "I night": two whole words, close in probability. The engine decides this in
+      // use; the phase seeds its answer so the layout check always sees the branch.
+      const state = { ...talk, composition: typeGroupsOf(message(['i']), 'might') };
+      seed(requestOf(state), {
+        words: [{ word: 'might', p: 0.42, complete: true }, { word: 'night', p: 0.31, complete: true }, { word: 'mighty', p: 0.06, complete: false }, { word: 'nights', p: 0.04, complete: false }],
+        total: 4, longer: 0.1, offset: 0, source: 'engine',
+      });
+      return state;
+    }
+    case 'composing-nomatch': {
+      // Nothing matches and nothing is one digit off either: Q1 says No word (the engine never
+      // answers like this for a real code, but the layout must hold).
+      const state = { ...talk, composition: typeGroupsOf(message(['ask']), 'suzy') };
+      seed(requestOf(state), { words: [], total: 0, longer: 0, offset: 0, source: 'engine' });
+      return state;
+    }
+    case 'composing-slip': {
+      // "suzy" typed with one slip (its third group read as O–S): nothing matches, so Q1 offers the
+      // engine's correction; the slipped letter wears its own group's colour in the message.
+      const state = { ...talk, composition: { ...message(['ask']), pending: ['G3', 'G4', 'G3', 'G4'] as GroupId[], candidateIndex: 0, reopened: false } };
+      seed(requestOf(state), { words: [], total: 0, longer: 0, offset: 0, source: 'engine', fallback: { word: 'suzy', kind: 'corrected' } });
+      return state;
+    }
     case 'composing-ready':
-      return { ...talk, dismissed: talk.nextId - 1, composition: message(['i', 'would', 'love', 'to', 'go']) };
+      return { ...talk, composition: message(['i', 'would', 'love', 'to', 'go']) };
+    case 'done':
+      return { ...talk, screen: { kind: 'done' }, composition: message(['i', 'would', 'love', 'to', 'go']) };
+    case 'other-words': {
+      // Other words for "go" (code 23): the first page of four exact-length words, with More.
+      const state: State = { ...talk, screen: { kind: 'other', page: 0 }, composition: message(['i', 'would', 'love', 'to', 'go']) };
+      seed(chooserRequestOf(state, 0), { words: [['go', 0.5], ['no', 0.2], ['ho', 0.03], ['jo', 0.02]].map(([word, p]) => ({ word: word as string, p: p as number, complete: true })), total: 9, longer: 0, offset: 0, source: 'engine' });
+      return state;
+    }
+    case 'other-words-few': {
+      // A code with three exact-length words: no More, and the fourth quadrant rests.
+      const state: State = { ...talk, screen: { kind: 'other', page: 0 }, composition: message(['i', 'would', 'love', 'to', 'go', 'outside']) };
+      seed(chooserRequestOf(state, 0), { words: [['outside', 0.9], ['outsize', 0.05], ['spurted', 0.01]].map(([word, p]) => ({ word: word as string, p: p as number, complete: true })), total: 3, longer: 0, offset: 0, source: 'engine' });
+      return state;
+    }
     case 'speaking':
-      return { ...talk, dismissed: talk.nextId - 1, live: { kind: 'speaking', text: 'I would love to go', word: 2, turnId: null, holder: false, token: 0, draft: message(['i', 'would', 'love', 'to', 'go']) } };
+      return { ...talk, live: { kind: 'speaking', text: 'I would love to go', word: 2, turnId: null, token: 0, draft: message(['i', 'would', 'love', 'to', 'go']) } };
     case 'spoken': {
       const spoken = withTurns(clean, [...HISTORY, OUTSIDE, { who: 'me', text: 'I would love to go' }]);
       return { ...spoken, live: { kind: 'spoken', turnId: spoken.nextId - 1 } };
     }
     case 'menu':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'main' } };
-    case 'menu-phrases':
-      return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'phrases' } };
     case 'menu-settings':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'settings' } };
     case 'menu-settings-2':
@@ -112,23 +143,24 @@ export function seedFor(name: PhaseName, base: State): State {
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'demo' } };
     case 'worst-case': {
       const worst = withTurns(clean, WORST);
-      const ctx = contextWords(worst);
-      const words = ['really', 'uncomfortable', 'physiotherapist', 'everything', 'temperature'].reduce((c, w) => typeWord(c, w, ctx), EMPTY_COMPOSITION);
-      return { ...worst, dismissed: worst.nextId - 1, composition: typeGroupsOf(words, 'disappointed', ctx) };
+      const state = { ...worst, composition: typeGroupsOf(message(['really', 'uncomfortable', 'physiotherapist', 'everything', 'temperature']), 'disappointed') };
+      seed(requestOf(state), { words: [{ word: 'disappointed', p: 0.6, complete: true }, { word: 'disappointing', p: 0.2, complete: false }], total: 2, longer: 0.2, offset: 0, source: 'engine' });
+      return state;
     }
     case 'worst-nomatch': {
       const worst = withTurns(clean, WORST);
-      const ctx = contextWords(worst);
-      return { ...worst, dismissed: worst.nextId - 1, composition: typeGroupsOf(typeWord(EMPTY_COMPOSITION, 'ask', ctx), 'wojciechowski', ctx) };
+      const state = { ...worst, composition: typeGroupsOf(message(['ask']), 'wojciechowski') };
+      seed(requestOf(state), { words: [], total: 0, longer: 0, offset: 0, source: 'engine' });
+      return state;
     }
     case 'calibrate-position':
-      return { ...clean, screen: { kind: 'calibration', step: 'position' } };
+      return { ...clean, screen: { kind: 'calibration', step: 'position', from: { kind: 'talk' } } };
     case 'calibrate-points':
-      return { ...clean, screen: { kind: 'calibration', step: 'points' } };
+      return { ...clean, screen: { kind: 'calibration', step: 'points', from: { kind: 'talk' } } };
     case 'calibrate-validate':
-      return { ...clean, screen: { kind: 'calibration', step: 'validate' } };
+      return { ...clean, screen: { kind: 'calibration', step: 'validate', from: { kind: 'talk' } } };
     case 'calibrate-ready':
-      return { ...clean, screen: { kind: 'calibration', step: 'ready' } };
+      return { ...clean, screen: { kind: 'calibration', step: 'ready', from: { kind: 'talk' } } };
     case 'setup-eyes':
       return { ...clean, screen: { kind: 'setup', step: 'eyes' } };
     case 'setup-voice':

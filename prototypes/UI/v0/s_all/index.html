@@ -32,11 +32,14 @@
 </head>
 <body>
 <nav id="bar" aria-label="Styles"></nav>
-<script>
+<script type="module">
   const H = location.hostname;
   // serve.mjs runs the styles on the five ports after its own (5101-5105 when it is on 5100).
   const P = Number(location.port) || 5100;
   // Styles open with ?onboarding=off: straight into the app, no calibration or first-run screens.
+  // serve.mjs says where the prediction engine is (it may have moved off 8765); S6 is told in its URL.
+  const engine = await fetch('/engine.json').then((r) => r.json()).catch(() => ({ origin: null }));
+  const ENGINE = engine.origin ? `&engine=${encodeURIComponent(engine.origin)}` : '';
   const STYLES = [
     { id: 's0', name: 'S0 · Light mock (live prediction)', url: '/s0/index.html' },
     { id: 's1', name: 'S1 · Rails',    url: `http://${H}:${P + 1}/?onboarding=off` },
@@ -44,7 +47,7 @@
     { id: 's3', name: 'S3 · Stages',   url: `http://${H}:${P + 3}/?onboarding=off` },
     { id: 's4', name: 'S4 · Split',    url: `http://${H}:${P + 4}/?onboarding=off` },
     { id: 's5', name: 'S5 · Dialogue', url: `http://${H}:${P + 5}/?onboarding=off` },
-    { id: 's6', name: 'S6 · Orb',      url: `http://${H}:${P + 6}/?onboarding=off` },
+    { id: 's6', name: 'S6 · Orb',      url: `http://${H}:${P + 6}/?onboarding=off${ENGINE}` },
   ];
   const bar = document.getElementById('bar');
   const frames = {};

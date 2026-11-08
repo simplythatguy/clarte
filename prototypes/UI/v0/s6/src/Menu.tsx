@@ -1,23 +1,34 @@
 /**
- * Menu pages. The menu replaces the conversation screen and keeps its geometry: Q1 goes back,
- * Q4 holds the page's own extra action, Q5–Q8 hold four items, and Q2–Q3 stay a rest zone that
- * shows only the page name. Settings show their current value and advance to the next value on
- * selection, so every change is one look.
+ * The pages that use the menu geometry: Q1 goes back, Q4 holds the page's own action, Q5–Q8 hold
+ * the items, and Q2–Q3 stay a rest zone.
+ *
+ * Menu (message empty): the page name over the blurred conversation; Settings, Recalibrate and
+ * Demo, then the settings pages with More in Q4. Settings show their current value and advance to
+ * the next value on selection, so every change is one look.
+ *
+ * Done (owner, 2026-11-07; the message has words): the message stays in the rest zone to review,
+ * Speak sits where Done was, so looking twice at Q4 speaks, and the message's own actions are the
+ * items: Delete word, Clear message, Other words and Recalibrate. Other words took Settings' place:
+ * a rare word is often deep in the engine's list (49% of dictionary words are not top-2 at the
+ * full code with no context), and Recalibrate is the more immediate repair mid-message; Settings
+ * stays one step away through Menu once the message is spoken or cleared.
+ *
+ * Other words: Q1 Back, Q4 More (the next page; past the last it starts again), and four exact-
+ * length words for the last word's code in Q5–Q8. Picking one replaces the last word. A page with
+ * fewer words leaves the rest of the row empty; a single page has no More.
  */
 import type { ReactNode } from 'react';
 import type { MenuPage, Settings } from './model.ts';
 import type { SlotName, Slots, SlotView } from './Tile.tsx';
-import { longest } from './text.ts';
-import { Again, Back, Blob, Bubble, Flask, Hand, Mic, Next, Palette, Sliders, Sparkle, Speaker, Sun, Target, TextSize, Timer, Wave } from './icons.tsx';
-
-export const PHRASES = ['Yes', 'No', 'Thank you', 'Please say that again'];
+import { displayWord, longest, type Shown } from './text.ts';
+import { Again, Back, Blob, Bubble, Erase, Exchange, Flask, Mic, Next, Palette, Sliders, Speaker, Sun, Target, TextSize, Timer, Trash, Wave } from './icons.tsx';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
-/** A quiet glyph inside each setting's dwell ring, so the ring never reads as an empty radio button. */
+/** A quiet glyph on each setting's card. */
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
   letterDwell: Timer, controlDwell: Timer, textScale: TextSize, theme: Sun, sound: Speaker, mode: Target,
-  wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob,
+  wordColours: Palette, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob,
 };
 
 const seconds = (ms: number) => `${+(ms / 1000).toFixed(2)} s`;
@@ -31,10 +42,9 @@ const CYCLES = {
   sound: { key: 'sound', name: 'Sounds', values: [true, false], format: onOff },
   mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
-  suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
   repeat: { key: 'repeat', name: 'Repeat', values: ['leave', 'redwell'], format: (v: string) => (v === 'leave' ? 'Look away' : 'Hold') },
-  partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'Microphone' : 'Script') },
+  partner: { key: 'partner', name: 'Microphone', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'On' : 'Off') },
   orbMotion: { key: 'orbMotion', name: 'Orb motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
 } as { [K in keyof Settings]: Cycle<K> };
 
@@ -46,15 +56,15 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
   return values[(i + 1) % values.length];
 }
 
-const PAGES: Record<Exclude<MenuPage, 'main' | 'phrases'>, (SettingKey | null)[]> = {
+const PAGES: Record<Exclude<MenuPage, 'main'>, (SettingKey | null)[]> = {
   settings: ['letterDwell', 'controlDwell', 'textScale', 'theme'],
-  'settings-2': ['sound', 'mode', 'orbMotion', 'suggestions'],
-  demo: ['noise', 'repeat', 'partner', 'wordColours'],
+  'settings-2': ['sound', 'mode', 'orbMotion', 'repeat'],
+  // The Demo page's fourth card plays the next scripted partner line (App: 'partner-speaks').
+  demo: ['noise', 'partner', 'wordColours', null],
 };
 
 export const TITLES: Record<MenuPage, string> = {
   main: 'Menu',
-  phrases: 'Phrases',
   settings: 'Settings',
   'settings-2': 'Settings',
   demo: 'Demo',
@@ -75,31 +85,22 @@ export function settingText<K extends SettingKey>(k: K, settings: Settings): { n
   return { name: CYCLES[k].name, value: CYCLES[k].format(settings[k]) };
 }
 
+const item = (action: string, label: string, glyph: ReactNode, tone: 'surface' | 'ink' = 'surface'): SlotView => ({
+  action, tone, icon: glyph, bodyKey: `${action}:${label}`,
+  body: <span className="card-label" style={longest(label)}>{label}</span>,
+});
+
 /** The menu as slot descriptions, rendered by the same persistent cards as the conversation. */
 export function menuSlots(page: MenuPage, settings: Settings): Slots {
-  const icon = (action: string, label: string, glyph: ReactNode, tone: 'surface' | 'ink' = 'surface'): SlotView => ({
-    action, tone, icon: glyph, bodyKey: `${action}:${label}`,
-    body: <span className="card-label" style={longest(label)}>{label}</span>,
-  });
-  const setting = <K extends SettingKey>(k: K) => settingSlot(k, settings);
-  const back = icon('back', 'Back', <Back />, 'ink');
-
+  const back = item('back', 'Back', <Back />, 'ink');
   if (page === 'main') {
+    // Three items in reading order after Back; Q4 and Q8 rest.
     return {
       q1: back,
-      q4: icon('one-moment', 'One moment', <Hand />),
-      q5: icon('phrases', 'Phrases', <Bubble />),
-      q6: icon('settings', 'Settings', <Sliders />),
-      q7: icon('recalibrate', 'Recalibrate', <Target />),
-      q8: icon('demo', 'Demo', <Flask />),
+      q5: item('settings', 'Settings', <Sliders />),
+      q6: item('recalibrate', 'Recalibrate', <Target />),
+      q7: item('demo', 'Demo', <Flask />),
     };
-  }
-  if (page === 'phrases') {
-    const slots: Slots = { q1: back };
-    PHRASES.forEach((text, i) => {
-      slots[`q${i + 5}` as SlotName] = { action: `phrase-${i}`, tone: 'surface', icon: <Bubble />, bodyKey: `phrase-${i}`, body: <span className="phrase" style={longest(text)}>{text}</span> };
-    });
-    return slots;
   }
   const slots: Slots = { q1: back };
   if (page === 'settings' || page === 'settings-2') {
@@ -108,6 +109,46 @@ export function menuSlots(page: MenuPage, settings: Settings): Slots {
       body: <><span className="card-label" style={longest('More')}>More</span><span className="pager" aria-hidden="true"><i data-on={page === 'settings' || undefined} /><i data-on={page === 'settings-2' || undefined} /></span></>,
     };
   }
-  PAGES[page].forEach((k, i) => { if (k) slots[`q${i + 5}` as SlotName] = setting(k); });
+  PAGES[page].forEach((k, i) => { if (k) slots[`q${i + 5}` as SlotName] = settingSlot(k, settings); });
+  // Its peers in the row are settings, so its words take the setting value's size.
+  if (page === 'demo') slots.q8 = { ...item('partner-speaks', 'Partner speaks', <Bubble />), body: <span className="setting-value" style={longest('Partner speaks')}>Partner speaks</span> };
+  return slots;
+}
+
+/** The Done page (owner, 2026-11-07). */
+export function doneSlots(): Slots {
+  return {
+    q1: item('back', 'Back', <Back />, 'ink'),
+    q4: item('speak', 'Speak', <Speaker />),
+    q5: item('delete-word', 'Delete word', <Erase />),
+    q6: item('clear', 'Clear message', <Trash />),
+    q7: item('other-words', 'Other words', <Exchange />),
+    q8: item('recalibrate', 'Recalibrate', <Target />),
+  };
+}
+
+export const WORD_SLOTS: SlotName[] = ['q5', 'q6', 'q7', 'q8'];
+
+/**
+ * The Other words page. `words` is this page's list (at most four, each with its written form when
+ * the engine sent one), `index` the replaced word's place in the message (for its capital), `page`
+ * and `pages` the position for More. More's accessible name is its visible text ("More, Page 1 of 22").
+ */
+export function otherSlots(words: Shown[], index: number, page: number, pages: number): Slots {
+  const slots: Slots = { q1: item('back', 'Back', <Back />, 'ink') };
+  if (pages > 1) {
+    const at = `Page ${page + 1} of ${pages}`;
+    slots.q4 = {
+      action: 'more', tone: 'surface', icon: <Next />, label: `More, ${at}`, bodyKey: `more:${page}`,
+      body: <><span className="card-label" style={longest('More')}>More</span><span className="card-hint">{at}</span></>,
+    };
+  }
+  words.forEach((word, i) => {
+    const text = displayWord(word.text, index, word.display);
+    slots[WORD_SLOTS[i]] = {
+      action: `other-${i}`, tone: 'surface', bodyKey: `other:${word.text}`,
+      body: <span className="card-label is-word" style={{ ['--len' as string]: text.length }}>{text}</span>,
+    };
+  });
   return slots;
 }

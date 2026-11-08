@@ -1,30 +1,33 @@
 /**
- * Style 6 state (built on style 5): the conversation thread, what is live right now, the message being composed,
- * and which screen is showing. One reducer owns every change; the two contextual slots (Q1 and
- * Q4) are derived from state, never stored, so a label can never disagree with what it does.
+ * Style 6 state: the conversation thread, what the partner is saying right now, what the device
+ * is doing out loud, the message being composed, and which screen is showing. One reducer owns
+ * every change; the two contextual cards (Q1 and Q4) are derived from state and the current
+ * prediction by `policy.ts`, never stored, so a label can never disagree with what it does.
+ *
+ * Listening is always on (owner, 2026-11-07): there is no Listen state. `hearing` is the partner's
+ * words as they arrive; a pause or a final result commits them as a partner turn.
  */
 import {
   EMPTY_COMPOSITION,
-  currentCandidate,
+  acceptWord,
   messageText,
   reduce as reduceComposition,
   type Composition,
+  type Word,
 } from '../../shared/composer.ts';
-import type { GroupId } from '../../shared/decoder.ts';
-import { suggestReply } from './suggest.ts';
-import { conflictFor, type Conflict } from './conflict.ts';
-import { candidates } from '../../shared/composer.ts';
+import { signatureOf, type GroupId } from '../../shared/decoder.ts';
+import type { Conflict } from './conflict.ts';
+import { conflictOf, primaryFor, secondaryFor, type PrimaryFn, type SecondaryFn } from './policy.ts';
+import type { PredictRequest, Prediction, Role } from './prediction.ts';
 import type { PartnerSource } from './voice.ts';
 
 export type Turn = {
   id: number;
   who: 'partner' | 'me';
   text: string;
-  /** A floor-holder ("One moment…"): said aloud, kept in the record, never a reply. */
-  holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'settings' | 'settings-2' | 'demo' | 'phrases';
+export type MenuPage = 'main' | 'settings' | 'settings-2' | 'demo';
 export type CalibrationStep = 'position' | 'points' | 'validate' | 'ready';
 /** The first-run setup pages (owner concept: a report per step). */
 export type SetupStep = 'eyes' | 'voice' | 'ready';
@@ -32,15 +35,20 @@ export const SETUP_STEPS: SetupStep[] = ['eyes', 'voice', 'ready'];
 
 export type Screen =
   | { kind: 'talk' }
-  | { kind: 'menu'; page: MenuPage }
-  | { kind: 'calibration'; step: CalibrationStep }
+  /** The page Done opens: the message to review, Speak where Done was, and the message's actions. */
+  | { kind: 'done' }
+  /** Other words: every exact-length word for the last word's code, four per page, to replace it. */
+  | { kind: 'other'; page: number }
+  /** `origin` is where Back returns to from a settings page opened from the Done page. */
+  | { kind: 'menu'; page: MenuPage; origin?: 'done' }
+  /** `from` is the screen calibration returns to, by Start, Back or Escape: the conversation or the Done page it was opened from, or the setup report on the first run. */
+  | { kind: 'calibration'; step: CalibrationStep; from: Screen }
   | { kind: 'setup'; step: SetupStep; sample?: boolean };
 
 /** What the device is doing out loud right now. `token` 0 marks a static debug frame. */
 export type Live =
   | { kind: 'quiet' }
-  | { kind: 'listening'; transcript: string; token: number }
-  | { kind: 'speaking'; text: string; word: number; turnId: number | null; holder: boolean; token: number; draft: Composition | null }
+  | { kind: 'speaking'; text: string; word: number; turnId: number | null; token: number; draft: Composition | null }
   | { kind: 'spoken'; turnId: number };
 
 export type Settings = {
@@ -51,7 +59,6 @@ export type Settings = {
   sound: boolean;
   mode: 'dwell' | 'confirm';
   wordColours: boolean;
-  suggestions: boolean;
   noise: boolean;
   repeat: 'leave' | 'redwell';
   partner: PartnerSource;
@@ -67,7 +74,6 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   mode: 'dwell',
   wordColours: false,
-  suggestions: true,
   noise: false,
   repeat: 'leave',
   partner: 'microphone',
@@ -77,10 +83,10 @@ export const DEFAULT_SETTINGS: Settings = {
 export type State = {
   screen: Screen;
   live: Live;
+  /** The partner's words as they are being heard; empty when nothing is being said. */
+  hearing: string;
   turns: Turn[];
   composition: Composition;
-  /** The partner turn whose suggested reply was dismissed or typed over; it is not offered again. */
-  dismissed: number | null;
   settings: Settings;
   nextId: number;
   /** When the simulated calibration last finished, this session. */
@@ -90,9 +96,9 @@ export type State = {
 export const INITIAL_STATE: State = {
   screen: { kind: 'setup', step: 'eyes' },
   live: { kind: 'quiet' },
+  hearing: '',
   turns: [],
   composition: EMPTY_COMPOSITION,
-  dismissed: null,
   settings: DEFAULT_SETTINGS,
   nextId: 1,
   calibratedAt: null,
@@ -100,16 +106,20 @@ export const INITIAL_STATE: State = {
 
 export type Action =
   | { type: 'group'; group: GroupId }
-  | { type: 'accept' }
-  /** Accept the second word of a conflict (Q4 while branched). */
-  | { type: 'accept-alternative'; word: string }
+  /** Accept the word that was shown. `rank` is its place in the engine's ranking, kept for Delete word; `display` its written form when the engine sent one. */
+  | { type: 'accept'; word: string; rank: number; display?: string }
+  /** The last pending group; with nothing pending, the last word (reopened at its next candidate). */
   | { type: 'delete' }
-  | { type: 'use-suggestion'; text: string }
-  | { type: 'dismiss-suggestion' }
-  | { type: 'listen-start'; token: number }
-  | { type: 'transcript'; text: string }
-  | { type: 'listen-stop' }
-  | { type: 'speak-start'; text: string; turnId: number | null; holder: boolean; token: number }
+  /** Other words: the last word gives way to `word` (its place in the chooser's ranking is `rank`). */
+  | { type: 'replace-word'; word: string; rank: number; display?: string }
+  | { type: 'clear' }
+  /** The partner's words so far (interim). */
+  | { type: 'hearing'; text: string }
+  /** A pause or a final result: the words become a partner turn. */
+  | { type: 'heard'; text: string }
+  /** The microphone stopped (speaking, a setting): whatever was being heard becomes a turn. */
+  | { type: 'hearing-ended' }
+  | { type: 'speak-start'; text: string; turnId: number | null; token: number }
   | { type: 'speak-word'; token: number; word: number }
   | { type: 'speak-end'; token: number }
   /** The person stopped the voice: a spoken message returns to the composer as a draft. */
@@ -117,120 +127,96 @@ export type Action =
   | { type: 'say-again-expired' }
   | { type: 'screen'; screen: Screen }
   | { type: 'calibrated'; at: number }
-  | { type: 'phrase'; text: string }
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'replace'; state: State };
 
-/** Recent words of the conversation, passed to the decoder so they rank higher. */
+/** The conversation as the engine wants it: every turn, plus what is being heard as the last partner turn. */
+export function historyOf(state: State): [Role, string][] {
+  const history = state.turns.map((t): [Role, string] => [t.who === 'partner' ? 'partner' : 'user', t.text]);
+  if (state.hearing.trim()) history.push(['partner', state.hearing.trim()]);
+  return history;
+}
+
+export function groupsOf(pending: readonly string[]): string {
+  return pending.map((g) => g.slice(1)).join('');
+}
+
+/** The prediction the conversation screen needs right now. */
+export function requestOf(state: State): PredictRequest {
+  const c = state.composition;
+  return { history: historyOf(state), message: c.words.map((w) => w.text), groups: groupsOf(c.pending), offset: c.pending.length ? c.candidateIndex : 0 };
+}
+
+/** Words per page of the Other words chooser: one per letter-group quadrant. */
+export const CHOOSER_PAGE = 4;
+
+/** The code the chooser reopens: the last word's own letters, so exact-length words are its peers. */
+export function chooserCode(state: State): string {
+  const last = state.composition.words[state.composition.words.length - 1];
+  return last ? groupsOf(signatureOf(last.text)) : '';
+}
+
+/** The Other words page: exact-length words for the last word's code, without that word in the message. */
+export function chooserRequestOf(state: State, page: number): PredictRequest {
+  const words = state.composition.words.map((w) => w.text);
+  return { history: historyOf(state), message: words.slice(0, -1), groups: chooserCode(state), offset: page * CHOOSER_PAGE, complete: true, limit: CHOOSER_PAGE };
+}
+
+/** The request worth having ready: the next word once the shown word is accepted. */
+export function prefetchOf(state: State, shown: string | null): PredictRequest | null {
+  if (!shown || state.live.kind === 'speaking') return null;
+  return { history: historyOf(state), message: [...state.composition.words.map((w) => w.text), shown], groups: '', offset: 0 };
+}
+
+/** Recent words of the conversation, for the setup report. */
 export function contextWords(state: State): string[] {
   const recent = state.turns.slice(-6).map((t) => t.text);
-  if (state.live.kind === 'listening') recent.push(state.live.transcript);
+  if (state.hearing) recent.push(state.hearing);
   return recent.join(' ').toLowerCase().match(/[a-z']+/g) ?? [];
 }
 
-/** The partner turn a reply is owed to: the last turn, if it is the partner's (floor-holders skipped). */
+/** The partner turn a reply is owed to: the last turn, if it is the partner's. */
 export function owedTurn(state: State): Turn | null {
-  for (let i = state.turns.length - 1; i >= 0; i--) {
-    const turn = state.turns[i];
-    if (turn.holder) continue;
-    return turn.who === 'partner' ? turn : null;
-  }
-  return null;
+  const turn = state.turns[state.turns.length - 1];
+  return turn && turn.who === 'partner' ? turn : null;
 }
 
-export function suggestionFor(state: State): string | null {
-  if (!state.settings.suggestions || state.live.kind !== 'quiet') return null;
-  const c = state.composition;
-  if (c.words.length || c.pending.length) return null;
-  const turn = owedTurn(state);
-  if (!turn || state.dismissed === turn.id) return null;
-  return suggestReply(turn.text);
-}
-
-export type PrimaryFn =
-  | { kind: 'listen' }
-  | { kind: 'stop-listening' }
-  | { kind: 'suggestion'; text: string }
-  | { kind: 'candidate'; word: string }
-  | { kind: 'no-match'; groups: number }
-  | { kind: 'speak' }
-  | { kind: 'stop-speaking' }
-  | { kind: 'say-again'; turnId: number };
-
-export type SecondFn =
-  | { kind: 'delete'; word: boolean }
-  | { kind: 'one-moment' }
-  | { kind: 'menu' }
-  | { kind: 'dismiss' }
-  /** The second word of a conflict; Delete returns once the branch resolves. */
-  | { kind: 'alternative'; word: string }
-  | { kind: 'none' };
-
-export type Slots = { primary: PrimaryFn; second: SecondFn; groups: boolean; conflict?: Conflict };
-
-/** The current word conflict, if the screen should branch. Only on the decoder's first ranking. */
-export function conflictOf(state: State): Conflict | null {
-  const c = state.composition;
-  if (state.screen.kind !== 'talk' || state.live.kind === 'listening' || state.live.kind === 'speaking') return null;
-  if (!c.pending.length || c.candidateIndex !== 0) return null;
-  return conflictFor(c, contextWords(state));
-}
+export type Slots = {
+  primary: PrimaryFn;
+  secondary: SecondaryFn;
+  /** Letter groups take input (every talk state except speaking). */
+  groups: boolean;
+  conflict: Conflict | null;
+};
 
 /** What Q1 and Q4 offer, and whether the letter groups take input, for the conversation screen. */
-export function slotsFor(state: State): Slots {
-  const { live, composition: c } = state;
-  if (live.kind === 'listening') return { primary: { kind: 'stop-listening' }, second: { kind: 'one-moment' }, groups: false };
-  if (live.kind === 'speaking') return { primary: { kind: 'stop-speaking' }, second: { kind: 'none' }, groups: false };
-  if (c.pending.length) {
-    const conflict = conflictOf(state);
-    if (conflict) {
-      return { primary: { kind: 'candidate', word: conflict.first }, second: { kind: 'alternative', word: conflict.second }, groups: true, conflict };
-    }
-    const candidate = currentCandidate(c, contextWords(state));
-    return {
-      primary: candidate ? { kind: 'candidate', word: candidate.word } : { kind: 'no-match', groups: c.pending.length },
-      second: { kind: 'delete', word: c.reopened },
-      groups: true,
-    };
-  }
-  if (c.words.length) return { primary: { kind: 'speak' }, second: { kind: 'delete', word: false }, groups: true };
-  if (live.kind === 'spoken') return { primary: { kind: 'say-again', turnId: live.turnId }, second: { kind: 'menu' }, groups: true };
-  const suggestion = suggestionFor(state);
-  if (suggestion) return { primary: { kind: 'suggestion', text: suggestion }, second: { kind: 'dismiss' }, groups: true };
-  return { primary: { kind: 'listen' }, second: { kind: 'menu' }, groups: true };
-}
-
-export function primaryKey(fn: PrimaryFn): string {
-  switch (fn.kind) {
-    case 'suggestion': return `suggestion:${fn.text}`;
-    case 'candidate': return `candidate:${fn.word}`;
-    case 'say-again': return `say-again:${fn.turnId}`;
-    default: return fn.kind;
-  }
-}
-
-export function secondKey(fn: SecondFn): string {
-  if (fn.kind === 'alternative') return `alternative:${fn.word}`;
-  return fn.kind === 'delete' ? `delete:${fn.word}` : fn.kind;
+export function slotsFor(state: State, prediction: Prediction): Slots {
+  return {
+    primary: primaryFor(state, prediction),
+    secondary: secondaryFor(state, prediction),
+    groups: state.live.kind !== 'speaking',
+    conflict: conflictOf(state, prediction),
+  };
 }
 
 /** A name for every distinct screen state, used by the layout check and the debug hook. */
-export function phaseOf(state: State): string {
-  const { screen } = state;
+export function phaseOf(state: State, prediction: Prediction): string {
+  const { screen, composition: c } = state;
   if (screen.kind === 'calibration') return `calibrate-${screen.step}`;
   if (screen.kind === 'setup') return `setup-${screen.step}`;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
-  const { primary, second } = slotsFor(state);
-  switch (primary.kind) {
-    case 'stop-listening': return 'listening';
-    case 'stop-speaking': return 'speaking';
-    case 'say-again': return 'spoken';
-    case 'suggestion': return 'suggested';
-    case 'speak': return 'composing-ready';
-    case 'no-match': return 'composing-nomatch';
-    case 'candidate': return second.kind === 'alternative' ? 'composing-branch' : second.kind === 'delete' && second.word ? 'composing-reopened' : 'composing-pending';
-    case 'listen': return 'idle';
+  if (screen.kind === 'done') return 'done';
+  if (screen.kind === 'other') return 'other-words';
+  if (state.live.kind === 'speaking') return 'speaking';
+  const typing = c.words.length > 0 || c.pending.length > 0;
+  if (state.hearing) return typing ? 'hearing-typing' : 'hearing';
+  if (state.live.kind === 'spoken') return 'spoken';
+  if (c.pending.length) {
+    if (conflictOf(state, prediction)) return 'composing-branch';
+    if (!prediction.words.length) return prediction.fallback ? 'composing-slip' : 'composing-nomatch';
+    return c.reopened ? 'composing-reopened' : 'composing-pending';
   }
+  return c.words.length ? 'composing-ready' : 'idle';
 }
 
 function addTurn(state: State, turn: Omit<Turn, 'id'>): [State, number] {
@@ -239,53 +225,94 @@ function addTurn(state: State, turn: Omit<Turn, 'id'>): [State, number] {
 }
 
 function compose(state: State, event: Parameters<typeof reduceComposition>[1]): State {
-  return { ...state, composition: reduceComposition(state.composition, event, contextWords(state)) };
+  return { ...state, composition: reduceComposition(state.composition, event) };
 }
+
+/** Whatever the partner was saying becomes a turn (idempotent: nothing heard, nothing added). */
+function commitHearing(state: State): State {
+  const text = state.hearing.trim();
+  if (!text) return state.hearing ? { ...state, hearing: '' } : state;
+  return addTurn({ ...state, hearing: '' }, { who: 'partner', text })[0];
+}
+
+/**
+ * Delete with nothing pending takes back the last word and reopens it one place on in the engine's
+ * ranking, so Delete word then the word is "other word" and every candidate is reachable by
+ * `offset`; a second Delete straight after the reopen removes the word.
+ */
+function deleteFrom(c: Composition): Composition {
+  if (c.reopened) return { ...c, pending: [], candidateIndex: 0, reopened: false };
+  if (c.pending.length) return { ...c, pending: c.pending.slice(0, -1), candidateIndex: 0 };
+  const last = c.words[c.words.length - 1];
+  if (!last) return c;
+  const words = c.words.slice(0, -1);
+  if (last.source !== 'decoded' || !last.groups.length) return { ...c, words, reopened: false };
+  return { words, pending: last.groups, candidateIndex: last.candidateIndex + 1, reopened: true };
+}
+
+/** A message word with the written form the engine gave it, when any (the shared `Word` keeps the decoder's lower-case text). */
+export type ShownWord = Word & { display?: string };
+
+/** The written form of a message word, when the engine sent one. */
+export function wordDisplay(word: Word): string | undefined {
+  return (word as ShownWord).display;
+}
+
+function withDisplay(c: Composition, display: string | undefined): Composition {
+  if (!display) return c;
+  const words = [...c.words];
+  const last: ShownWord = { ...words[words.length - 1], display };
+  words[words.length - 1] = last;
+  return { ...c, words };
+}
+
+/**
+ * Accept `word` for the pending groups. A word that does not continue them (a gaze-slip correction,
+ * or the best word for a prefix of what was typed) remembers its own code instead, so Delete word
+ * and Other words reopen the word that was actually said.
+ */
+function acceptFor(c: Composition, word: string, rank: number, display?: string): Composition {
+  const own = signatureOf(word);
+  const continues = c.pending.every((g, i) => own[i] === g);
+  if (!c.pending.length || continues) return withDisplay(acceptWord(c, word, rank), display);
+  return withDisplay({ words: [...c.words, { text: word, groups: own, candidateIndex: rank, source: 'decoded' }], pending: [], candidateIndex: 0, reopened: false }, display);
+}
+
+/** Typing or accepting ends the Say again window. */
+const quietAfterSpoken = (live: Live): Live => (live.kind === 'spoken' ? { kind: 'quiet' } : live);
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'group': {
-      // Typing over a suggestion dismisses it for this partner turn; typing ends the Say again window.
-      const owed = owedTurn(state);
-      const next = compose({ ...state, live: state.live.kind === 'spoken' ? { kind: 'quiet' } : state.live }, { type: 'group', group: action.group });
-      return { ...next, dismissed: owed ? owed.id : state.dismissed };
-    }
+    case 'group':
+      return compose({ ...state, live: quietAfterSpoken(state.live) }, { type: 'group', group: action.group });
     case 'accept':
-      return compose(state, { type: 'accept' });
-    case 'accept-alternative': {
-      const context = contextWords(state);
-      const index = candidates(state.composition, context).findIndex((x) => x.word === action.word);
-      if (index < 0) return state;
-      return compose({ ...state, composition: { ...state.composition, candidateIndex: index } }, { type: 'accept' });
-    }
+      return { ...state, live: quietAfterSpoken(state.live), composition: acceptFor(state.composition, action.word, action.rank, action.display) };
     case 'delete':
-      return compose(state, { type: 'delete' });
-    case 'use-suggestion': {
-      const owed = owedTurn(state);
-      return { ...compose(state, { type: 'phrase', text: action.text }), dismissed: owed ? owed.id : state.dismissed };
+      return { ...state, composition: deleteFrom(state.composition) };
+    case 'replace-word': {
+      const c = state.composition;
+      if (!c.words.length) return state;
+      const words = [...c.words.slice(0, -1), { text: action.word, groups: signatureOf(action.word), candidateIndex: action.rank, source: 'decoded' as const }];
+      return { ...state, composition: withDisplay({ ...c, words, pending: [], candidateIndex: 0, reopened: false }, action.display) };
     }
-    case 'dismiss-suggestion': {
-      const owed = owedTurn(state);
-      return owed ? { ...state, dismissed: owed.id } : state;
+    case 'clear':
+      return { ...state, composition: EMPTY_COMPOSITION };
+    case 'hearing':
+      return action.text === state.hearing ? state : { ...state, hearing: action.text };
+    case 'heard': {
+      const text = action.text.trim();
+      const cleared = { ...state, hearing: '' };
+      return text ? addTurn(cleared, { who: 'partner', text })[0] : cleared;
     }
-    case 'listen-start':
-      return { ...state, live: { kind: 'listening', transcript: '', token: action.token } };
-    case 'transcript':
-      return state.live.kind === 'listening' ? { ...state, live: { ...state.live, transcript: action.text } } : state;
-    case 'listen-stop': {
-      if (state.live.kind !== 'listening') return state;
-      const text = state.live.transcript.trim();
-      const quiet = { ...state, live: { kind: 'quiet' } as Live };
-      return text ? addTurn(quiet, { who: 'partner', text })[0] : quiet;
-    }
+    case 'hearing-ended':
+      return commitHearing(state);
     case 'speak-start': {
-      // A listening session ends when the person takes the turn ("One moment").
-      let base = state;
-      if (state.live.kind === 'listening') base = reducer(state, { type: 'listen-stop' });
+      // Taking the turn: whatever the partner was saying becomes their turn first.
+      let base = commitHearing(state);
       // Speaking a message moves it out of the composer; it joins the thread when speech ends.
-      const draft = action.turnId === null && !action.holder ? base.composition : null;
+      const draft = action.turnId === null ? base.composition : null;
       if (draft) base = { ...base, composition: EMPTY_COMPOSITION };
-      return { ...base, live: { kind: 'speaking', text: action.text, word: 0, turnId: action.turnId, holder: action.holder, token: action.token, draft } };
+      return { ...base, screen: { kind: 'talk' }, live: { kind: 'speaking', text: action.text, word: 0, turnId: action.turnId, token: action.token, draft } };
     }
     case 'speak-word':
       return state.live.kind === 'speaking' && state.live.token === action.token ? { ...state, live: { ...state.live, word: action.word } } : state;
@@ -293,8 +320,8 @@ export function reducer(state: State, action: Action): State {
       const live = state.live;
       if (live.kind !== 'speaking' || live.token !== action.token) return state;
       if (live.turnId !== null) return { ...state, live: { kind: 'spoken', turnId: live.turnId } };
-      const [next, id] = addTurn(state, { who: 'me', text: live.text, holder: live.holder || undefined });
-      return { ...next, live: live.holder ? { kind: 'quiet' } : { kind: 'spoken', turnId: id } };
+      const [next, id] = addTurn(state, { who: 'me', text: live.text });
+      return { ...next, live: { kind: 'spoken', turnId: id } };
     }
     case 'speak-cancel': {
       const live = state.live;
@@ -308,8 +335,6 @@ export function reducer(state: State, action: Action): State {
       return { ...state, screen: action.screen };
     case 'calibrated':
       return { ...state, calibratedAt: action.at };
-    case 'phrase':
-      return { ...compose(state, { type: 'phrase', text: action.text }), screen: { kind: 'talk' }, live: state.live.kind === 'spoken' ? { kind: 'quiet' } : state.live };
     case 'settings':
       return { ...state, settings: { ...state.settings, ...action.patch } };
     case 'replace':
