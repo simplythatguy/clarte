@@ -15,6 +15,7 @@ import { createServer } from 'node:http';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { silentBrowser } from './silent.mjs';
 
 const require = createRequire(join(process.cwd(), 'package.json'));
 const { chromium } = require('playwright');
@@ -90,7 +91,7 @@ if (!(await engineResponsive(ENGINE))) { console.error(`the engine at ${ENGINE} 
 const GROUP_OF = (ch) => ('abcdef'.includes(ch) ? 1 : 'ghijklmn'.includes(ch) ? 2 : 'opqrs'.includes(ch) ? 3 : 'tuvwxyz'.includes(ch) ? 4 : 0);
 const keysOf = (word) => [...word.toLowerCase()].map(GROUP_OF).filter(Boolean).map((g) => String(4 + g));
 
-const browser = await chromium.launch();
+const browser = await silentBrowser(chromium);
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(e.message));

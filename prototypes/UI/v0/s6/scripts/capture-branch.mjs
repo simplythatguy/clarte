@@ -9,6 +9,7 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { silentBrowser } from './silent.mjs';
 
 const require = createRequire(join(process.cwd(), 'package.json'));
 const { chromium } = require('playwright');
@@ -30,7 +31,7 @@ async function engineResponsive(origin) {
   return true;
 }
 if (!(await engineResponsive(ENGINE))) { console.error(`the engine at ${ENGINE} is not answering within 400 ms (busy or down): nothing captured`); process.exit(2); }
-const browser = await chromium.launch();
+const browser = await silentBrowser(chromium);
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await page.goto(`${APP}/?onboarding=off&engine=${encodeURIComponent(ENGINE)}`, { waitUntil: 'load' });
 await page.waitForFunction(() => Boolean(window.clarteDebug?.state));
