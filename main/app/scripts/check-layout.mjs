@@ -27,7 +27,7 @@ const viewports = [
 ];
 
 mkdirSync(outDir, { recursive: true });
-const browser = await chromium.launch();
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio'] });
 let failures = 0;
 try {
   for (const viewport of viewports) {

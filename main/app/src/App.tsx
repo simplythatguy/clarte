@@ -1,12 +1,12 @@
 /**
  * Clarté: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
  * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
- * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
+ * an Options screen for every predicted word; the first run (Onboarding.tsx: Welcome, eye calibration,
  * making the person's voice in VoiceSetup.tsx); words from the prediction engine (useWords.ts); and looks from the webcam eye
- * tracker (eyes/session.ts), or the mouse with `?input=mouse` or while the tracker is not calibrated.
+ * tracker (eyes/session.ts); with keyboard and mouse (`?input=mouse`, or chosen) clicks and keys select.
  *
- * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
- * the conversation thread, Q5–Q8 the letter groups. Every activation (dwell, digit key, click,
+ * Q4 is the contextual primary slot, Q1 the contextual delete slot, Q2–Q3 a rest zone holding
+ * the conversation thread, Q5–Q8 the letter groups. Every activation (a confirmed look, digit key, click,
  * Enter on a focused tile) arrives as one engine `select` event and is routed by action id.
  */
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ReactNode } from 'react';
@@ -55,6 +55,8 @@ import { closeMic, makeVoice, makerNow, move, openMic, resetMaker, setMakerError
 import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
 import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
+import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
+import { TeachSound, type TeachStep } from './TeachSound.tsx';
 import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
@@ -68,39 +70,52 @@ const SAMPLE = 'Hello, this is my voice.';
 const HOLDER = "Wait! I'm answering.";
 const STORE = 'clarte.v1';
 const PARAMS = new URLSearchParams(location.search);
-/** `?input=mouse`: the mouse stands in for the eyes and no camera starts. */
+/** `?input=mouse`: keyboard and mouse, with no camera; clicks and keys select. */
 const MOUSE_ONLY = PARAMS.get('input') === 'mouse';
+/** Screens where a sound never selects: the eyes cannot select yet, or the person is recording. */
+const SOUND_OFF = new Set<string>(['welcome', 'calibration', 'voice', 'teach']);
+/** Screens where the eyes cannot select yet, so the pointer does not stand in for them. */
+const EYES_NOT_READY = new Set<string>(['welcome', 'calibration']);
 
+/**
+ * Every launch opens on Welcome, then eye calibration (owner, 2026-11-08); `?onboarding=off` opens
+ * straight into the app. Only the settings carry over.
+ */
 function loadStored(): State {
-  // `?onboarding=off` opens straight into the app.
-  const skip = PARAMS.get('onboarding') === 'off';
+  const screen: State['screen'] = PARAMS.get('onboarding') === 'off' ? { kind: 'talk' } : INITIAL_STATE.screen;
   try {
     const raw = localStorage.getItem(STORE);
-    if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
-    const saved = JSON.parse(raw) as { settings?: Partial<Settings>; setupDone?: boolean };
-    return {
-      ...INITIAL_STATE,
-      settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }),
-      screen: saved.setupDone || skip ? { kind: 'talk' } : INITIAL_STATE.screen,
-    };
+    if (!raw) return { ...INITIAL_STATE, screen };
+    const saved = JSON.parse(raw) as { settings?: Partial<Settings> };
+    return { ...INITIAL_STATE, settings: migrate({ ...INITIAL_STATE.settings, ...saved.settings }), screen };
   } catch {
-    return INITIAL_STATE;
+    return { ...INITIAL_STATE, screen };
   }
 }
 
 /** Settings saved before NAT-24 stored `sound` as on/off. */
-function migrate(settings: Settings): Settings {
+function migrate(saved: Settings): Settings {
+  // Only today's settings carry over: the dwell settings (mode, letterDwell, controlDwell) are gone.
+  const settings = Object.fromEntries(Object.keys(INITIAL_STATE.settings).map((k) => [k, saved[k as keyof Settings]])) as Settings;
   const sound = settings.sound as Settings['sound'] | boolean;
   if (sound === true) return { ...settings, sound: 'all' };
   if (sound === false) return { ...settings, sound: 'off' };
   return settings;
 }
 
-function setupDone(): boolean {
-  try { return Boolean(JSON.parse(localStorage.getItem(STORE) ?? '{}').setupDone); } catch { return false; }
+/**
+ * Whether the person has finished the first run's voice pages (Continue after making a voice, or
+ * Not now); later launches then go from calibration straight to the conversation. A store saved
+ * before this, when the whole first run happened once, says `setupDone` instead.
+ */
+function voiceDone(): boolean {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}') as { voiceDone?: boolean; setupDone?: boolean };
+    return Boolean(saved.voiceDone || saved.setupDone);
+  } catch { return false; }
 }
 
-function store(patch: { settings?: Settings; setupDone?: boolean }): void {
+function store(patch: { settings?: Settings; voiceDone?: boolean }): void {
   try {
     const current = JSON.parse(localStorage.getItem(STORE) ?? '{}');
     localStorage.setItem(STORE, JSON.stringify({ ...current, ...patch }));
@@ -134,7 +149,6 @@ function primaryFace(fn: PrimaryFn): CardFace {
     case 'listen': return { icon: <Mic />, label: 'Listen' };
     case 'stop-listening': return { icon: <StopSquare />, label: 'Stop' };
     case 'suggestion': return { icon: <Sparkle />, label: <span className="card-label is-quote" style={longest(fn.text)}>“{fn.text}”</span>, hint: 'Suggested' };
-    case 'candidate': return { icon: <Check />, label: <span className="card-label is-word" style={{ ['--len' as string]: fn.word.length }}>{fn.word}</span>, hint: 'Accept' };
     case 'no-match': return { icon: <Check />, label: 'No word' };
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
@@ -143,8 +157,8 @@ function primaryFace(fn: PrimaryFn): CardFace {
     // like a live leaderboard as typing changes them (OptionsFace.tsx).
     case 'options': return {
       icon: <Options />,
-      name: `Options: ${fn.top.join(', ')}${fn.more ? ', and more' : ''}`,
-      label: <OptionsFace top={fn.top} more={fn.more} />,
+      name: `Options: ${fn.words.slice(0, 3).join(', ')}${fn.words.length > 3 ? ', and more' : ''}`,
+      label: <OptionsFace top={fn.words.slice(0, 3)} more={fn.words.length > 3} />,
     };
   }
 }
@@ -177,6 +191,12 @@ function halves(letters: string): string[] {
 }
 
 const AUTO_START_S = 20;
+
+/**
+ * No dwell (owner, 2026-11-08): a look never selects. A steady look this long closes the line round a
+ * card and waits; Space or Enter, a click or a switch selects it. Not a setting any more.
+ */
+const LOOK_MS = { letter: 600, control: 900 };
 
 /**
  * Seconds left before `onDone` runs by itself, counting down while `active`; null once a key, a
@@ -258,14 +278,14 @@ export function App() {
   const words = useWords(state);
   const slots = slotsFor(state, words);
   const shown = shownWord(state.composition, words.prediction)?.word ?? null;
-  /** The mouse drives looks for the rest of the session (`?input=mouse`, or chosen after a camera failure). */
+  /** Keyboard and mouse for the rest of the session, with no selection by dwell (`?input=mouse`, Keyboard and mouse on Welcome, or Use the mouse after a camera failure). */
   const mouseOnly = useRef(MOUSE_ONLY);
   // Bumped when an activation landed on a stale label, so the label catches up at once.
   const [syncs, setSyncs] = useState(0);
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
   const primary = useSettled('primary', primaryKey(slots.primary), slots.primary, looked, syncs);
   // The typed letters spell the word the card shows, which holds still while gaze rests on it.
-  const typedWord = primary.value.kind === 'candidate' ? primary.value.word : shown;
+  const typedWord = primary.value.kind === 'options' ? primary.value.words[0] ?? shown : shown;
 
   // No word fits the groups typed so far: a soft "not yet", a second late, and only if it lasts.
   const noMatch = slots.primary.kind === 'no-match';
@@ -276,10 +296,30 @@ export function App() {
   }, [noMatch]);
   const second = useSettled('delete', secondKey(slots.second), slots.second, looked, syncs);
 
+  // Look + sound (owner, 2026-11-08; DEC-128): a look closes the line round a card and the person's
+  // sound ("yeah", taught under Menu › Settings › My sound) selects it, like Space or a switch. A
+  // sound counts only where it can mean a selection: not while the partner is heard or Clarté
+  // speaks (it could be theirs or its own), not on the voice pages (the person is recording their
+  // voice there), and not before the eyes are calibrated. Keyboard and mouse opens no microphone.
+  useEffect(() => {
+    if (MOUSE_ONLY) return;
+    let sound: SoundSelect | null = null;
+    let stopped = false;
+    const onSound = () => { noteKeyActivation(false); engine.confirm(); };
+    const enabled = () => {
+      const s = stateRef.current;
+      return s.live.kind !== 'listening' && s.live.kind !== 'speaking' && !SOUND_OFF.has(s.screen.kind);
+    };
+    startSoundSelect(onSound, enabled).then((s) => { if (stopped) s.stop(); else sound = s; }, () => {});
+    return () => { stopped = true; sound?.stop(); };
+  }, []);
+  const [teachStep, setTeachStep] = useState<TeachStep>('room');
+  const [teachRun, setTeachRun] = useState(0);
+
   // Settings → engine, document and audio (before paint, so a new text size never shows unfitted).
   useLayoutEffect(() => {
-    engine.configure({ mode: settings.mode, noiseSigma: settings.noise ? 0.06 : 0 });
-    setDwellClasses(settings.letterDwell, settings.controlDwell, screen.kind === 'talk', settings.repeat);
+    engine.configure({ mode: 'confirm', noiseSigma: settings.noise ? 0.06 : 0 });
+    setDwellClasses(LOOK_MS.letter, LOOK_MS.control, screen.kind === 'talk', settings.repeat);
     document.documentElement.style.setProperty('--scale', String(settings.textScale));
     document.documentElement.toggleAttribute('data-large', settings.textScale > 1);
     configureSound({ level: settings.sound, volume: settings.volume });
@@ -300,7 +340,10 @@ export function App() {
   // Gaze sources and the per-frame clock.
   useEffect(() => {
     const detach = [
-      attachPointerStream(engine, () => mouseOnly.current || !eyesDrive()),
+      // The pointer stands in for the eyes only while the eyes are expected but not driving, and
+      // never on Welcome or calibration, where the eyes cannot select yet. With keyboard and mouse
+      // nothing selects by dwell (owner): a click or keys 1–8 select, and hovering never does.
+      attachPointerStream(engine, () => !mouseOnly.current && !eyesDrive() && !EYES_NOT_READY.has(stateRef.current.screen.kind)),
       startTicking(engine),
       unlockOnGesture(),
       // In development the overlay tracks actionables itself (main.tsx); here for production builds.
@@ -309,20 +352,27 @@ export function App() {
     // Enter or Space on a focused tile activates that tile; elsewhere they confirm a preview.
     const onKeyCapture = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      // A held key is not a second deliberate confirmation after the screen changes.
+      if (e.repeat) { e.preventDefault(); e.stopPropagation(); return; }
       // Confirming a preview by key is a keyboard action: no bloom, no transitions.
       if (engine.snapshot.state === 'previewed') { noteKeyActivation(true); suppressMotionBriefly(); }
-      const el = e.target as HTMLElement | null;
       const tile = el?.closest?.('[data-action]');
       const action = tile?.getAttribute('data-action');
+      const pinned = stateRef.current.screen.kind === 'options'
+        && engine.snapshot.quadrant === 'Q4' && engine.snapshot.looked === 'pick-0';
       // A keyboard-focused tile takes the key; a preview waiting for confirmation always wins,
       // and a tile that merely kept focus after a click does not steal the confirm.
-      if (action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed') {
+      const confirmed = action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed'
+        ? action : pinned ? 'pick-0' : null;
+      if (confirmed) {
         e.preventDefault();
         e.stopPropagation();
-        userActivation.current = action;
+        userActivation.current = confirmed;
         noteKeyActivation(true);
         suppressMotionBriefly();
-        engine.activate(action, e.timeStamp);
+        engine.activate(confirmed, e.timeStamp);
       }
     };
     window.addEventListener('keydown', onKeyCapture, true);
@@ -384,12 +434,7 @@ export function App() {
       case 'listen': token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
       case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
-      case 'candidate':
-        commit(fn.word, historyOf(s), s.composition.words.map((w) => w.text));
-        dispatch({ type: 'accept', word: fn.word, rank: fn.rank });
-        play('word');
-        return;
-      case 'options': dispatch({ type: 'screen', screen: { kind: 'options', at: 0 } }); play('control'); return;
+      case 'options': dispatch({ type: 'open-options', words: fn.words }); play('control'); return;
       case 'no-match': return;
       case 'speak': startSpeaking(sentence(messageText(s.composition)), null, false); return;
       case 'stop-speaking':
@@ -428,11 +473,19 @@ export function App() {
     afterCalibration();
   }, [afterCalibration]);
 
+  /** Welcome leads to calibration, then the voice pages until they are done, then the conversation. */
   const getStarted = useCallback(() => {
     if (stateRef.current.screen.kind !== 'welcome') return;
     play('control');
-    dispatch({ type: 'screen', screen: mouseOnly.current ? FIRST_VOICE : { kind: 'calibration', then: 'voice' } });
+    const done = voiceDone();
+    dispatch({ type: 'screen', screen: mouseOnly.current ? (done ? { kind: 'talk' } : FIRST_VOICE) : { kind: 'calibration', then: done ? 'talk' : 'voice' } });
   }, []);
+  /** Keyboard and mouse: no camera and no calibration; clicks and keys select for the session. */
+  const chooseKeyboardAndMouse = useCallback(() => {
+    if (stateRef.current.screen.kind !== 'welcome') return;
+    mouseOnly.current = true;
+    getStarted();
+  }, [getStarted]);
   // Before calibration the eyes cannot select yet, so Get started starts by itself after 20 s,
   // unless the person shows they can use the keyboard or the mouse.
   const autoStart = useAutoStart(screen.kind === 'welcome' && !mouseOnly.current, getStarted);
@@ -462,13 +515,9 @@ export function App() {
   }, [calibrating, leaveCalibration]);
   const calibrationFailure = eyes.kind === 'failed' ? eyes.message : eyes.kind === 'run-failed' ? eyes.reason : null;
 
-  // A returning person goes straight to the conversation: the camera starts and the saved
-  // calibration is restored. When there is none that fits, or the camera fails now or later, the
-  // calibration screen opens (its failure view offers Try again and Use the mouse).
-  useEffect(() => {
-    if (mouseOnly.current || !setupDone() || PARAMS.get('onboarding') === 'off') return;
-    void startEyes(engine);
-  }, []);
+  // Every launch calibrates (Get started), over the saved calibration once the camera restores it,
+  // so Escape and Keep the old one fall back to it. If the camera fails later, or the calibration
+  // stops fitting, the calibration screen opens (its failure view offers Try again and Use the mouse).
   useEffect(() => {
     if (mouseOnly.current || (eyes.kind !== 'uncalibrated' && eyes.kind !== 'failed')) return;
     const kind = stateRef.current.screen.kind;
@@ -492,7 +541,7 @@ export function App() {
     const s = stateRef.current.screen;
     if (s.kind !== 'voice') return;
     closeMic();
-    if (s.from === 'first-run') { store({ setupDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); }
+    if (s.from === 'first-run') { store({ voiceDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); }
     else dispatch({ type: 'screen', screen: { kind: 'menu', page: 'voice' } });
   }, []);
 
@@ -588,20 +637,28 @@ export function App() {
     }
     if (s.screen.kind === 'welcome') {
       if (action === 'get-started') getStarted();
+      else if (action === 'keyboard-mouse') chooseKeyboardAndMouse();
+      return;
+    }
+    if (s.screen.kind === 'teach') {
+      if (action === 'back' || action === 'teach-done') page('settings');
+      else if (action === 'teach-retry') { play('control'); setTeachStep('room'); setTeachRun((n) => n + 1); }
       return;
     }
     if (s.screen.kind === 'voice') { voiceAction(action); return; }
     if (s.screen.kind === 'options') {
       if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
       if (action === 'page-prev' || action === 'page-next') {
-        dispatch({ type: 'screen', screen: { kind: 'options', at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
+        dispatch({ type: 'screen', screen: { ...s.screen, at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
         play('control');
         return;
       }
-      const word = action.startsWith('pick-') ? wordsNow(s).options[Number(action.slice(5))] : undefined;
+      const word = action.startsWith('pick-') ? s.screen.words[Number(action.slice(5))] : undefined;
       if (word) {
         // Its rank in the word card's ranking, so Delete reopens the word at the one after it.
-        const rank = Math.max(0, peek(requestOf(s)).words.findIndex((w) => w.word === word));
+        const prediction = peek(requestOf(s));
+        const index = prediction.words.findIndex((w) => w.word === word);
+        const rank = index < 0 ? 0 : prediction.offset + index;
         commit(word, historyOf(s), s.composition.words.map((w) => w.text));
         dispatch({ type: 'accept-word', word, rank });
         play('word');
@@ -635,6 +692,7 @@ export function App() {
         return;
       }
       if (action === 'recalibrate') { play('control'); mouseOnly.current = false; dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } }); return; }
+      if (action === 'teach-sound') { play('control'); setTeachStep('room'); setTeachRun((n) => n + 1); dispatch({ type: 'screen', screen: { kind: 'teach' } }); return; }
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
@@ -647,7 +705,7 @@ export function App() {
       // The change this selection causes shows at once (Listen → Stop, Speak → Stop), except
       // after accepting a word or a suggestion: then Speak appears only once gaze has left
       // (MOTION.md "Word accepted").
-      if (intended.primary.kind !== 'candidate' && intended.primary.kind !== 'suggestion') resync();
+      if (intended.primary.kind !== 'suggestion') resync();
     } else if (action === 'delete') {
       if (shownSecond.key !== secondKey(intended.second)) { markIgnored(action); resync(); return; }
       runSecond(intended.second);
@@ -656,7 +714,7 @@ export function App() {
       // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
     }
-  }, [getStarted, hear, leaveCalibration, resync, runPrimary, runSecond, startSpeaking, voiceAction]);
+  }, [getStarted, hear, leaveCalibration, resync, runPrimary, runSecond, startSpeaking, chooseKeyboardAndMouse, voiceAction]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;
@@ -721,6 +779,24 @@ export function App() {
     } : {};
     restKey = calibrationFailure ? 'calibration-failure' : 'calibration';
     rest = <Calibration failure={calibrationFailure} />;
+  } else if (screen.kind === 'teach') {
+    // One prompt at a time in the menu's title place; Back in Q1, and Done once the sound is in use.
+    slotViews = {
+      q1: backCard('Settings'),
+      ...(teachStep === 'ready' ? { q4: tallCard('teach-done', 'Done', <Check />) } : teachStep === 'failed' ? { q4: tallCard('teach-retry', 'Try again', <ArrowRight />) } : {}),
+    };
+    restKey = 'teach';
+    rest = (
+      <>
+        <div className="thread-behind" inert aria-hidden="true">
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />
+        </div>
+        <section className="thread thread-title" aria-label="My sound">
+          <p className="page-trail">{[...trailOf('settings'), 'My sound'].join(' › ')}</p>
+          <TeachSound key={teachRun} onStep={setTeachStep} />
+        </section>
+      </>
+    );
   } else if (screen.kind === 'welcome') {
     slotViews = welcomeSlots(autoStart);
     restKey = 'onboarding-welcome';
@@ -741,13 +817,15 @@ export function App() {
       title = TITLES[screen.page];
       trail = trailOf(screen.page);
     } else {
-      // Options (owner, 2026-11-08): the most likely word in Q5, then Q6, Q7, Q8, and a fifth in Q4.
-      const views = words.options.map((word, i): SlotView => ({
+      // Keep the first prediction where Options was opened; page only the alternatives below.
+      const views = screen.words.map((word, i): SlotView => ({
         action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
         body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
       }));
-      const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8', 'q4']);
+      const [first, ...alternatives] = views;
+      const paged = pageList(alternatives, screen.at, ['q5', 'q6', 'q7', 'q8']);
       slotViews = { q1: backCard('Home'), ...paged.slots };
+      if (first) slotViews.q4 = { ...first, tone: 'ink' };
       strip = paged.strip;
       title = 'Options';
     }

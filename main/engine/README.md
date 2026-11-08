@@ -108,6 +108,22 @@ request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 
   python3 wiktionary_extract.py wiktionary-english.tsv && .venv/bin/python add_wiktionary.py
   wiktionary-english.tsv`. The prefix index is one sorted array (`engine/lexicon.py` `PrefixIndex`):
   the lexicon takes 196 MB and 3.2 s to load.
+- **Names** (round 5, `build_names.py` -> `data/names.tsv.gz`, 174,781 names; the 141,231 the lexicon
+  lacked join it as tier 2, 1,007,594 words in all): English Wiktionary's given names and surnames
+  (`wiktionary_names.py` over the kaikki.org extract), the 2010 US Census surnames, and `propernames`, each
+  with a prior (wordfreq when it has seen the name, else the Census share x 1e-3, else 1e-9; an everyday word
+  that is also a name takes name evidence only). The rescorer measures how likely the next word is a name
+  (`name_mass`: the next-token probability of a capitalised word that is not an everyday word; "my name is"
+  0.45, "i feel" 0.001), and that share of the prior moves to the names. From four typed groups on, and never
+  on a message's first word, the six commonest names of exactly the typed length are always rescored, and a
+  name the transformer scores within 2 nats of the best ordinary word of that length takes that word's prior
+  and ranks with the common words: "I'm" + the code of omer gives Omar, Omer; "i need a" + the code of stop
+  keeps stop. A name chosen once is learned (commit), so "I'm" + the code of omer then gives Omer first.
+  Dev (8,685 words, paired with round 4): selections per word 2.461 vs 2.466, top-1 at full code 0.9068 vs
+  0.9069, both n.s.; latency p50 31 vs 27 ms, p95 79 vs 78 ms. `bench/names_eval.py` replays 47 names after
+  12 cues and 21 ordinary continuations through the s6 screen (names 10.83 -> 9.86 looks, ordinary 3.00 ->
+  3.00, every one unchanged). Rebuild: `python3 wiktionary_names.py wikt-names.tsv < kaikki.jsonl && .venv/bin/python
+  build_names.py wikt-names.tsv Names_2010Census.csv`.
 - **Word tiers** (round 3, the `tier` column; rules in `build_lexicon.py`): tier 1 is every word a real
   dictionary attests: the New Oxford American Dictionary through macOS DictionaryServices (headword,
   inflection of a noun/verb/adjective, or variant spelling; affix-only entries such as `ur-`, `im-`, `-let`
@@ -189,4 +205,5 @@ See RESULTS.md. The models inherit v0's licences (DailyDialog: non-commercial). 
 rare and foreign-looking words from wordfreq; the paging contract makes them reachable, the prior
 keeps them out of the way. The rows added from Wiktionary (sources `k`) come from Wiktionary, the free
 dictionary (https://en.wiktionary.org), via the kaikki.org extract, under CC BY-SA 4.0; a copy or
-derivative of `data/lexicon.tsv.gz` must keep that attribution and licence.
+derivative of `data/lexicon.tsv.gz` must keep that attribution and licence. The same holds for `data/names.tsv.gz`, whose Wiktionary names come from the same extract under
+CC BY-SA 4.0; its Census surnames are public domain (US Census Bureau, 2010 surnames file).

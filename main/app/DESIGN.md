@@ -8,7 +8,23 @@ It now lives in `main/app` as the app itself (owner, 2026-11-08), with v0's shar
 
 The primary card always sits in Q4 (top right) and the second card in Q1 (top left), so each action keeps one place. The primary card is dark and holds Listen, Stop, Speak, the predicted word, a suggested reply, Say again or Options. The second card holds Menu, Wait!, Delete or Not now. Listen turns into Stop, and Speak into Stop, where they were. Menu opens where the menu's Back button will be. This replaces DEC-100's "Q1 always holds the predicted word"; the word now sits in Q4. Each card keeps its own tone wherever it sits: dark for the primary card, grey glass for the second, and white for Menu (owner, 2026-11-08). The Menu card steps back so it leaves the centre of attention and the screen feels less crowded. It uses the page's own white, has no shadow, and its icon and label are secondary ink (`--ink-2`, 9.4:1 on white, against 17:1 for full ink). A 10% edge keeps it findable as a card on the white page. While it is looked at it darkens to full ink.
 
-## Options (owner, 2026-11-08)
+## Pinned first choice comparison (Omer, 2026-11-08)
+
+This branch keeps the always-open Options flow and pins its first displayed prediction in the dark Q4 card. Opening Options and accepting that first word use the same button position. The first word is excluded from the bottom row, which shows up to four alternatives directly in Q5–Q8. Five or more alternatives use the existing two-word strip in Q5–Q6 and arrows in Q7–Q8. Paging never moves or replaces the pinned word. Q1 remains Back and Q2–Q3 remain reading/rest space.
+
+Two clicks at the same position open and accept. A fresh Space or Enter confirmation can accept the pinned word while gaze stays in Q4. Holding a key does not count as a second confirmation, and continuing a dwell does not automatically accept or speak. In dwell-only use the existing leave-and-return guard remains; stationary acceptance needs a deliberate click, key, or compatible explicit confirmation. No blink or sound detector is added by this change.
+
+The snapshot and candidate ordering from the demo below remain unchanged. This is a separate comparison branch and PR; PR #33 retains the original bottom-first chooser. Fewer eye movements are a design goal, not a measured fatigue or speed result.
+
+## Demo word selection baseline (Omer, 2026-11-08)
+
+During grouped typing the Q4 card always opens **Options**, even when the model strongly favours one word or has only one candidate. Nothing is accepted until a word is selected in the chooser. Q1 remains Delete, Q2–Q3 remain the reading/rest area, and Q5–Q8 remain the letter groups. This replaces the close-conflict trigger described below for the demo; it does not add the explored Q3 Other words control.
+
+The current inline guess comes first, followed by the fetched exact-length alternatives and the other fetched completions, with duplicates removed. The list is copied when Options opens and stays fixed until Back or acceptance. Candidate-list changes also invalidate an armed preview, so a late result cannot silently change the action being selected. Back preserves the pending groups; choosing a word returns to the draft without speaking.
+
+The baseline five-card/two-card layout is recorded below; the pinned-first variant above reserves Q4 and pages only the remaining alternatives. Fetching beyond the existing candidate bounds and exact spelling remain follow-ups, rather than promises of full vocabulary coverage.
+
+## Original Options design (owner, 2026-11-08)
 
 When the typed groups spell two whole words about equally well (`conflictFor`, unchanged), the screen no longer branches with lines to two cards. The Q4 card reads **Options**, with nothing below the word. Above it, in slightly smaller type (36 px against 44 px), are the three most likely words, the likeliest nearest the label and each one dimmer going up (62%, 42%, 27%). A faint ⋯ sits on top only when more than three words fit (owner, 2026-11-08). The words sit 10 px apart, with a little more space above "Options". On windows under 820 px tall the preview words shrink to 26 px and tighten first, so "Options" keeps its 44 px. As typing changes the list, the three words behave like a live leaderboard (`OptionsFace.tsx`, owner 2026-11-08). A word that stays slides to its new rank (FLIP, 320 ms, `--ease-move`). A word that drops out slides off upward and fades (160 ms). A word that arrives slides in from above, beyond third place where the list goes on, once the leavers have cleared its row (from 120 ms). Each word's dimness eases to its new rank. Two words never share a row, and the card itself no longer cross-fades as a whole. Selecting the card opens the Options screen. That screen has Back (to Home) in Q1, the page title in the middle, and every whole word the groups spell, most likely first (`optionsFor`):
 
@@ -25,13 +41,25 @@ The Listening, Replying and Speaking pill is gone from the screen. A hidden live
 
 ## Letter cards (owner, 2026-11-08)
 
-The letter-group cards use the same grey glass as every other card. Their letters stay 36 px, bottom left, in one row. Centred two-row letters at the Menu label's size were tried and undone at the owner's request. Only their letters carry colour, from the owner's palette (2026-11-08), Q5 to Q8: purple `#8338EC`, orange `#FB5607`, pink `#FF006E` and blue `#3A86FF`. The palette's yellow (`#FFBE0B`) was 1.5:1 on the grey. It would have to darken to about `#B07800`, a mustard-brown, to reach 3:1, so the same palette's purple takes its place, the owner's pick from three rendered options (golden yellow, purple in yellow's place, a warm-to-cool reorder). The typed word's letters use the same inks. On the grey glass: purple 5.2:1, orange 3.0:1, pink 3.5:1, blue 3.2:1, all at or above the 3:1 bar for large text (the letters are 36 px semibold). The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
+The letter-group cards use the same grey glass as every other card. Their letters stay 36 px in one row, now at the card's centre like every card's words (see below). Centred two-row letters at the Menu label's size were tried and undone at the owner's request. Only their letters carry colour, from the owner's palette (2026-11-08), Q5 to Q8: purple `#8338EC`, orange `#FB5607`, pink `#FF006E` and blue `#3A86FF`. The palette's yellow (`#FFBE0B`) was 1.5:1 on the grey. It would have to darken to about `#B07800`, a mustard-brown, to reach 3:1, so the same palette's purple takes its place, the owner's pick from three rendered options (golden yellow, purple in yellow's place, a warm-to-cool reorder). The typed word's letters use the same inks. On the grey glass: purple 5.2:1, orange 3.0:1, pink 3.5:1, blue 3.2:1, all at or above the 3:1 bar for large text (the letters are 36 px semibold). The Vibrant palette keeps its deeper inks, since it sets white letters on solid group colours.
 
 ## The grid (owner, 2026-11-08)
 
 One space, 32 px, everywhere. It is the gap from the screen's edges to the cards, and between cards across and down. Each card fills its quadrant less those spaces: four columns share five spaces and two rows share three. Cards are 25vw − 40 px wide and 50vh − 48 px tall, which is 320 × 402 px at 1440×900, 280 × 312 px at 1280×720 and 440 × 492 px at 1920×1080. Measured at all three sizes, every gap is exactly 32 px. In CSS (`.cell`), a card in column c sits 32 × (1 − c/4) px into its quadrant and a card in row r sits 32 × (1 − r/2) px down. That keeps every card inside its own backend quadrant, and `check-layout.mjs` reports zero violations in every phase at 1440×900 and 1280×720. The setup reports use the same full-size cards. The thread keeps its own 40 px gaze inset from the row boundary.
 
 Earlier grids, in order: six equal cards on a 16 px grid (PR #18); a shorter letter row; then style 6 and 7's 296 × 338 px cards with 64 px gutters, 32 px from the side edges and 40 px from the top and bottom (owner, 2026-11-07).
+## Words at the card's centre (2026-11-08)
+
+The eye tracker is most accurate toward a card's centre, so every card's words, label or letters now sit at its centre instead of bottom left. Each card is three rows whose outer two are always equal, so the middle row, the words, is centred exactly (`.card` in `styles.css`). One-line words across a row of cards share one line. The icon is centred just above the words, so icon and words read as one. A face is three rows too: the small line above the words (the crumb over Back, a setting's name) and a hint below them ("Accept", "Last group", "Starts in 20 s") mirror each other's height, so the words themselves, not the words and their hint, are centred. On a face with a hint and nothing above it, the icon steps down into the empty top row so it still rests on the words.
+
+- **The Options card** keeps its icon in the top-left corner, out of the flow. Its face is already a tall stack (three words over "Options"), and the stack centres in the whole card. The leaderboard measures each word from the card rather than the stack, so a word that stays never jumps when the stack recentres.
+- **Letters** are centred in their one row. At large text they wrap into two centred rows, as before.
+- **Tall cards** (Try again, Record my voice) centre their label in the whole card, which owns both quadrants.
+- **Content too tall for the middle** (two-line labels at 200% text on small windows) pushes the bottom row out first, so the words slide down a little rather than under the icon. `fit.ts` shrinks the text only when the words would pass the card's bottom padding.
+- The selection fill's copy of the words is laid out with the same rows, so it inverts exactly over them, and the circle now grows from the words.
+
+Kept as they were: the cards, their quadrants, sizes, colours, typefaces and icons. Only positions and alignment changed.
+
 ## Speaking (owner, 2026-11-07)
 
 The Cloud turns green and livelier while Clarté speaks, as in style 6. Style 7 hid it whenever text filled the middle, and the spoken sentence counted, so the green was never seen. In style 8 the Cloud stays while Clarté speaks, with the sentence over it. Its face steps aside (it erases at Speak and redraws when the speech ends), so it never sits under the words.
@@ -40,9 +68,9 @@ The Cloud turns green and livelier while Clarté speaks, as in style 6. Style 7 
 
 - **The Cloud is style 7's size again.** A 0.8× Cloud was tried and undone at the owner's request.
 
-## Dwell feedback (owner, 2026-11-08)
+## Look feedback (owner, 2026-11-08)
 
-Looking at a card draws a line round its edge: it starts at the top left, runs clockwise at an even pace, and closes the loop exactly when the dwell completes, so the line's length is the time left. It starts after the existing intent delay (150 ms for letters, 250 ms for buttons), so a glance that passes over a card shows nothing. Leaving early retracts it in 150 ms, once the engine's blink grace (about 300 ms) has passed. The colour follows the card: ink on grey and white cards, the group's ink on letter cards, white on dark cards.
+Looking at a card draws a line round its edge: it starts at the top left, runs clockwise at an even pace, and closes the loop when the look has lasted long enough (0.6 s on letters, 0.9 s on buttons). A closed loop waits: since 2026-11-08 a look never selects (owner: no dwell), and Space or Enter, a click or a switch selects the card the loop is closed round. It starts after the existing intent delay (150 ms for letters, 250 ms for buttons), so a glance that passes over a card shows nothing. Leaving early retracts it in 150 ms, once the engine's blink grace (about 300 ms) has passed. The colour follows the card: ink on grey and white cards, the group's ink on letter cards, white on dark cards.
 
 A selection fills the card (owner, 2026-11-08): a solid circle in the card's own vivid colour (the group colour on letter cards, ink on grey and white cards, white on dark cards) grows from the centre until it covers the card (260 ms, `--ease-state`) and holds a beat (120 ms). Then the filled card, its line and its words fade out together as one piece to the card as it was (280 ms). Nothing runs backwards (owner, 2026-11-08). A selection that turns the card into a different button, as on any screen change (Settings giving way to Sound, Menu becoming Back), drops the fill at once: the new button appears clean, with no exit animation carried over (owner, 2026-11-08). Before, the old button's fill played out on the new one. The fill also keeps the colours it started with, and it hands over without an exit if the card under it already has the fill's colour. The card's words and icon change colour exactly as far as the circle has reached: white on colour and ink, ink on white. This is done with a copy of the card's content in that colour, laid out exactly like the card and clipped to the same circle. The copy refreshes two frames in, so a selection that changes the card's words (Listen to Stop) inverts the new words. The card is back at rest about two thirds of a second after the selection, even while gaze stays on it, and its words are readable throughout, so nothing waits for it. Tried and rejected first: a soft blurred oval tint, then a sharp wavy water line with a ripple. Under reduced motion the line steps round in quarters and a selection shows the fill fading out, without the circle growing.
 
@@ -53,13 +81,12 @@ The menu is a small tree, kept in one table in `Menu.tsx` (title, parent, entrie
 | Page | Cards |
 | -- | -- |
 | Menu | Recalibrate (Q5–Q6), Settings (Q7–Q8): two wide cards |
-| Settings | Dwell (Q4), Appearance (Q5), Suggested replies (Q6), Sound (Q7), Dev Tools (Q8) |
-| Dwell | Selection, Letter dwell, Button dwell |
+| Settings | Appearance (Q5), Suggested replies (Q6), Sound (Q7), Dev Tools (Q8) |
 | Appearance | Text size, Motion, Word colours |
 | Sound | Sounds, Volume |
 | Dev Tools (was Demo) | Gaze noise, Repeat, Partner voice |
 
-A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. A page with more than five entries would page two at a time with ← in Q7 and → in Q8 (see Options), but the grouping keeps every page at five or fewer. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Dwell) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
+A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. A page with more than five entries would page two at a time with ← in Q7 and → in Q8 (see Options), but the grouping keeps every page at five or fewer. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Sound) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
 
 Earlier (owner, 2026-11-07): One moment and Phrases left the menu, and the Phrases page went with them. One moment stays on the conversation screen while listening, renamed **Wait!**. Selecting it says "Wait! I'm answering."
 
@@ -100,10 +127,18 @@ The ball floats at the centre of the top row, halfway between the top of the scr
 - **Interruption.** Position, size and lean all come from one progress value from 0 (centre) to 1 (docked). If the middle fills and clears mid-flight, the ball turns round from where it is.
 - **Still or reduced motion.** No flight. It fades out (150 ms), moves, and fades in at the other place, with the face at rest.
 
+## Every launch starts at Welcome (owner, 2026-11-08)
+
+Each launch opens on Welcome, then eye calibration, not only the first. The saved calibration stays as the fallback: Get started starts the camera, the saved calibration is restored, and the run trains over it, so Escape during the run and **Keep the old one** after a failed run keep it. The voice pages follow calibration only until the person finishes them once, by Continue after making a voice or by Not now (`voiceDone` in `clarte.v1`; a store from before with `setupDone` counts). Menu › My voice reaches them at any time. `?onboarding=off` still skips the whole flow, and `?input=mouse` skips calibration.
+
+On Welcome, **Get started** is the tall ink card over Q4 and Q8 (still with "Starts in 20 s"), and the orb and the words are centred in the three columns to its left. **Keyboard and mouse** is not a card (owner, 2026-11-08): it is quiet text in secondary ink at hint size, one line, centred at the foot of Q6 under the words, so the eye goes to Get started and people try calibration. It is still a target in its own quadrant: a click or key 6 selects it, and it darkens under the pointer. As calibration starts, Get started slides off to the right (520 ms) and Keyboard and mouse fades. Get started keeps one body key with or without its hint: the press that stops the countdown would otherwise swap the body under the pointer, and the click would never fire.
+
+**Keyboard and mouse** skips calibration and starts no camera, the same as Use the mouse after a camera failure. With keyboard and mouse a click or keys 1–8 select, and hovering never does (owner's standing rule). So the pointer no longer feeds the gaze engine in a keyboard-and-mouse session, and it never does on Welcome or calibration, where the eyes cannot select yet and only a mouse could dwell. Elsewhere, without a calibrated tracker (`?onboarding=off`), the pointer still stands in for the eyes, and like the eyes it only previews.
+
 ## Open questions for the owner
 
 1. The eyes follow the mouse pointer, as in the reference. With a real eye tracker there is no pointer; should they follow the looked-at card instead?
 
 ## Evidence
 
-In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarté speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu`, `menu-settings` and `menu-dwell` (the menu tree), `composing` (the word in progress in group colours).
+In `evidence/`, real renders at 1440×900: `empty` (an empty conversation, the ball at the centre), `idle` (Soft, history on screen, the ball docked), `vibrant-suggested` (Vibrant), `speaking` (the companion docked while Clarté speaks), `companion-demo` (`?demo`), `companion-flight.webm` (docking and returning, recorded in Chromium; recordings stay local, as in v0), `listening-wait` (Wait! while listening), `menu` and `menu-settings` (the menu tree; `menu-dwell` is from before the Dwell page was removed), `composing` (the word in progress in group colours).

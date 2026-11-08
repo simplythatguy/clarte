@@ -81,6 +81,8 @@ class MLXRescorer:
         if tok.eos_token_id is not None:
             boundary[tok.eos_token_id] = True
         self.boundary = mx.array(boundary)
+        self.vocab_size = vocab_size
+        self._name_mask = None
         self.bos = tok.bos_token_id if getattr(tok, "bos_token_id", None) is not None else None
         self.pad = tok.eos_token_id or 0
         self.prev_ids, self.cache, self.prev_last = [], None, None
@@ -153,6 +155,26 @@ class MLXRescorer:
             h = h + a.o_proj(o.transpose(0, 2, 1, 3).reshape(1, N, -1))
             h = h + layer.mlp(layer.post_attention_layernorm(h))
         return self.head(self.inner.norm(h))[0].astype(mx.float32)          # [N, V]
+
+    def name_mass(self, text, common):
+        """How likely the next word is a name: the probability that the next token starts a capitalised word
+        that is not an everyday word (`common`) and not I: "my name is" 0.45, "Hi, I'm Sarah. What's your
+        name?" 0.62, "hi I'm" 0.41, "i'm" 0.02, "i feel" 0.001. Reuses the prompt's cached keys and values,
+        so it costs no extra model pass when the candidates are scored after it."""
+        mx = self.mx
+        if self._name_mask is None:
+            import re
+            mask = np.zeros(self.vocab_size, dtype=bool)
+            for token, i in self.tokenizer.get_vocab().items():
+                if i >= self.vocab_size:
+                    continue
+                piece = self.tokenizer.convert_tokens_to_string([token])
+                m = re.match(r"^ ([A-Z][a-z]+)", piece)
+                if m and m.group(1).lower() not in common and not piece.startswith((" I'", " I ")):
+                    mask[i] = True
+            self._name_mask = mx.array(mask)
+        _, last = self._prefix(text)
+        return float(mx.exp(mx.logsumexp(mx.where(self._name_mask[: last.shape[0]], last, -mx.inf))))
 
     def score(self, text, words):
         """Log probability of each word followed by a word boundary, given the prompt text."""

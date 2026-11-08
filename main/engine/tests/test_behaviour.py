@@ -22,9 +22,9 @@ class Learnable(unittest.TestCase):
         fake.lex = Lexicon()
         fake.params = {}
         learn = lambda w: Engine.learnable(fake, w)
-        self.assertTrue(learn("zorvella"))
-        self.assertTrue(learn("okonkwo"))
-        for w in ["fucking", "hello", "priya", "the", "ll", "gm"]:        # lexicon words are never learned
+        for w in ["zorvella", "okonkwo", "priya", "omer"]:               # new words and names that are not everyday words
+            self.assertTrue(learn(w), w)
+        for w in ["fucking", "hello", "will", "may", "the", "ll", "gm"]:  # other lexicon words are never learned
             self.assertFalse(learn(w), w)
         for w in ["zzqx", "x", "fuckingg", "fuckers", "fuckingshit", "bullshitting"]:   # junk and profanity are never learned
             self.assertFalse(learn(w), w)
@@ -122,6 +122,49 @@ class Behaviour(unittest.TestCase):
         e.start_conversation("branch")
         out = e.predict([["partner", "Your sister Priya is coming at four."]], ["is"], code_of("priya"), limit=8)
         self.assertIs(out["branch"], False)
+
+
+def mlx_available():
+    try:
+        from engine.neural import available
+        return "qwen2.5-1.5b" in available()
+    except Exception:
+        return False
+
+
+@unittest.skipUnless(LIVE and mlx_available(), "PREDICT_TESTS=fast or no MLX rescorer")
+class Names(unittest.TestCase):
+    """Round 5: names where the sentence calls for one, ordinary words where it does not (qwen2.5-1.5b, GPU)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine import Engine
+        cls.engine = Engine(rescorer="qwen2.5-1.5b")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.engine.close()
+
+    def whole(self, history, message, word):
+        out = self.engine.predict(history, message, code_of(word), limit=8, complete=True)["words"]
+        return [w.get("display", w["word"]) for w in out]
+
+    def test_a_name_where_the_ordinary_words_make_no_sense(self):
+        self.engine.start_conversation("names")
+        self.assertEqual(self.whole([], ["i'm"], "omer")[0], "Omar")
+        self.assertIn("Omer", self.whole([], ["hi", "i'm"], "omer")[:4])
+
+    def test_ordinary_words_keep_their_place(self):
+        self.engine.start_conversation("names")
+        self.assertEqual(self.whole([], ["i", "need", "a"], "stop")[0], "stop")
+        self.assertEqual(self.whole([], ["my", "name", "is"], "very")[0], "very")
+        self.assertEqual(self.whole([], ["where's", "the", "nearest"], "bathroom")[0], "bathroom")
+
+    def test_a_chosen_name_comes_first_next_time(self):
+        e = self.engine
+        e.start_conversation("names")
+        e.commit("Omer", [], ["i'm"])
+        self.assertEqual(self.whole([], ["i'm"], "omer")[0], "Omer")
 
 
 class Server(unittest.TestCase):

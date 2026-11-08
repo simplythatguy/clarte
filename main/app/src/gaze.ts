@@ -62,8 +62,8 @@ export function useLooked(): string | null {
 }
 
 /**
- * The mouse as a gaze tracker, while `active()` says so (the eye tracker is off, failed or not yet
- * calibrated, or `?input=mouse`). A real tracker streams samples continuously; a still mouse sends
+ * The mouse as a gaze tracker, while `active()` says so (App: the eye tracker is off, failed or
+ * not yet calibrated, outside Welcome and calibration, and never with keyboard and mouse). A real tracker streams samples continuously; a still mouse sends
  * no events, and the shared engine counts 600 ms without samples as lost gaze. So, like
  * `attachPointer`, this feeds pointer positions, and it also repeats the last position at 30 Hz
  * while the pointer is over the page (which also keeps simulator noise moving). Leaving the
@@ -102,6 +102,9 @@ export function guardQuadrant(quadrant: QuadrantId | null, action: string): void
 }
 
 export function isGuarded(action: string, snapshot: GazeSnapshot = engine.snapshot): boolean {
+  // Only a dwell can fire under a resting gaze. In confirm mode every selection is an explicit
+  // Space, click, switch or sound, so the new card in a quadrant needs no look away first.
+  if (engine.settings.mode !== 'dwell') return false;
   return guard !== null && snapshot.quadrant === guard.quadrant && action !== guard.action;
 }
 

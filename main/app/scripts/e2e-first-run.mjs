@@ -1,7 +1,8 @@
 // The first run end to end on a fake camera, against a running `./clarte ui` (or `npm run dev` plus the engine):
 // Welcome → Get started → the real 8-dot calibration through the WebEyeTrack worker → training → the calibration
-// saved → Voice → Continue → the conversation; then a reload goes straight to the conversation with the saved
-// calibration restored, and typing in mouse mode shows the engine's word.
+// saved → Voice → Not now → the conversation; then a reload opens Welcome again, Get started restores the saved
+// calibration under a new run, Escape keeps it and goes straight to the conversation (the voice pages are done),
+// and typing in mouse mode shows the engine's word.
 //
 //   node scripts/e2e-first-run.mjs [http://localhost:5200] [path/to/face.y4m]
 //
@@ -22,7 +23,7 @@ await mkdir(OUT, { recursive: true });
 const failures = [];
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` (${detail})` : ''}`); if (!ok) failures.push(name); };
 
-const browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA}`, '--use-fake-ui-for-media-stream', '--use-gl=angle'] });
+const browser = await chromium.launch({ headless: true, args: ['--mute-audio', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA}`, '--use-fake-ui-for-media-stream', '--use-gl=angle'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['camera'] });
 const page = await context.newPage();
 page.on('pageerror', (e) => console.error('page error:', e.message));
@@ -73,16 +74,22 @@ try {
   check('the tracker drives the gaze engine', Boolean(samples?.point), JSON.stringify({ point: samples?.point, quadrant: samples?.quadrant }));
   await shot('5-conversation');
 
-  // Every status after the reload is recorded: a restore that silently failed would show a calibration run.
+  // Every launch calibrates over the saved calibration: Escape during the run keeps it, and the voice pages, done
+  // once, are skipped.
   const firstSaved = JSON.parse(await page.evaluate((key) => localStorage.getItem(key), CALIBRATION_KEY)).savedAt;
   await page.reload();
   await until('the app', () => page.evaluate(() => Boolean(window.clarteDebug)), 10_000);
-  await page.evaluate(() => { const seen = (window.__eyes = []); setInterval(() => { const e = window.clarteDebug?.eyes(); const k = e && (e.reason ? `${e.kind}(${e.reason})` : e.kind); if (k && seen.at(-1) !== k) seen.push(k); }, 50); });
-  check('a returning person goes straight to the conversation', !(await phase()).startsWith('voice') && !['welcome', 'calibration'].includes(await phase()), await phase());
-  await until('the restored calibration', async () => (await eyes())?.kind === 'tracking', 120_000);
-  const afterReload = await page.evaluate(() => window.__eyes);
+  check('a second launch opens on Welcome again', (await phase()) === 'welcome', await phase());
+  await page.evaluate(() => { const seen = (window.__phases = []); setInterval(() => { const p = window.clarteDebug?.phase(); if (p && seen.at(-1) !== p) seen.push(p); }, 50); });
+  await page.getByRole('button', { name: 'Get started' }).click();
+  await until('the launch run', async () => (await eyes())?.kind === 'calibrating' && (await eyes()).startedAt !== null, 120_000);
+  await page.keyboard.press('Escape');
+  await until('the restored calibration', async () => (await eyes())?.kind === 'tracking', 60_000);
+  await page.waitForTimeout(300);
   const restored = await eyes();
-  check('the saved calibration is restored at launch, with no new run', restored.calibratedAt === firstSaved && !afterReload.includes('calibrating'), afterReload.join(' → '));
+  const launch = await page.evaluate(() => window.__phases);
+  check('Escape during the launch run keeps the saved calibration', restored.calibratedAt === firstSaved, JSON.stringify(restored));
+  check('a second launch skips the voice pages', !launch.some((p) => p.startsWith('voice')) && !['welcome', 'calibration'].includes(await phase()), launch.join(' → '));
 
   // Menu › Recalibrate over a restored calibration: a fresh run collects labels, trains and replaces the saved one.
   const menuButton = page.getByRole('button', { name: 'Menu' });
@@ -105,7 +112,7 @@ try {
   check('Escape keeps the calibration in use', (await eyes()).calibratedAt === secondSaved && (await phase()) !== 'calibration', JSON.stringify(await eyes()));
 
   // Typing, with the mouse standing in for the eyes so the photo's fixed gaze cannot select anything.
-  await page.goto(`${ORIGIN}/?input=mouse`);
+  await page.goto(`${ORIGIN}/?input=mouse&onboarding=off`);
   await until('the app', () => page.evaluate(() => Boolean(window.clarteDebug)), 10_000);
   await page.mouse.move(720, 120); // the rest zone between the two top cards
   await until('the engine', () => page.evaluate(async () => { for (const p of [8765, 8766, 8767, 8768, 8769]) { try { const r = await fetch(`http://127.0.0.1:${p}/api/v1/health`); if (r.ok && (await r.json()).ok) return true; } catch {} } return false; }), 180_000);

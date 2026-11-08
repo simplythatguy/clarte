@@ -5,8 +5,10 @@
  */
 import { EMPTY_COMPOSITION, acceptWord, reduce, type Composition } from './core/composer.ts';
 import { signatureOf } from './core/decoder.ts';
-import { type MenuPage, type State, type Turn, type VoiceStep } from './model.ts';
+import { optionsRequestOf, requestOf, type MenuPage, type State, type Turn, type VoiceStep } from './model.ts';
 import { type MakerState } from './myvoice/maker.ts';
+import { predictLocal } from './prediction/local.ts';
+import { optionsOf } from './words.ts';
 
 /**
  * What the recording session shows in each voice phase (App passes it to `showMaker`): a session
@@ -38,7 +40,6 @@ export const PHASES = [
   'spoken',
   'menu',
   'menu-settings',
-  'menu-dwell',
   'menu-appearance',
   'menu-sound',
   'menu-dev-tools',
@@ -92,6 +93,11 @@ function typeGroupsOf(c: Composition, word: string): Composition {
   return next;
 }
 
+function withOptions(state: State, at: number): State {
+  const words = optionsOf(state.composition, predictLocal(requestOf(state)), predictLocal(optionsRequestOf(state)));
+  return { ...state, screen: { kind: 'options', at, words } };
+}
+
 export function seedFor(name: PhaseName, base: State): State {
   const clean: State = { ...base, screen: { kind: 'talk' }, live: { kind: 'quiet' }, composition: EMPTY_COMPOSITION, dismissed: null };
   const talk = withTurns(clean, [...HISTORY, OUTSIDE]);
@@ -114,11 +120,11 @@ export function seedFor(name: PhaseName, base: State): State {
       // "I good": good, more, lose and hope fit the same groups.
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'good') };
     case 'options':
-      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['in', 'how']), 'been'), screen: { kind: 'options', at: 0 } };
+      return withOptions({ ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['in', 'how']), 'been') }, 0);
     case 'options-many':
     case 'options-many-end':
       // "game": seven whole words (make, game, hand, half, name, land, lend), so the list pages.
-      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['lets', 'play', 'a']), 'game'), screen: { kind: 'options', at: name === 'options-many' ? 0 : 99 } };
+      return withOptions({ ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['lets', 'play', 'a']), 'game') }, name === 'options-many' ? 0 : 99);
     case 'composing-nomatch':
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['ask']), 'suzy') };
     case 'composing-ready':
@@ -132,7 +138,6 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'menu':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: 'main' } };
     case 'menu-settings':
-    case 'menu-dwell':
     case 'menu-appearance':
     case 'menu-sound':
     case 'menu-dev-tools':

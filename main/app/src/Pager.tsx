@@ -1,7 +1,7 @@
 /**
  * Lists of cards on a page: the Options screen's words and any menu page (owner, 2026-11-08).
  *
- * Up to five cards take their places directly. More than five show two at a time in Q5–Q6, with ←
+ * Cards take their places directly when they fit the supplied slots. Longer lists show two at a time in Q5–Q6, with ←
  * in Q7 and → in Q8; an arrow fades when the list cannot go further that way. An arrow slides the
  * row one card: one card slides out, its neighbour moves over, the next slides in. The row is
  * clipped to the two cards' own strip, so a moving card never crosses into the arrows' quadrants,
@@ -12,8 +12,6 @@ import { Tile, type SlotName, type Slots, type SlotView } from './Tile.tsx';
 import { Swap } from './Swap.tsx';
 import { Back, Next } from './icons.tsx';
 
-/** A page shows this many cards directly; more and it pages. */
-const DIRECT = 5;
 /** Cards in view while paging (Q5 and Q6). */
 export const IN_VIEW = 2;
 /** The row's slide: on-screen movement, so it eases in and out (--ease-move). */
@@ -29,7 +27,7 @@ const arrow = (action: string, label: string, glyph: ReactElement, disabled: boo
 
 /** Where a list's cards go: directly in `order` when it fits, else a paged strip and arrows. */
 export function pageList(views: SlotView[], at: number, order: SlotName[]): Paged {
-  if (views.length <= DIRECT) {
+  if (views.length <= order.length) {
     const slots: Slots = {};
     views.forEach((v, i) => { slots[order[i]] = v; });
     return { slots, strip: null };

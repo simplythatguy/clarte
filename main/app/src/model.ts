@@ -14,7 +14,6 @@ import {
 import type { GroupId } from './core/decoder.ts';
 import type { SoundLevel } from './core/sound.ts';
 import { suggestReply } from './suggest.ts';
-import { isConflict, shownWord } from './words.ts';
 import type { PredictRequest, Prediction, Role } from './prediction/prediction.ts';
 import type { PartnerSource } from './voice.ts';
 import type { Pacing, Source } from './myvoice/service.ts';
@@ -27,13 +26,13 @@ export type Turn = {
   holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'voice' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
+export type MenuPage = 'main' | 'voice' | 'settings' | 'appearance' | 'sound' | 'dev-tools';
 
 export type Screen =
   | { kind: 'talk' }
   | { kind: 'menu'; page: MenuPage; at?: number }
-  /** Every whole word the typed groups spell, to choose from; `at` is the first one in view. */
-  | { kind: 'options'; at: number }
+  /** A snapshot of the choices being reviewed; late predictions cannot change a pick's meaning. */
+  | { kind: 'options'; at: number; words: string[] }
   /** The first run (Onboarding.tsx): Welcome, then calibration, then voice cloning. */
   | { kind: 'welcome' }
   /** Eye calibration; `then` is where it leads once a calibration is in use. */
@@ -42,7 +41,9 @@ export type Screen =
    * Making the person's voice (VoiceSetup.tsx): on the first run after calibration, or from
    * Menu › My voice. `source` is today's recordings or files from before; `from` is where leaving goes.
    */
-  | { kind: 'voice'; step: VoiceStep; source: Source; from: 'first-run' | 'menu' };
+  | { kind: 'voice'; step: VoiceStep; source: Source; from: 'first-run' | 'menu' }
+  /** Teaching Clarté the person's sound (TeachSound.tsx), opened from Menu › Settings › My sound. */
+  | { kind: 'teach' };
 
 /** The voice pages, in order: what to make it from, consent, recording or files, making, the result. */
 export type VoiceStep = 'intro' | 'consent' | 'record' | 'files' | 'making' | 'ready' | 'need-more' | 'error';
@@ -55,14 +56,11 @@ export type Live =
   | { kind: 'spoken'; turnId: number };
 
 export type Settings = {
-  letterDwell: number;
-  controlDwell: number;
   textScale: number;
   /** Which cues play (SOUND.md): all of them, the fewer important ones, or none. */
   sound: SoundLevel;
   /** Cue volume, 0–1. */
   volume: number;
-  mode: 'dwell' | 'confirm';
   wordColours: boolean;
   suggestions: boolean;
   noise: boolean;
@@ -77,12 +75,9 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  letterDwell: 600,
-  controlDwell: 900,
   textScale: 1,
   sound: 'all',
   volume: 0.75,
-  mode: 'dwell',
   wordColours: false,
   suggestions: true,
   noise: false,
@@ -120,6 +115,7 @@ export type Action =
   | { type: 'accept'; word: string; rank: number }
   /** Accept one word of the Options screen and return to the conversation. */
   | { type: 'accept-word'; word: string; rank: number }
+  | { type: 'open-options'; words: string[] }
   | { type: 'delete' }
   | { type: 'use-suggestion'; text: string }
   | { type: 'dismiss-suggestion' }
@@ -155,7 +151,7 @@ export function requestOf(state: State): PredictRequest {
   return { history: historyOf(state), message: c.words.map((w) => w.text), groups: groupsOf(c.pending), offset: c.candidateIndex };
 }
 
-/** The Options request: every exact-length word for the pending groups. */
+/** The fetched exact-length alternatives, supplemented by the word card's completions. */
 export const OPTIONS_LIMIT = 20;
 export function optionsRequestOf(state: State): PredictRequest {
   return { ...requestOf(state), offset: 0, complete: true, limit: OPTIONS_LIMIT };
@@ -187,14 +183,12 @@ export type PrimaryFn =
   | { kind: 'listen' }
   | { kind: 'stop-listening' }
   | { kind: 'suggestion'; text: string }
-  | { kind: 'candidate'; word: string; rank: number }
   | { kind: 'no-match'; groups: number }
   | { kind: 'speak' }
   | { kind: 'stop-speaking' }
   | { kind: 'say-again'; turnId: number }
-  /** Several whole words fit about equally well: open the Options screen to choose. `top` is the
-   *  three most likely, shown on the card; `more` says whether the list goes on past them. */
-  | { kind: 'options'; top: string[]; more: boolean };
+  /** Open the chooser even when the model strongly favours just one of these words. */
+  | { kind: 'options'; words: string[] };
 
 export type SecondFn =
   | { kind: 'delete'; word: boolean }
@@ -211,13 +205,8 @@ export function slotsFor(state: State, words: Words): Slots {
   if (live.kind === 'listening') return { primary: { kind: 'stop-listening' }, second: { kind: 'one-moment' }, groups: false };
   if (live.kind === 'speaking') return { primary: { kind: 'stop-speaking' }, second: { kind: 'none' }, groups: false };
   if (c.pending.length) {
-    if (isConflict(c, words.prediction) && words.options.length > 1) {
-      const { options } = words;
-      return { primary: { kind: 'options', top: options.slice(0, 3), more: options.length > 3 }, second: { kind: 'delete', word: c.reopened }, groups: true };
-    }
-    const shown = shownWord(c, words.prediction);
     return {
-      primary: shown ? { kind: 'candidate', word: shown.word, rank: shown.rank } : { kind: 'no-match', groups: c.pending.length },
+      primary: words.options.length ? { kind: 'options', words: words.options } : { kind: 'no-match', groups: c.pending.length },
       second: { kind: 'delete', word: c.reopened },
       groups: true,
     };
@@ -232,7 +221,7 @@ export function slotsFor(state: State, words: Words): Slots {
 export function primaryKey(fn: PrimaryFn): string {
   switch (fn.kind) {
     case 'suggestion': return `suggestion:${fn.text}`;
-    case 'candidate': return `candidate:${fn.word}`;
+    case 'options': return `options:${JSON.stringify(fn.words)}`;
     case 'say-again': return `say-again:${fn.turnId}`;
     default: return fn.kind;
   }
@@ -246,10 +235,10 @@ export function secondKey(fn: SecondFn): string {
 export function phaseOf(state: State, words: Words): string {
   const { screen } = state;
   if (screen.kind === 'voice') return screen.step === 'intro' ? 'voice' : `voice-${screen.step}`;
-  if (screen.kind === 'welcome' || screen.kind === 'calibration') return screen.kind;
+  if (screen.kind === 'welcome' || screen.kind === 'calibration' || screen.kind === 'teach') return screen.kind;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'options') return 'options';
-  const { primary, second } = slotsFor(state, words);
+  const { primary } = slotsFor(state, words);
   switch (primary.kind) {
     case 'stop-listening': return 'listening';
     case 'stop-speaking': return 'speaking';
@@ -258,7 +247,6 @@ export function phaseOf(state: State, words: Words): string {
     case 'speak': return 'composing-ready';
     case 'no-match': return 'composing-nomatch';
     case 'options': return 'composing-options';
-    case 'candidate': return second.kind === 'delete' && second.word ? 'composing-reopened' : 'composing-pending';
     case 'listen': return 'idle';
   }
 }
@@ -274,6 +262,10 @@ function compose(state: State, event: Parameters<typeof reduceComposition>[1]): 
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case 'open-options':
+      return state.composition.pending.length && action.words.length
+        ? { ...state, screen: { kind: 'options', at: 0, words: [...action.words] } }
+        : state;
     case 'group': {
       // Typing over a suggestion dismisses it for this partner turn; typing ends the Say again window.
       const owed = owedTurn(state);

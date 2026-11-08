@@ -11,7 +11,8 @@ import { optionsOf } from './words.ts';
 /** The answer the state calls for now, without fetching: for reducers, callbacks and the debug hook. */
 export function wordsNow(state: State): Words {
   if (!state.composition.pending.length) return { prediction: peek(requestOf(state)), options: [] };
-  return { prediction: peek(requestOf(state)), options: optionsOf(peek(optionsRequestOf(state))) };
+  const prediction = peek(requestOf(state));
+  return { prediction, options: optionsOf(state.composition, prediction, peek(optionsRequestOf(state))) };
 }
 
 export function useWords(state: State): Words {

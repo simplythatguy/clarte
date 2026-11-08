@@ -1,7 +1,7 @@
 /**
  * Menu pages (owner, 2026-11-08). The menu replaces the conversation screen and keeps its geometry:
  * Q1 goes back one level and names where it goes (Home, Menu, Settings), and Q2–Q3 stay a rest zone
- * that shows the page name with its path above it (Menu › Settings › Dwell). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
+ * that shows the page name with its path above it (Menu › Settings › Sound). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
  * Settings (Q7–Q8), and My voice top right (Q4, NAT-32). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
  * and a fifth top right (Q4); more than five page two at a time with arrows (Pager.tsx). Settings show their current value and advance to the next value on
  * selection, so every change is one look.
@@ -13,26 +13,23 @@ import { pageList, type Paged } from './Pager.tsx';
 import { longest } from './text.ts';
 import { Again, Back, Blob, Check, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave, Waveform } from './icons.tsx';
 import { readyVoices, voiceName } from './myvoice/voices.ts';
+import { hasProfile } from './listen/store.ts';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
 /** A quiet glyph inside each setting's dwell ring, so the ring never reads as an empty radio button. */
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
-  letterDwell: Timer, controlDwell: Timer, textScale: TextSize, sound: Speaker, mode: Target,
+  textScale: TextSize, sound: Speaker,
   wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob, volume: Speaker,
   voiceId: Waveform, pacing: Timer,
 };
 
-const seconds = (ms: number) => `${+(ms / 1000).toFixed(2)} s`;
 const onOff = (v: boolean) => (v ? 'On' : 'Off');
 
 const CYCLES = {
-  letterDwell: { key: 'letterDwell', name: 'Letter dwell', values: [300, 450, 600, 800, 1000, 1500, 2000], format: seconds },
-  controlDwell: { key: 'controlDwell', name: 'Button dwell', values: [300, 600, 900, 1200, 1500, 2000], format: seconds },
   textScale: { key: 'textScale', name: 'Text size', values: [1, 1.25, 1.5, 1.75, 2], format: (v: number) => `${Math.round(v * 100)}%` },
   sound: { key: 'sound', name: 'Sounds', values: ['all', 'fewer', 'off'], format: (v: string) => ({ all: 'All', fewer: 'Fewer', off: 'Off' })[v] ?? v },
   volume: { key: 'volume', name: 'Volume', values: [0.25, 0.5, 0.75, 1], format: (v: number) => `${Math.round(v * 100)}%` },
-  mode: { key: 'mode', name: 'Selection', values: ['dwell', 'confirm'], format: (v: string) => (v === 'dwell' ? 'Dwell' : 'Confirm') },
   wordColours: { key: 'wordColours', name: 'Word colours', values: [false, true], format: onOff },
   suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
@@ -52,12 +49,13 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
   return values[(i + 1) % values.length];
 }
 
-/** What a menu page offers: a setting to cycle, a page to open, Recalibrate, or another command. */
+/** What a menu page offers: a setting to cycle, a page to open, Recalibrate, another command, or teaching the sound. */
 type Entry =
   | { kind: 'setting'; key: SettingKey }
   | { kind: 'page'; page: MenuPage; glyph: () => ReactNode }
   | { kind: 'recalibrate' }
-  | { kind: 'command'; action: string; label: string; glyph: () => ReactNode };
+  | { kind: 'command'; action: string; label: string; glyph: () => ReactNode }
+  | { kind: 'teach' };
 
 type Page = { title: string; parent: MenuPage | null; entries: Entry[] };
 
@@ -84,9 +82,8 @@ const PAGES: Record<MenuPage, Page> = {
   settings: {
     title: 'Settings',
     parent: 'main',
-    entries: [open('dwell', Timer), open('appearance', Palette), setting('suggestions'), open('sound', Speaker), open('dev-tools', Flask)],
+    entries: [open('appearance', Palette), setting('suggestions'), open('sound', Speaker), { kind: 'teach' }, open('dev-tools', Flask)],
   },
-  dwell: { title: 'Dwell', parent: 'settings', entries: [setting('mode'), setting('letterDwell'), setting('controlDwell')] },
   appearance: { title: 'Appearance', parent: 'settings', entries: [setting('textScale'), setting('orbMotion'), setting('wordColours')] },
   sound: { title: 'Sound', parent: 'settings', entries: [setting('sound'), setting('volume')] },
   'dev-tools': { title: 'Dev Tools', parent: 'settings', entries: [setting('noise'), setting('repeat'), setting('partner')] },
@@ -145,6 +142,14 @@ export function menuSlots(page: MenuPage, settings: Settings, at = 0): Paged {
       case 'page': return card(`open-${e.page}`, PAGES[e.page].title, e.glyph(), span);
       case 'recalibrate': return card('recalibrate', 'Recalibrate', <Target />, span);
       case 'command': return card(e.action, e.label, e.glyph(), span);
+      case 'teach': {
+        // Shown like a setting: its name, and whether the person has taught their sound yet.
+        const value = hasProfile() ? 'Teach again' : 'Teach';
+        return {
+          action: 'teach-sound', tone: 'surface', icon: <Wave />, bodyKey: `teach:${value}`,
+          body: <><span className="setting-name" style={longest('My sound')}>My sound</span><span key={value} className="setting-value" style={longest(value)}>{value}</span></>,
+        };
+      }
     }
   };
   const { entries } = PAGES[page];

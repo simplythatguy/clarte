@@ -156,5 +156,56 @@ check('confirm mode previews instead of selecting', confirmEvents.includes('prev
 confirmEngine.confirm(400);
 check('confirm selects the preview', confirmEvents.includes('select') && confirmEngine.snapshot.state === 'selected');
 
+// Switching cards waits until the eyes have settled (owner, 2026-11-08).
+const settleEngine = new GazeEngine({ dwellMs: 600, holdMs: 1000, holdShare: 0.65, graceMs: 300, smoothing: 1, deadBand: 0 });
+settleEngine.setViewport(viewport);
+settleEngine.setActionables(style1);
+const settleEvents: string[] = [];
+settleEngine.subscribe((_, event) => { if (event) settleEvents.push(`${event.type}:${event.action}`); });
+const feed = (from: number, to: number, at: (t: number) => [number, number]) => { for (let t = from; t <= to; t += 33) settleEngine.sample(...at(t), t); };
+feed(0, 300, () => [100, 100]);
+check('the first card needs a settled look too', settleEngine.snapshot.quadrant === null, String(settleEngine.snapshot.quadrant));
+feed(333, 700, () => [100, 100]);
+check('a steady first look settles after 650 ms', settleEngine.snapshot.quadrant === 'Q1', String(settleEngine.snapshot.quadrant));
+feed(733, 1700, () => [100, 100]);
+feed(1733, 2300, () => [500, 100]);
+check('a clean move to the next card waits', settleEngine.snapshot.quadrant === 'Q1' && settleEngine.snapshot.state !== 'dwelling', `${settleEngine.snapshot.quadrant} ${settleEngine.snapshot.state}`);
+feed(2333, 2500, () => [500, 100]);
+check('and moves once the new card holds 65% of the last second', settleEngine.snapshot.quadrant === 'Q2', `${settleEngine.snapshot.quadrant} ${settleEngine.snapshot.state}`);
+feed(2533, 3500, () => [500, 100]);
+check('then the new card is selected', settleEvents.includes('select:autocomplete'), settleEvents.join(' '));
+const before = settleEvents.length;
+feed(2533, 5000, (t) => (Math.floor(t / 33) % 2 ? [100, 100] : [500, 100]));
+check('a look split between two cards never jumps', settleEngine.snapshot.quadrant === 'Q2' && !settleEvents.slice(before).some((e) => e.startsWith('select:') && e !== `select:${settleEngine.snapshot.looked}`), `${settleEngine.snapshot.quadrant} ${settleEvents.slice(before).join(' ')}`);
+const leaveEngine = new GazeEngine({ dwellMs: 600, holdMs: 1000, holdShare: 0.65, graceMs: 300, smoothing: 1, deadBand: 0 });
+leaveEngine.setViewport(viewport);
+leaveEngine.setActionables(style1);
+const leaveEvents: string[] = [];
+leaveEngine.subscribe((_, event) => { if (event) leaveEvents.push(event.type); });
+for (let t = 0; t <= 800; t += 33) leaveEngine.sample(100, 100, t);
+for (let t = 833; t <= 1400; t += 33) leaveEngine.sample(500, 100, t);
+check('leaving a card stops its line before the next card is chosen', leaveEngine.snapshot.quadrant === 'Q1' && leaveEngine.snapshot.state === 'focused' && !leaveEvents.includes('select'), `${leaveEngine.snapshot.quadrant} ${leaveEngine.snapshot.state} ${leaveEvents.join(' ')}`);
+const wideEngine = new GazeEngine({ dwellMs: 600, holdMs: 1000, holdShare: 0.65, smoothing: 1, deadBand: 0 });
+wideEngine.setViewport(viewport);
+wideEngine.setActionables([{ id: 'wide', rect: { left: 740, top: 470, right: 1420, bottom: 880 } }]);
+for (let t = 0; t <= 700; t += 33) wideEngine.sample(Math.floor(t / 33) % 2 ? 1250 : 900, 700, t);
+check('a wide card split across its quadrants still settles', wideEngine.snapshot.looked === 'wide', JSON.stringify(wideEngine.snapshot));
+
+// Confirm mode needs no look away between selections (no dwell, #32).
+const againEngine = new GazeEngine({ mode: 'confirm', dwellMs: 300, holdMs: 0, rearmMs: 300, smoothing: 1, deadBand: 0 });
+againEngine.setViewport(viewport);
+againEngine.setActionables(style1);
+const againEvents: string[] = [];
+againEngine.subscribe((_, event) => { if (event?.type === 'select') againEvents.push(event.action); });
+for (let t = 0; t <= 400; t += 33) againEngine.sample(100, 100, t);
+againEngine.confirm(420);
+for (let t = 433; t <= 900; t += 33) againEngine.sample(100, 100, t);
+check('a steady look is ready again after a confirmation', againEngine.snapshot.state === 'previewed', againEngine.snapshot.state);
+againEngine.confirm(910);
+check('a second confirmation selects again without looking away', againEvents.length === 2, againEvents.join(' '));
+againEngine.setActionables(style1.map((a) => (a.id === 'mode' ? { ...a, id: 'next-screen' } : a)));
+for (let t = 943; t <= 1400; t += 33) againEngine.sample(100, 100, t);
+check('a new card in the same place previews without looking away', againEngine.snapshot.state === 'previewed' && againEngine.snapshot.action === 'next-screen', JSON.stringify(againEngine.snapshot));
+
 if (failures) { console.error(`${failures} check(s) failed`); process.exit(1); }
 console.log('all checks passed');

@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test": "node scripts/selftest.ts && node scripts/test-options.ts",
+    "test:ui": "node scripts/test-options-ui.mjs",
+    "test:ui:pinned": "node scripts/test-pinned-options-ui.mjs",
     "dev": "vite --port 5200 --strictPort",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview --port 5200 --strictPort",
