@@ -68,22 +68,12 @@ const entries: Entry[] = VOCABULARY.map((word, rank) => ({ word, key: signatureO
 function toKey(groups: readonly GroupId[]): string { return groups.join(''); }
 
 /**
- * A live decoder (the language model) a style may plug in. It returns candidates in the same
- * shape, or null when it has no answer (offline), and the stand-in below answers instead.
- */
-export type DecodeOverride = (groups: readonly GroupId[], options: DecodeOptions) => Candidate[] | null;
-let override: DecodeOverride | null = null;
-export function setDecodeOverride(fn: DecodeOverride | null): void { override = fn; }
-
-/**
  * Candidates for a typed group sequence: exact-length matches first, then completions, each by
  * frequency, with a boost for words that already appeared in the conversation.
  */
 export function decode(groups: readonly GroupId[], options: DecodeOptions = {}): Candidate[] {
   const limit = options.limit ?? 5;
   if (groups.length === 0) return [];
-  const live = override?.(groups, options);
-  if (live) return live.slice(0, limit);
   const key = toKey(groups);
   const context = new Set((options.context ?? []).map((w) => w.toLowerCase()));
   const scored: Candidate[] = [];

@@ -7,8 +7,8 @@
  * 4321). To let this page read it, start the service with
  * CLARTE_VOICE_ORIGINS=http://localhost:4321,http://localhost:5106.
  */
-export const SERVICE_URL: string = import.meta.env.VITE_CLARTE_VOICE_URL ?? 'http://localhost:4322';
-export const VOICE_APP_URL: string = import.meta.env.VITE_CLARTE_VOICE_APP_URL ?? 'http://localhost:4321';
+export const SERVICE_URL = 'http://localhost:4322';
+export const VOICE_APP_URL = 'http://localhost:4321';
 
 export type Segment = { n: number; file: string; duration: number; quality: number; other_speaker: boolean; selected: boolean };
 export type Voice = {

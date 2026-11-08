@@ -68,18 +68,14 @@ export function useLooked(): string | null {
  * while the pointer is over the page (which also keeps simulator noise moving). Leaving the
  * window is looking away.
  */
-export function attachPointerStream(target: GazeEngine = engine, yieldTo: () => boolean = () => false): () => void {
+export function attachPointerStream(target: GazeEngine = engine): () => void {
   let last: { x: number; y: number } | null = null;
-  // While the real eye tracker streams (`yieldTo`, eyes.ts), the mouse no longer moves the gaze.
-  const move = (e: PointerEvent) => { outside = false; last = { x: e.clientX, y: e.clientY }; if (!yieldTo()) target.sample(last.x, last.y, e.timeStamp); };
+  const move = (e: PointerEvent) => { outside = false; last = { x: e.clientX, y: e.clientY }; target.sample(last.x, last.y, e.timeStamp); };
   // Leaving the page is looking away: cancel the dwell now (blink grace is for blinks, not exits).
-  const leave = () => { last = null; if (yieldTo()) return; outside = true; target.sample(null, null); target.cancel(); };
+  const leave = () => { last = null; outside = true; target.sample(null, null); target.cancel(); };
   // Off the page is "no eyes": keep reporting it, so the engine drops the quadrant after its
   // 200 ms blink grace and cancels the dwell (looking off screen cancels, BRIEF "Selection").
-  const timer = setInterval(() => {
-    if (yieldTo()) { outside = false; return; }
-    if (last) target.sample(last.x, last.y); else target.sample(null, null);
-  }, 33);
+  const timer = setInterval(() => { if (last) target.sample(last.x, last.y); else target.sample(null, null); }, 33);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerdown', move);
   document.addEventListener('pointerleave', leave);

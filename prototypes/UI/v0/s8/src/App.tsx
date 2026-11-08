@@ -41,7 +41,7 @@ import { Thread, type StateName } from './Thread.tsx';
 import { TITLES, menuSlots, nextValue, type SettingKey } from './Menu.tsx';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
-import { listenToPartner, resetScript, type Speech } from './voice.ts';
+import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
 import { configureSound, duck, play, unlockOnGesture } from '../../shared/sound.ts';
 import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
@@ -52,10 +52,6 @@ import { reactionFor } from './sentiment.ts';
 import { Branch } from './Branch.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { SETUP_STEPS } from './model.ts';
-import { EyesFrame } from './EyesFrame.tsx';
-import { eyesDriving, useEyes } from './eyes.ts';
-import { speakInVoice } from './clonedVoice.ts';
-import { setPredictionContext, usePredictions, type HistoryTurn } from './predict.ts';
 import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
@@ -67,13 +63,7 @@ const STORE = 'clarte.style8.v1';
 
 function loadStored(): State {
   // `?onboarding=off` opens straight into the app (used by the style switcher).
-  const params = new URLSearchParams(location.search);
-  const skip = params.get('onboarding') === 'off';
-  // `?setup` opens the first-run setup from its first page, even after it was finished (NAT-27).
-  if (params.has('setup')) {
-    store({ setupDone: false });
-    try { return { ...INITIAL_STATE, settings: migrate({ ...INITIAL_STATE.settings, ...JSON.parse(localStorage.getItem(STORE) ?? '{}').settings }) }; } catch { return INITIAL_STATE; }
-  }
+  const skip = new URLSearchParams(location.search).get('onboarding') === 'off';
   try {
     const raw = localStorage.getItem(STORE);
     if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
@@ -209,12 +199,7 @@ export function App() {
   const userActivation = useRef<string | null>(null);
 
   const { settings, screen, live } = state;
-  // The language model reads the whole conversation and the message so far (predict.ts), and the
-  // screen re-renders when its answer arrives.
-  usePredictions();
-  setPredictionContext(historyOf(state), messageWords(state));
   const slots = slotsFor(state);
-  const eyes = useEyes();
   const voiceReport = useVoiceReport(screen.kind === 'setup' && screen.step === 'voice', screen.kind === 'setup' && Boolean(screen.sample));
   // Bumped when an activation landed on a stale label, so the label catches up at once.
   const [syncs, setSyncs] = useState(0);
@@ -254,7 +239,7 @@ export function App() {
   // Gaze sources and the per-frame clock.
   useEffect(() => {
     const detach = [
-      attachPointerStream(engine, eyesDriving),
+      attachPointerStream(engine),
       startTicking(engine),
       unlockOnGesture(),
       // In development the overlay tracks actionables itself (main.tsx); here for production builds.
@@ -306,8 +291,7 @@ export function App() {
     // A short breath in, then every cue ducks under the voice until it ends (SOUND.md).
     play('speak-start');
     duck(true);
-    // In the person's own cloned voice when one is ready, else the browser's (clonedVoice.ts).
-    const s = speakInVoice(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }));
+    const s = speakWords(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }));
     speech.current = s;
     void s.done.then(() => { duck(false); dispatch({ type: 'speak-end', token: speakToken }); play('speak-end'); });
     return () => { s.cancel(); duck(false); };
@@ -372,19 +356,6 @@ export function App() {
     dispatch({ type: 'screen', screen: setupDone() ? { kind: 'talk' } : { kind: 'setup', step: 'eyes' } });
   }, []);
   const calibrationStep = useCallback((step: CalibrationStep) => dispatch({ type: 'screen', screen: { kind: 'calibration', step } }), []);
-  const leaveCalibration = useCallback(() => {
-    play('control');
-    dispatch({ type: 'screen', screen: setupDone() ? { kind: 'talk' } : { kind: 'setup', step: 'eyes' } });
-  }, []);
-
-  // The real tracker (NAT-27) finishes calibration when it reaches navigation ("compose") after
-  // having been uncalibrated during this calibration screen: camera, dots, head movement, check.
-  const sawUncalibrated = useRef(false);
-  useEffect(() => {
-    if (screen.kind !== 'calibration' || !eyes.connected) { sawUncalibrated.current = false; return; }
-    if (eyes.phase !== 'compose') sawUncalibrated.current = true;
-    else if (sawUncalibrated.current) { sawUncalibrated.current = false; finishCalibration(); }
-  }, [screen.kind, eyes.connected, eyes.phase, finishCalibration]);
 
   // The latest labels, read by the select handler without re-subscribing every render.
   const shownRef = useRef({ primary, second, slots });
@@ -476,20 +447,12 @@ export function App() {
     if (linked && (PHASES as readonly string[]).includes(linked)) window.clarteDebug.setPhase(linked);
   }, []);
 
-  // The tracker's frame stays mounted in the same place on every screen, so the camera and the
-  // trained model live for the whole session; it is on top only while calibrating.
-  const eyesFrame = <EyesFrame shown={screen.kind === 'calibration' && eyes.connected} onBack={leaveCalibration} />;
   if (screen.kind === 'calibration') {
-    if (eyes.connected) return <><Stage id="calibration-eyes"><div className="eyes-under" /></Stage>{eyesFrame}</>;
-    // No tracker running: the simulated calibration.
     // Keyed by step: each step starts from its own first point (the point list changes length).
     return (
-      <>
-        <Stage id={`calibration-${screen.step === 'ready' ? 'ready' : 'run'}`}>
-          <Calibration key={screen.step} step={screen.step} onStep={calibrationStep} onDone={finishCalibration} activate={activate} />
-        </Stage>
-        {eyesFrame}
-      </>
+      <Stage id={`calibration-${screen.step === 'ready' ? 'ready' : 'run'}`}>
+        <Calibration key={screen.step} step={screen.step} onStep={calibrationStep} onDone={finishCalibration} activate={activate} />
+      </Stage>
     );
   }
 
@@ -560,28 +523,13 @@ export function App() {
   const still = settings.orbMotion === 'still' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
-    <>
-      <Stage id="app" surface={screen.kind === 'setup' ? 'report' : 'talk'}>
-        {screen.kind !== 'setup' && <Companion visible={blank} listening={live.kind === 'listening'} reaction={reaction} mood={mood} pulse={pulse} still={still} />}
-        <Board slots={slotViews} screen={restKey} activate={activate} />
-        <RestZone id={restKey}>{rest}</RestZone>
-        {screen.kind === 'talk' && <Branch conflict={slots.conflict ?? null} />}
-      </Stage>
-      {eyesFrame}
-    </>
+    <Stage id="app" surface={screen.kind === 'setup' ? 'report' : 'talk'}>
+      {screen.kind !== 'setup' && <Companion visible={blank} listening={live.kind === 'listening'} reaction={reaction} mood={mood} pulse={pulse} still={still} />}
+      <Board slots={slotViews} screen={restKey} activate={activate} />
+      <RestZone id={restKey}>{rest}</RestZone>
+      {screen.kind === 'talk' && <Branch conflict={slots.conflict ?? null} />}
+    </Stage>
   );
-}
-
-/** The conversation as the language model reads it: partner and user turns, then words being heard. */
-function historyOf(state: State): HistoryTurn[] {
-  const turns: HistoryTurn[] = state.turns.map((t) => [t.who === 'partner' ? 'partner' : 'user', t.text]);
-  if (state.live.kind === 'listening' && state.live.transcript.trim()) turns.push(['partner', state.live.transcript.trim()]);
-  return turns;
-}
-
-/** The message's committed words, lower case, as the engine tokenizes them. */
-function messageWords(state: State): string[] {
-  return state.composition.words.flatMap((w) => (w.source === 'unresolved' ? [] : w.text.toLowerCase().match(/[a-z']+/g) ?? []));
 }
 
 const SLOT_NAMES: SlotName[] = ['q1', 'q4', 'q5', 'q6', 'q7', 'q8'];
