@@ -513,9 +513,15 @@ body {
 .turn-partner { color: var(--ink-2); }
 
 
-/* The word in progress is the selected object, as in the editor reference: a hairline box with a
-   handle at each end. The box is an outline (no layout). */
-.now .word.in-progress { position: relative; outline: 1.5px solid var(--select-line); outline-offset: 0.1em; border-radius: 3px; }
+/* The word in progress is the selected object, as in the editor reference: a hairline either side
+   with a handle on each, and no line joining them (owner, 2026-11-08). The lines are side borders
+   whose width the negative margin takes back, so the word sits exactly where it would without them. */
+.now .word.in-progress {
+  position: relative;
+  border-inline: 1.5px solid var(--select-line);
+  padding: 0.1em;
+  margin: 0 calc(-0.1em - 1.5px);
+}
 .now .word.in-progress::before, .now .word.in-progress::after {
   content: '';
   position: absolute;
@@ -527,8 +533,8 @@ body {
   background: var(--ink);
   pointer-events: none;
 }
-.now .word.in-progress::before { left: calc(-0.1em - 6.25px); }
-.now .word.in-progress::after { right: calc(-0.1em - 6.25px); }
+.now .word.in-progress::before { left: -6.25px; }
+.now .word.in-progress::after { right: -6.25px; }
 
 /* The menu opens over the conversation: it stays where it was, blurred (glass-tiles reference). */
 .thread-behind { display: contents; }
