@@ -13,7 +13,7 @@ export const PHASES = [
   'suggested',
   'composing-pending',
   'composing-reopened',
-  'composing-branch',
+  'composing-options',
   'composing-nomatch',
   'composing-ready',
   'speaking',
@@ -24,6 +24,9 @@ export const PHASES = [
   'menu-appearance',
   'menu-sound',
   'menu-dev-tools',
+  'options',
+  'options-many',
+  'options-many-end',
   'worst-case',
   'worst-nomatch',
   'calibrate-position',
@@ -88,9 +91,15 @@ export function seedFor(name: PhaseName, base: State): State {
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i', 'would', 'love', 'to', 'go']), 'outs', context) };
     case 'composing-reopened':
       return { ...talk, dismissed: talk.nextId - 1, composition: reduce(message(['i', 'would', 'love', 'to', 'go']), { type: 'delete' }, context) };
-    case 'composing-branch':
-      // "I might" / "I night": two whole words, close in frequency, neither used in the conversation.
+    case 'composing-options':
+      // "I might": might, night, light and limit fit the same groups, the first two about equally well.
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i']), 'might', context) };
+    case 'options':
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['in', 'how']), 'been', context), screen: { kind: 'options', at: 0 } };
+    case 'options-many':
+    case 'options-many-end':
+      // "game": seven whole words (make, game, hand, half, name, land, lend), so the list pages.
+      return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['lets', 'play', 'a']), 'game', context), screen: { kind: 'options', at: name === 'options-many' ? 0 : 99 } };
     case 'composing-nomatch':
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['ask']), 'suzy', context) };
     case 'composing-ready':

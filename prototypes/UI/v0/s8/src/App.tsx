@@ -6,7 +6,7 @@
  * Style 6 · Orb (owner concept, 2026-11-07), built on style 5 · Dialogue's grid and engine.
  *
  * The conversation screen keeps style 5's quadrants and adds the companion (Companion.tsx) behind the thread
- * in the Q2–Q3 rest zone, the branch for word conflicts (Branch.tsx, Q1 and Q4), and a report-style
+ * in the Q2–Q3 rest zone, an Options screen for word conflicts, and a report-style
  * first-run setup (Setup.tsx).
  *
  * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
@@ -38,7 +38,8 @@ import {
 } from './model.ts';
 import { Tile, type SlotName, type SlotView, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
-import { TITLES, menuSlots, nextValue, parentOf, trailOf, type SettingKey } from './Menu.tsx';
+import { TITLES, backCard, menuSlots, nextValue, parentOf, trailOf, type SettingKey } from './Menu.tsx';
+import { optionsFor } from './conflict.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
@@ -47,10 +48,10 @@ import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
-import { Branch } from './Branch.tsx';
+import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
 import { SETUP_STEPS } from './model.ts';
-import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Sparkle, Speaker, StopSquare } from './icons.tsx';
+import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
 /** "More" walks the three settings pages in a loop. */
@@ -115,7 +116,7 @@ function Cell({ q, children }: { q: string; children?: ReactNode }) {
 
 type CardFace = { icon: ReactNode; label?: ReactNode; hint?: string; name?: string };
 
-/** What the primary card (ink; Q1, or Q4 when it is Listen or Stop listening) shows for each function. */
+/** What the primary card (ink, Q4) shows for each function. */
 function primaryFace(fn: PrimaryFn): CardFace {
   switch (fn.kind) {
     case 'listen': return { icon: <Mic />, label: 'Listen' };
@@ -126,18 +127,17 @@ function primaryFace(fn: PrimaryFn): CardFace {
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
     case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
     case 'say-again': return { icon: <Again />, label: 'Say again' };
+    case 'options': return { icon: <Options />, label: 'Options', hint: `${fn.count} words` };
   }
 }
 
-/** What the second card (white; Q4, or Q1 when it is Menu or Wait!) shows for each function. */
+/** What the second card (light, Q1) shows for each function. */
 function secondFace(fn: SecondFn, pending: number): CardFace {
   switch (fn.kind) {
     case 'delete': return fn.word ? { icon: <Erase />, label: 'Delete word' } : { icon: <Erase />, label: 'Delete', hint: pending ? 'Last group' : 'Last word' };
     case 'one-moment': return { icon: <Hand />, label: 'Wait!' };
     case 'menu': return { icon: <MenuLines />, label: 'Menu' };
     case 'dismiss': return { icon: <Close />, label: 'Not now' };
-    // The second word of a conflict: the branch's other end (Branch.tsx).
-    case 'alternative': return { icon: <Check />, label: <span className="card-label is-word" style={{ ['--len' as string]: fn.word.length }}>{fn.word}</span>, hint: 'Accept' };
     // While speaking nothing can be deleted; the slot shows what it returns to, dimmed.
     case 'none': return { icon: <Backspace />, label: 'Delete', name: 'Delete, unavailable while speaking' };
   }
@@ -319,6 +319,7 @@ export function App() {
       case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
       case 'candidate': dispatch({ type: 'accept' }); play('word'); return;
+      case 'options': dispatch({ type: 'screen', screen: { kind: 'options', at: 0 } }); play('control'); return;
       case 'no-match': return;
       case 'speak': startSpeaking(sentence(messageText(s.composition)), null, false); return;
       case 'stop-speaking':
@@ -341,7 +342,6 @@ export function App() {
       case 'one-moment': startSpeaking(HOLDER, null, true); return;
       case 'menu': dispatch({ type: 'screen', screen: { kind: 'menu', page: 'main' } }); play('control'); return;
       case 'dismiss': dispatch({ type: 'dismiss-suggestion' }); play('delete'); return;
-      case 'alternative': dispatch({ type: 'accept-alternative', word: fn.word }); play('word'); return;
       case 'none': return;
     }
   }, [startSpeaking]);
@@ -380,6 +380,17 @@ export function App() {
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
+    if (s.screen.kind === 'options') {
+      if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
+      if (action === 'page-prev' || action === 'page-next') {
+        dispatch({ type: 'screen', screen: { kind: 'options', at: s.screen.at + (action === 'page-next' ? 1 : -1) } });
+        play('control');
+        return;
+      }
+      const word = action.startsWith('pick-') ? optionsFor(s.composition, contextWords(s))[Number(action.slice(5))] : undefined;
+      if (word) { dispatch({ type: 'accept-word', word }); play('word'); }
+      return;
+    }
     if (s.screen.kind === 'menu') {
       if (action === 'back') {
         const up = parentOf(s.screen.page);
@@ -388,6 +399,11 @@ export function App() {
         return;
       }
       if (action.startsWith('open-')) { page(action.slice(5) as MenuPage); return; }
+      if (action === 'page-prev' || action === 'page-next') {
+        dispatch({ type: 'screen', screen: { ...s.screen, at: (s.screen.at ?? 0) + (action === 'page-next' ? 1 : -1) } });
+        play('control');
+        return;
+      }
       if (action === 'recalibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
@@ -465,6 +481,7 @@ export function App() {
     : null;
 
   let slotViews: Slots;
+  let strip: Strip | null = null;
   let rest: ReactNode;
   let restKey: string;
   if (screen.kind === 'setup') {
@@ -472,19 +489,38 @@ export function App() {
     slotViews = setupSlots(ctx);
     restKey = `setup-${screen.step}`;
     rest = <SetupReport ctx={ctx} />;
-  } else if (screen.kind === 'menu') {
-    slotViews = menuSlots(screen.page, settings);
-    restKey = `title-${TITLES[screen.page]}`;
-    // The menu opens over the conversation, which stays in place, blurred (glass-tiles reference).
+  } else if (screen.kind === 'menu' || screen.kind === 'options') {
+    // The menu and Options open over the conversation, which stays in place, blurred.
+    let title: string;
+    let trail: string[] = [];
+    if (screen.kind === 'menu') {
+      const paged = menuSlots(screen.page, settings, screen.at);
+      slotViews = paged.slots;
+      strip = paged.strip;
+      title = TITLES[screen.page];
+      trail = trailOf(screen.page);
+    } else {
+      // Options (owner, 2026-11-08): the most likely word in Q5, then Q6, Q7, Q8, and a fifth in Q4.
+      const words = optionsFor(state.composition, contextWords(state));
+      const views = words.map((word, i): SlotView => ({
+        action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
+        body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
+      }));
+      const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8', 'q4']);
+      slotViews = { q1: backCard('Home'), ...paged.slots };
+      strip = paged.strip;
+      title = 'Options';
+    }
+    restKey = `title-${title}`;
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
           <Thread state={null} turns={state.turns} live={live} composition={state.composition} context={contextWords(state)} wordColours={settings.wordColours} />
         </div>
-        <section className="thread thread-title" aria-label={TITLES[screen.page]}>
+        <section className="thread thread-title" aria-label={title}>
           {/* The path above the title (owner, 2026-11-08), once there is more than the page itself. */}
-          {trailOf(screen.page).length > 1 && <p className="page-trail">{trailOf(screen.page).join(' › ')}</p>}
-          <h1 className="page-title">{TITLES[screen.page]}</h1>
+          {trail.length > 1 && <p className="page-trail">{trail.join(' › ')}</p>}
+          <h1 className="page-title">{title}</h1>
         </section>
       </>
     );
@@ -494,10 +530,10 @@ export function App() {
     const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
     // Menu is white (owner, 2026-11-08); every other light card stays grey glass.
     const secondView: SlotView = { action: 'delete', tone: second.value.kind === 'menu' ? 'white' : 'surface', icon: sFace.icon ?? undefined, label: sFace.name, disabled: second.value.kind === 'none', bodyKey: second.key, body: <FaceBody face={sFace} /> };
-    // Owner, 2026-11-08: Menu lives in Q1 and the Listen toggle in Q4, so each keeps one place: Listen
-    // turns into Stop where it was, and Menu opens where its Back button will be.
-    const swapped = primary.value.kind === 'listen' || primary.value.kind === 'stop-listening' || second.value.kind === 'menu';
-    slotViews = swapped ? { q1: secondView, q4: primaryView } : { q1: primaryView, q4: secondView };
+    // Owner, 2026-11-08: the primary card (Listen, Stop, Speak, the word, Options) always sits in Q4
+    // and the second (Menu, Wait!, Delete) in Q1, so each action keeps one place: Listen turns into
+    // Stop, and Speak into Stop, where they were; Menu opens where its Back button will be.
+    slotViews = { q1: secondView, q4: primaryView };
     for (const id of GROUP_IDS) {
       slotViews[GROUP_QUADRANT[id]] = {
         action: id, tone: 'group', group: id, disabled: !slots.groups, bodyKey: id,
@@ -523,7 +559,7 @@ export function App() {
       {screen.kind !== 'setup' && <Companion visible={blank} still={still} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
-      {screen.kind === 'talk' && <Branch conflict={slots.conflict ?? null} />}
+      {strip && <PagedStrip strip={strip} activate={activate} />}
     </Stage>
   );
 }
@@ -551,7 +587,7 @@ function Board({ slots, screen, activate }: { slots: Slots; screen: string; acti
         return (
           <Cell key={q} q={q}>
             {view && (
-              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate} className={slots[q]?.span ? 'card-span' : ''}>
+              <Tile action={view.action} tone={view.tone} group={view.group} icon={view.icon} label={view.label} disabled={view.disabled} gone={!slots[q]} fast={fast} onActivate={activate} className={`${slots[q]?.span ? 'card-span' : ''} ${slots[q]?.className ?? ''}`}>
                 <Swap swapKey={view.bodyKey} className="card-swap" leavingClass="card-leaving" fast={fast}>{view.body}</Swap>
               </Tile>
             )}

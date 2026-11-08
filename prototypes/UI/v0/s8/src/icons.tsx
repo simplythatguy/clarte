@@ -42,3 +42,5 @@ export const Eye = () => <Icon><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-
 export const Waveform = () => <Icon><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3" /></Icon>;
 export const Alert = () => <Icon><path d="M12 4l9 15.5H3z" /><path d="M12 10v4.5" /><circle cx="12" cy="17" r="0.6" fill="currentColor" /></Icon>;
 export const Wave = () => <Icon><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" /></Icon>;
+/** Options: a few cards to choose from. */
+export const Options = () => <Icon><rect x="3.5" y="8" width="12" height="12" rx="2.5" /><path d="M8 4.5h9.5A3 3 0 0 1 20.5 7.5V17" /></Icon>;

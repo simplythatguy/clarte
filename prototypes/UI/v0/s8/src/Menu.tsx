@@ -3,12 +3,13 @@
  * Q1 goes back one level and names where it goes (Home, Menu, Settings), and Q2–Q3 stay a rest zone
  * that shows the page name with its path above it (Menu › Settings › Dwell). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
  * Settings (Q7–Q8). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
- * and a fifth top right (Q4). Settings show their current value and advance to the next value on
+ * and a fifth top right (Q4); more than five page two at a time with arrows (Pager.tsx). Settings show their current value and advance to the next value on
  * selection, so every change is one look.
  */
 import type { ReactNode } from 'react';
 import type { MenuPage, Settings } from './model.ts';
-import type { SlotName, Slots, SlotView } from './Tile.tsx';
+import type { SlotName, SlotView } from './Tile.tsx';
+import { pageList, type Paged } from './Pager.tsx';
 import { longest } from './text.ts';
 import { Again, Back, Blob, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave } from './icons.tsx';
 
@@ -87,7 +88,7 @@ export function trailOf(page: MenuPage): string[] {
 
 /** Up to four entries run along the bottom; a fifth takes the top right first. */
 function placesFor(count: number): SlotName[] {
-  return count === 5 ? ['q4', 'q5', 'q6', 'q7', 'q8'] : (['q5', 'q6', 'q7', 'q8'] as SlotName[]).slice(0, count);
+  return count === 5 ? ['q4', 'q5', 'q6', 'q7', 'q8'] : ['q5', 'q6', 'q7', 'q8'];
 }
 
 /** One setting as a card: its name, its current value; selecting it advances to the next value. */
@@ -105,19 +106,22 @@ export function settingText<K extends SettingKey>(k: K, settings: Settings): { n
   return { name: CYCLES[k].name, value: CYCLES[k].format(settings[k]) };
 }
 
+/** A Back card that names where it goes (Home is the conversation). */
+export function backCard(to: string): SlotView {
+  return {
+    action: 'back', tone: 'ink', icon: <Back />, label: `Back to ${to}`, bodyKey: `back:${to}`,
+    body: <><span className="crumb">{to}</span><span className="card-label" style={longest('Back')}>Back</span></>,
+  };
+}
+
 /** The menu as slot descriptions, rendered by the same persistent cards as the conversation. */
-export function menuSlots(page: MenuPage, settings: Settings): Slots {
+export function menuSlots(page: MenuPage, settings: Settings, at = 0): Paged {
   const card = (action: string, label: string, glyph: ReactNode, span?: 2): SlotView => ({
     action, tone: 'surface', icon: glyph, span, bodyKey: `${action}:${label}`,
     body: <span className="card-label" style={longest(label)}>{label}</span>,
   });
-  // Above "Back", the page it returns to; the conversation is Home.
   const parent = PAGES[page].parent;
-  const to = parent ? PAGES[parent].title : 'Home';
-  const back: SlotView = {
-    action: 'back', tone: 'ink', icon: <Back />, label: `Back to ${to}`, bodyKey: `back:${to}`,
-    body: <><span className="crumb">{to}</span><span className="card-label" style={longest('Back')}>Back</span></>,
-  };
+  const back = backCard(parent ? PAGES[parent].title : 'Home');
   const view = (e: Entry, span?: 2): SlotView => {
     switch (e.kind) {
       case 'setting': return settingSlot(e.key, settings);
@@ -127,8 +131,7 @@ export function menuSlots(page: MenuPage, settings: Settings): Slots {
   };
   const { entries } = PAGES[page];
   // The Menu page's two entries are wide cards, each across two quadrants (Q5–Q6, Q7–Q8).
-  if (page === 'main') return { q1: back, q5: view(entries[0], 2), q7: view(entries[1], 2) };
-  const slots: Slots = { q1: back };
-  placesFor(entries.length).forEach((q, i) => { slots[q] = view(entries[i]); });
-  return slots;
+  if (page === 'main') return { slots: { q1: back, q5: view(entries[0], 2), q7: view(entries[1], 2) }, strip: null };
+  const paged = pageList(entries.map((e) => view(e)), at, placesFor(entries.length));
+  return { slots: { q1: back, ...paged.slots }, strip: paged.strip };
 }

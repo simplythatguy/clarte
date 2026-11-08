@@ -4,9 +4,20 @@ A copy of style 7 · Cloud (v2, PR #17), made to try one change without touching
 
 In `s_all` style 8 appears as **S8** (Soft palette) and **S8V** (Vibrant palette). On its own it runs at `http://localhost:5108/?onboarding=off&palette=soft` or `&palette=vibrant`.
 
-## Menu in Q1, Listen in Q4 (owner, 2026-11-08)
+## The main card in Q4, Menu and Delete in Q1 (owner, 2026-11-08)
 
-Menu now sits in Q1 and the Listen button in Q4, so each keeps one place. Listen turns into Stop where it was, and Menu opens where the menu's Back button will be. In practice: idle shows Menu in Q1 and Listen in Q4; listening shows Wait! in Q1 and Stop in Q4; after speaking, Menu is in Q1 and Say again in Q4. Typing is unchanged, so Q1 still always holds the predicted word (DEC-100), and a suggested reply, Speak and Stop speaking stay in Q1. Each card keeps its own tone wherever it sits: Listen and Stop dark, Wait! grey, and Menu white (owner, 2026-11-08). The Menu card steps back so it leaves the centre of attention and the screen feels less crowded. It uses the page's own white, has no shadow, and its icon and label are secondary ink (`--ink-2`, 9.4:1 on white, against 17:1 for full ink). A 10% edge keeps it findable as a card on the white page. While it is looked at it darkens to full ink, and its dwell rises in the grey glass, since a white wash would not show. Every other light card, the letter cards included, stays grey glass.
+The primary card always sits in Q4 (top right) and the second card in Q1 (top left), so each action keeps one place. The primary card is dark and holds Listen, Stop, Speak, the predicted word, a suggested reply, Say again or Options. The second card holds Menu, Wait!, Delete or Not now. Listen turns into Stop, and Speak into Stop, where they were. Menu opens where the menu's Back button will be. This replaces DEC-100's "Q1 always holds the predicted word"; the word now sits in Q4. Each card keeps its own tone wherever it sits: dark for the primary card, grey glass for the second, and white for Menu (owner, 2026-11-08). The Menu card steps back so it leaves the centre of attention and the screen feels less crowded. It uses the page's own white, has no shadow, and its icon and label are secondary ink (`--ink-2`, 9.4:1 on white, against 17:1 for full ink). A 10% edge keeps it findable as a card on the white page. While it is looked at it darkens to full ink.
+
+## Options (owner, 2026-11-08)
+
+When the typed groups spell two whole words about equally well (`conflictFor`, unchanged), the screen no longer branches with lines to two cards. The Q4 card reads **Options** with the word count, and it opens the Options screen. That screen has Back (to Home) in Q1, the page title in the middle, and every whole word the groups spell, most likely first (`optionsFor`):
+
+- Up to five words: the first four in Q5, Q6, Q7, Q8, and the fifth in Q4.
+- More than five: two at a time in Q5 and Q6, with ← in Q7 and → in Q8. An arrow card is just its arrow, and it fades when the list cannot go further that way.
+
+Choosing a word accepts it and returns to the conversation. A word beyond the composer's own top five is still recorded as a decode of the same groups, so Delete can reopen it.
+
+**Paging** (`Pager.tsx`, shared with the menu). An arrow slides the row one card: one card slides out, its neighbour moves over, the next slides in (320 ms, `--ease-move`). The row is a strip clipped to the two cards' own box, so a moving card never crosses into the arrows' quadrants. The strip takes no selection while it moves (it is `inert` for the slide), and only the two cards in view are selectable. Under reduced motion it moves at once. Menu pages use the same paging if one ever holds more than five entries; none does today.
 
 ## No state pill (owner, 2026-11-08)
 
@@ -48,7 +59,7 @@ The menu is a small tree, kept in one table in `Menu.tsx` (title, parent, entrie
 | Sound | Sounds, Volume |
 | Dev Tools (was Demo) | Gaze noise, Repeat, Partner voice |
 
-A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. The owner reserved Q7 and Q8 for ← and → arrows on any page with more than five entries, but the grouping keeps every page at five or fewer, so no page has arrows today. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Dwell) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
+A page lays out up to four entries along the bottom (Q5–Q8), and a fifth takes the top right (Q4). There is no More card. A page with more than five entries would page two at a time with ← in Q7 and → in Q8 (see Options), but the grouping keeps every page at five or fewer. Back (Q1) steps up one level. The small faded word above "Back" names where it goes: Home (the conversation), Menu or Settings. The path (Menu › Settings › Dwell) sits above the page title in the middle, from Settings down. A wide card is two card widths and the space between, and it owns both of its quadrants. The card it covers is hidden at once, since its fade would show through the glass.
 
 Earlier (owner, 2026-11-07): One moment and Phrases left the menu, and the Phrases page went with them. One moment stays on the conversation screen while listening, renamed **Wait!**. Selecting it says "Wait! I'm answering."
 

@@ -46,6 +46,8 @@ export type SlotView = {
   bodyKey: string;
   /** A wide card across this quadrant and the next one to the right, which it then owns. */
   span?: 2;
+  /** Extra classes for the card (the arrow cards). */
+  className?: string;
   body: ReactNode;
 };
 export type SlotName = 'q1' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8';

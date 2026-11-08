@@ -13,7 +13,7 @@ import {
 import type { GroupId } from '../../shared/decoder.ts';
 import type { SoundLevel } from '../../shared/sound.ts';
 import { suggestReply } from './suggest.ts';
-import { conflictFor, type Conflict } from './conflict.ts';
+import { conflictFor, optionsFor, type Conflict } from './conflict.ts';
 import { candidates } from '../../shared/composer.ts';
 import type { PartnerSource } from './voice.ts';
 
@@ -33,7 +33,9 @@ export const SETUP_STEPS: SetupStep[] = ['eyes', 'voice', 'ready'];
 
 export type Screen =
   | { kind: 'talk' }
-  | { kind: 'menu'; page: MenuPage }
+  | { kind: 'menu'; page: MenuPage; at?: number }
+  /** Every whole word the typed groups spell, to choose from; `at` is the first one in view. */
+  | { kind: 'options'; at: number }
   | { kind: 'calibration'; step: CalibrationStep }
   | { kind: 'setup'; step: SetupStep; sample?: boolean };
 
@@ -104,8 +106,8 @@ export const INITIAL_STATE: State = {
 export type Action =
   | { type: 'group'; group: GroupId }
   | { type: 'accept' }
-  /** Accept the second word of a conflict (Q4 while branched). */
-  | { type: 'accept-alternative'; word: string }
+  /** Accept one word of the Options screen and return to the conversation. */
+  | { type: 'accept-word'; word: string }
   | { type: 'delete' }
   | { type: 'use-suggestion'; text: string }
   | { type: 'dismiss-suggestion' }
@@ -158,20 +160,20 @@ export type PrimaryFn =
   | { kind: 'no-match'; groups: number }
   | { kind: 'speak' }
   | { kind: 'stop-speaking' }
-  | { kind: 'say-again'; turnId: number };
+  | { kind: 'say-again'; turnId: number }
+  /** Several whole words fit about equally well: open the Options screen to choose. */
+  | { kind: 'options'; count: number };
 
 export type SecondFn =
   | { kind: 'delete'; word: boolean }
   | { kind: 'one-moment' }
   | { kind: 'menu' }
   | { kind: 'dismiss' }
-  /** The second word of a conflict; Delete returns once the branch resolves. */
-  | { kind: 'alternative'; word: string }
   | { kind: 'none' };
 
-export type Slots = { primary: PrimaryFn; second: SecondFn; groups: boolean; conflict?: Conflict };
+export type Slots = { primary: PrimaryFn; second: SecondFn; groups: boolean };
 
-/** The current word conflict, if the screen should branch. Only on the decoder's first ranking. */
+/** The current word conflict, if the screen should offer Options. Only on the decoder's first ranking. */
 export function conflictOf(state: State): Conflict | null {
   const c = state.composition;
   if (state.screen.kind !== 'talk' || state.live.kind === 'listening' || state.live.kind === 'speaking') return null;
@@ -187,7 +189,7 @@ export function slotsFor(state: State): Slots {
   if (c.pending.length) {
     const conflict = conflictOf(state);
     if (conflict) {
-      return { primary: { kind: 'candidate', word: conflict.first }, second: { kind: 'alternative', word: conflict.second }, groups: true, conflict };
+      return { primary: { kind: 'options', count: optionsFor(state.composition, contextWords(state)).length }, second: { kind: 'delete', word: c.reopened }, groups: true };
     }
     const candidate = currentCandidate(c, contextWords(state));
     return {
@@ -208,12 +210,12 @@ export function primaryKey(fn: PrimaryFn): string {
     case 'suggestion': return `suggestion:${fn.text}`;
     case 'candidate': return `candidate:${fn.word}`;
     case 'say-again': return `say-again:${fn.turnId}`;
+    case 'options': return `options:${fn.count}`;
     default: return fn.kind;
   }
 }
 
 export function secondKey(fn: SecondFn): string {
-  if (fn.kind === 'alternative') return `alternative:${fn.word}`;
   return fn.kind === 'delete' ? `delete:${fn.word}` : fn.kind;
 }
 
@@ -223,6 +225,7 @@ export function phaseOf(state: State): string {
   if (screen.kind === 'calibration') return `calibrate-${screen.step}`;
   if (screen.kind === 'setup') return `setup-${screen.step}`;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
+  if (screen.kind === 'options') return 'options';
   const { primary, second } = slotsFor(state);
   switch (primary.kind) {
     case 'stop-listening': return 'listening';
@@ -231,7 +234,8 @@ export function phaseOf(state: State): string {
     case 'suggestion': return 'suggested';
     case 'speak': return 'composing-ready';
     case 'no-match': return 'composing-nomatch';
-    case 'candidate': return second.kind === 'alternative' ? 'composing-branch' : second.kind === 'delete' && second.word ? 'composing-reopened' : 'composing-pending';
+    case 'options': return 'composing-options';
+    case 'candidate': return second.kind === 'delete' && second.word ? 'composing-reopened' : 'composing-pending';
     case 'listen': return 'idle';
   }
 }
@@ -255,11 +259,14 @@ export function reducer(state: State, action: Action): State {
     }
     case 'accept':
       return compose(state, { type: 'accept' });
-    case 'accept-alternative': {
+    case 'accept-word': {
       const context = contextWords(state);
       const index = candidates(state.composition, context).findIndex((x) => x.word === action.word);
-      if (index < 0) return state;
-      return compose({ ...state, composition: { ...state.composition, candidateIndex: index } }, { type: 'accept' });
+      if (index >= 0) return { ...compose({ ...state, composition: { ...state.composition, candidateIndex: index } }, { type: 'accept' }), screen: { kind: 'talk' } };
+      // A word beyond the composer's short list is still a decode of the same groups, so Delete can reopen it.
+      const c = state.composition;
+      const word = { text: action.word, groups: c.pending, candidateIndex: 0, source: 'decoded' as const };
+      return { ...state, composition: { words: [...c.words, word], pending: [], candidateIndex: 0, reopened: false }, screen: { kind: 'talk' } };
     }
     case 'delete':
       return compose(state, { type: 'delete' });

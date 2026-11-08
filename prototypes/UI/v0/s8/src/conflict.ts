@@ -1,7 +1,7 @@
 /**
- * Word conflicts: when the typed groups spell two whole words about equally well, the screen
- * branches instead of guessing (owner concept, 2026-11-07). Q1 keeps the first word and Q4 offers
- * the second; lines draw from the word in progress to both.
+ * Word conflicts: when the typed groups spell two whole words about equally well, the screen does
+ * not guess. The primary card offers Options (owner, 2026-11-08), and the Options screen lists
+ * every whole word the groups spell, most likely first.
  *
  * Contract for the language model: `conflictFor` returns the two words when both are whole words
  * for the typed groups, the second is close to the first (p(second) / p(first) ≥ CLOSE), and the
@@ -52,4 +52,9 @@ export function conflictFor(c: Composition, context: readonly string[] = []): Co
   for (const x of list) if (!x.complete) longer += zipf(x, 400, x.word.length - c.pending.length).p;
   if (pa.p + pb.p < ENDS_HERE * longer) return null;
   return { first: a.word, second: b.word };
+}
+
+/** Every whole word the typed groups spell, most likely first: the Options screen's list. */
+export function optionsFor(c: Composition, context: readonly string[] = []): string[] {
+  return decode(c.pending, { limit: 60, context }).filter((x) => x.complete).map((x) => x.word);
 }
