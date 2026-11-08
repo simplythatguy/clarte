@@ -186,16 +186,31 @@ body {
 .card[aria-disabled] > :not(.trace) { opacity: 0.32; }
 
 /* The dwell (owner, 2026-11-08; Tile.tsx): a line runs clockwise round the card's edge from the
-   top left and closes as the dwell completes; on a selection a translucent tint floods in to the
-   centre behind a sharp, wavy water line, sends one ripple back out, and fades. Ink on grey and white cards, the group's colour on letters,
-   white on dark cards. */
-.card { --trace: var(--ink); }
-.card-group { --trace: var(--gi); }
-.card-ink { --trace: #FFFFFF; }
+   top left and closes as the dwell completes; on a selection a solid circle of the same colour
+   grows from the centre over the card and fades, and under it the words take --on-trace. Ink on
+   grey and white cards, the group's colour on letters, white on dark cards. */
+.card { --trace: var(--ink); --on-trace: #FFFFFF; }
+.card-group { --trace: var(--gi); --on-trace: #FFFFFF; }
+.card-ink { --trace: #FFFFFF; --on-trace: var(--ink); }
 .trace { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; pointer-events: none; }
 .trace-line { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: calc(var(--radius-card) - 2.5px); fill: none; stroke: var(--trace); stroke-width: 3px; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
-.trace-flood { fill: var(--trace); fill-opacity: 0.16; }
-.trace-ripple { fill: none; stroke: var(--trace); stroke-width: 2px; opacity: 0; }
+/* The fill lays out exactly like the card (inherited flex and padding), so its copy of the words
+   sits on the originals; only the colour differs. */
+.trace-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: inherit;
+  flex-direction: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  padding: inherit;
+  background: var(--trace);
+  opacity: 0;
+  pointer-events: none;
+}
+.trace-fill, .trace-fill * { color: var(--on-trace) !important; }
 @media (prefers-reduced-motion: reduce) {
   .card[data-step='1'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.75 !important; }
   .card[data-step='2'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.5 !important; }
@@ -659,6 +674,6 @@ body {
 :root[data-palette='vibrant'] .card-group { background: var(--gi); border-color: transparent; color: #FFFFFF; }
 /* The look deepens the colour, so white letters only gain contrast. */
 :root[data-palette='vibrant'] .card-group:is([data-gaze='fill'], [data-gaze='preview']) { background: color-mix(in oklab, var(--gi) 92%, #000); border-color: transparent; }
-:root[data-palette='vibrant'] .card-group { --trace: #FFFFFF; }
+:root[data-palette='vibrant'] .card-group { --trace: #FFFFFF; --on-trace: var(--gi); }
 /* Unavailable (listening, speaking): back to a pale tint with coloured letters, so it reads as off. */
 :root[data-palette='vibrant'] .card-group[aria-disabled] { background: color-mix(in oklab, var(--gi) 10%, #FFFFFF); color: var(--gi); }
