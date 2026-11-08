@@ -1,6 +1,6 @@
 /**
- * The first run (owner, 2026-11-08): Welcome with Get started → eye calibration → voice cloning →
- * the conversation. Voice cloning is a placeholder until its screen is designed.
+ * The first run (owner, 2026-11-08): Welcome with Get started → eye calibration → making the
+ * person's voice (VoiceSetup.tsx, NAT-32) → the conversation.
  *
  * Backend quadrants (owner, 2026-11-08): each page's one action is a tall ink card over Q4 and Q8,
  * so a look at either selects it, and the text is centred in the three columns to its left. Every
@@ -16,7 +16,6 @@ import type { Slots, SlotView } from './Tile.tsx';
 import { longest } from './text.ts';
 import { ArrowRight } from './icons.tsx';
 
-export type OnboardingStep = 'welcome' | 'voice';
 
 /** The page's one action: a tall ink card over Q4 and Q8, so a look at either selects it. */
 export const tallCard = (action: string, label: string, icon: ReactNode, hint?: string): SlotView => ({
@@ -25,18 +24,14 @@ export const tallCard = (action: string, label: string, icon: ReactNode, hint?: 
 });
 
 /** `autoStart`: seconds before Get started selects itself, or null when it will not. */
-export function onboardingSlots(step: OnboardingStep, autoStart: number | null): Slots {
-  return step === 'welcome'
-    ? { q4: tallCard('get-started', 'Get started', <ArrowRight />, autoStart === null ? undefined : `Starts in ${autoStart} s`) }
-    : { q4: tallCard('voice-continue', 'Continue', <ArrowRight />) };
+export function welcomeSlots(autoStart: number | null): Slots {
+  return { q4: tallCard('get-started', 'Get started', <ArrowRight />, autoStart === null ? undefined : `Starts in ${autoStart} s`) };
 }
 
-export function OnboardingPage({ step }: { step: OnboardingStep }) {
+export function WelcomePage() {
   return (
-    <section className="onboarding" aria-label={step === 'welcome' ? 'Welcome' : 'Voice'}>
-      {step === 'welcome'
-        ? <h1 className="page-title">Welcome to Clarté</h1>
-        : <p className="onboarding-note">This is being worked on</p>}
+    <section className="onboarding" aria-label="Welcome">
+      <h1 className="page-title">Welcome to Clarté</h1>
     </section>
   );
 }

@@ -529,8 +529,21 @@ body {
 .onboarding { position: absolute; inset: 0; grid-column: 1 / 4; grid-row: 1 / -1; display: grid; place-items: center; text-align: center; pointer-events: none; }
 /* Room above the text for the orb (132 px, GuideOrb.tsx) and a 40 px gap: the margin box is what is centred, so orb and text are centred as one. */
 .onboarding > * { margin: calc(132px + 40px) 0 0; }
-/* The voice placeholder (owner, 2026-11-08): one line of ordinary text, not a title. */
-.onboarding-note { font-size: var(--fs-turn); font-weight: 500; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+/* Voice pages (NAT-32): the words sit in the rest zone of the top row, Q2–Q3, between Not now (Q1)
+   and the tall card (Q4–Q8) and clear of the bottom row's cards, under a smaller orb (88 px, 24 px
+   above the text: GuideOrb.tsx). One title and at most one line, or the sentence to read. */
+.onboarding.voice-page { grid-column: 2 / 4; grid-row: 1; padding: 0 24px; }
+.onboarding.voice-page > * { margin: calc(88px + 24px) 0 0; }
+.voice-text { display: grid; gap: 14px; justify-items: center; max-width: 100%; }
+.voice-page .page-title { font-size: min(var(--fs-message), 44px); text-wrap: balance; }
+.voice-line { margin: 0; font-size: var(--fs-hint); font-weight: 500; line-height: 1.35; color: var(--ink-2); text-wrap: balance; max-width: 36ch; }
+.voice-consent { max-width: 44ch; }
+/* The sentence to read is the page's one major thing. */
+.voice-prompt { margin: 0; font-size: min(var(--fs-live), 36px); font-weight: 600; line-height: 1.2; color: var(--ink); text-wrap: balance; max-width: 26ch; }
+.voice-progress { margin: 0; display: inline-flex; align-items: center; gap: 10px; font-size: var(--fs-hint); font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+/* Recording: a red dot beside the word, so the state never rests on colour alone. */
+.voice-dot { width: 12px; height: 12px; border-radius: 50%; background: #D93036; }
+:root[data-large] .onboarding.voice-page > * { margin-top: calc(64px + 16px); }
 /* The onboarding orb (GuideOrb.tsx): placed by its centre (--x, --y) at --size, gliding between
    places at the calibration's move time. As a target it does not float, so its centre is exact. */
 .guide-orb {

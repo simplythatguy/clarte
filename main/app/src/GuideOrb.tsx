@@ -14,8 +14,8 @@ import { TIMING, beginRun, eyesStatus, faceInView, positionAt, runDots, tickRun 
 
 type Place = { x: number; y: number; size: number };
 
-/** The orb's size at rest, waiting at the centre, and as a target. */
-const SIZE = { rest: 132, centre: 96, target: 72 };
+/** The orb's size at rest, at rest over a voice page (NAT-32), waiting at the centre, and as a target. */
+const SIZE = { rest: 132, voice: 88, centre: 96, target: 72 };
 /** White between the orb and its ring, and the ring's line. */
 const GAP = 10;
 const LINE = 4;
@@ -29,9 +29,13 @@ const TEXT_GAP = 40;
  * together in the three columns left of the tall card; the orb reads where the text landed.
  */
 function rest(): Place {
-  const text = document.querySelector('.onboarding > *')?.getBoundingClientRect();
-  if (!text) return { x: window.innerWidth * 0.375, y: window.innerHeight / 2 - SIZE.rest / 2, size: SIZE.rest };
-  return { x: text.left + text.width / 2, y: text.top - TEXT_GAP - SIZE.rest / 2, size: SIZE.rest };
+  const text = document.querySelector('.rest-entering .onboarding > *')?.getBoundingClientRect();
+  // Voice pages share the top row with the bottom row's cards, so the orb is smaller and closer.
+  const voice = document.querySelector('.rest-entering .voice-page') !== null;
+  const size = voice ? (document.documentElement.hasAttribute('data-large') ? 64 : SIZE.voice) : SIZE.rest;
+  const gap = voice ? (document.documentElement.hasAttribute('data-large') ? 16 : 24) : TEXT_GAP;
+  if (!text) return { x: window.innerWidth * 0.375, y: window.innerHeight / 2 - size / 2, size };
+  return { x: text.left + text.width / 2, y: text.top - gap - size / 2, size };
 }
 const centre = (): Place => ({ x: window.innerWidth / 2, y: window.innerHeight / 2, size: SIZE.centre });
 

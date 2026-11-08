@@ -17,6 +17,7 @@ import { suggestReply } from './suggest.ts';
 import { isConflict, shownWord } from './words.ts';
 import type { PredictRequest, Prediction, Role } from './prediction/prediction.ts';
 import type { PartnerSource } from './voice.ts';
+import type { Pacing, Source } from './myvoice/service.ts';
 
 export type Turn = {
   id: number;
@@ -26,7 +27,7 @@ export type Turn = {
   holder?: boolean;
 };
 
-export type MenuPage = 'main' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
+export type MenuPage = 'main' | 'voice' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
 
 export type Screen =
   | { kind: 'talk' }
@@ -37,7 +38,14 @@ export type Screen =
   | { kind: 'welcome' }
   /** Eye calibration; `then` is where it leads once a calibration is in use. */
   | { kind: 'calibration'; then: 'voice' | 'talk' }
-  | { kind: 'voice' };
+  /**
+   * Making the person's voice (VoiceSetup.tsx): on the first run after calibration, or from
+   * Menu › My voice. `source` is today's recordings or files from before; `from` is where leaving goes.
+   */
+  | { kind: 'voice'; step: VoiceStep; source: Source; from: 'first-run' | 'menu' };
+
+/** The voice pages, in order: what to make it from, consent, recording or files, making, the result. */
+export type VoiceStep = 'intro' | 'consent' | 'record' | 'files' | 'making' | 'ready' | 'need-more' | 'error';
 
 /** What the device is doing out loud right now. `token` 0 marks a static debug frame. */
 export type Live =
@@ -62,6 +70,10 @@ export type Settings = {
   partner: PartnerSource;
   /** The companion bobs and blinks (moving) or keeps still (still). */
   orbMotion: 'moving' | 'still';
+  /** The voice Clarté speaks with (a voice service id), or null for the system voice. */
+  voiceId: string | null;
+  /** How that voice speaks: like the recordings, or steadier (the service's `clearer`). */
+  pacing: Pacing;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -77,6 +89,8 @@ export const DEFAULT_SETTINGS: Settings = {
   repeat: 'leave',
   partner: 'microphone',
   orbMotion: 'moving',
+  voiceId: null,
+  pacing: 'like-me',
 };
 
 export type State = {
@@ -231,7 +245,8 @@ export function secondKey(fn: SecondFn): string {
 /** A name for every distinct screen state, used by the layout check and the debug hook. */
 export function phaseOf(state: State, words: Words): string {
   const { screen } = state;
-  if (screen.kind === 'welcome' || screen.kind === 'voice' || screen.kind === 'calibration') return screen.kind;
+  if (screen.kind === 'voice') return screen.step === 'intro' ? 'voice' : `voice-${screen.step}`;
+  if (screen.kind === 'welcome' || screen.kind === 'calibration') return screen.kind;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'options') return 'options';
   const { primary, second } = slotsFor(state, words);

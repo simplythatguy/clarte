@@ -2,7 +2,7 @@
  * Clarté: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
  * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
  * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
- * voice cloning); words from the prediction engine (useWords.ts); and looks from the webcam eye
+ * making the person's voice in VoiceSetup.tsx); words from the prediction engine (useWords.ts); and looks from the webcam eye
  * tracker (eyes/session.ts), or the mouse with `?input=mouse` or while the tracker is not calibrated.
  *
  * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
@@ -31,6 +31,7 @@ import {
   type SecondFn,
   type Settings,
   type State,
+  type VoiceStep,
 } from './model.ts';
 import { Tile, type SlotName, type SlotView, type Slots } from './Tile.tsx';
 import { Thread, type StateName } from './Thread.tsx';
@@ -39,8 +40,8 @@ import { shownWord } from './words.ts';
 import { useWords, wordsNow } from './useWords.ts';
 import { commit, peek } from './prediction/prediction.ts';
 import { Calibration } from './Calibration.tsx';
-import { PHASES, seedFor, type PhaseName } from './debug.ts';
-import { listenToPartner, resetScript, speakWords, type Speech } from './voice.ts';
+import { PHASES, makerFor, seedFor, type PhaseName } from './debug.ts';
+import { listenToPartner, resetScript, type Speech } from './voice.ts';
 import { configureSound, duck, play, unlockOnGesture } from './core/sound.ts';
 import { longest, sentence } from './text.ts';
 import { fitCards } from './fit.ts';
@@ -48,12 +49,20 @@ import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
 import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { OptionsFace } from './OptionsFace.tsx';
-import { OnboardingPage, onboardingSlots, tallCard } from './Onboarding.tsx';
+import { WelcomePage, welcomeSlots, tallCard } from './Onboarding.tsx';
+import { VoicePage, voiceSlots } from './VoiceSetup.tsx';
+import { closeMic, makeVoice, makerNow, move, openMic, resetMaker, setMakerError, showMaker, startTake, stopTake, useMaker } from './myvoice/maker.ts';
+import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
+import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
 import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
+/** The first run's voice page: making the person's voice from today's recordings (NAT-32). */
+const FIRST_VOICE = { kind: 'voice', step: 'intro', source: 'current', from: 'first-run' } as const;
+/** What Hear it says in the person's voice. */
+const SAMPLE = 'Hello, this is my voice.';
 /** "More" walks the three settings pages in a loop. */
 // Style 8 (owner, 2026-11-07): the floor-holder is "Wait!" (style 7: "One moment").
 const HOLDER = "Wait! I'm answering.";
@@ -242,6 +251,10 @@ export function App() {
   const userActivation = useRef<string | null>(null);
 
   const { settings, screen, live } = state;
+  const maker = useMaker();
+  const voices = useVoices();
+  /** A voice page's word about a blocked action (the file list needs a click), or null. */
+  const [voiceNote, setVoiceNote] = useState<string | null>(null);
   const words = useWords(state);
   const slots = slotsFor(state, words);
   const shown = shownWord(state.composition, words.prediction)?.word ?? null;
@@ -339,7 +352,9 @@ export function App() {
     // A short breath in, then every cue ducks under the voice until it ends (SOUND.md).
     play('speak-start');
     duck(true);
-    const s = speakWords(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }));
+    // In the person's own voice when one is chosen (Menu › My voice), else the system voice.
+    const { voiceId, pacing } = stateRef.current.settings;
+    const s = speakInVoice(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }), voiceId, pacing);
     speech.current = s;
     void s.done.then(() => { duck(false); dispatch({ type: 'speak-end', token: speakToken }); play('speak-end'); });
     return () => { s.cancel(); duck(false); };
@@ -401,10 +416,10 @@ export function App() {
     }
   }, [startSpeaking]);
 
-  // Calibration leads on to voice cloning on the first run, else back to the conversation.
+  // Calibration leads on to making the person's voice on the first run, else back to the conversation.
   const afterCalibration = useCallback(() => {
     const s = stateRef.current;
-    dispatch({ type: 'screen', screen: s.screen.kind === 'calibration' && s.screen.then === 'voice' ? { kind: 'voice' } : { kind: 'talk' } });
+    dispatch({ type: 'screen', screen: s.screen.kind === 'calibration' && s.screen.then === 'voice' ? FIRST_VOICE : { kind: 'talk' } });
   }, []);
   /** Leave calibration without a new calibration: the one in use before, if any, stays in use. */
   const leaveCalibration = useCallback((mouse: boolean) => {
@@ -416,7 +431,7 @@ export function App() {
   const getStarted = useCallback(() => {
     if (stateRef.current.screen.kind !== 'welcome') return;
     play('control');
-    dispatch({ type: 'screen', screen: mouseOnly.current ? { kind: 'voice' } : { kind: 'calibration', then: 'voice' } });
+    dispatch({ type: 'screen', screen: mouseOnly.current ? FIRST_VOICE : { kind: 'calibration', then: 'voice' } });
   }, []);
   // Before calibration the eyes cannot select yet, so Get started starts by itself after 20 s,
   // unless the person shows they can use the keyboard or the mouse.
@@ -460,6 +475,95 @@ export function App() {
     if (kind === 'talk' || kind === 'menu' || kind === 'options') dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } });
   }, [eyes]);
 
+  // ── The person's voice (NAT-32) ──
+  // Leaving the voice pages by any route closes the microphone.
+  const onVoice = screen.kind === 'voice';
+  useEffect(() => { if (!onVoice) { closeMic(); setVoiceNote(null); } }, [onVoice]);
+
+  const voiceGo = useCallback((step: VoiceStep, source?: Source) => {
+    const s = stateRef.current.screen;
+    if (s.kind !== 'voice') return;
+    setVoiceNote(null);
+    dispatch({ type: 'screen', screen: { ...s, step, source: source ?? s.source } });
+  }, []);
+
+  /** Not now, or Continue: the first run goes on to the conversation, the menu back to My voice. */
+  const leaveVoice = useCallback(() => {
+    const s = stateRef.current.screen;
+    if (s.kind !== 'voice') return;
+    closeMic();
+    if (s.from === 'first-run') { store({ setupDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); }
+    else dispatch({ type: 'screen', screen: { kind: 'menu', page: 'voice' } });
+  }, []);
+
+  const lastFiles = useRef<File[] | undefined>(undefined);
+  /** Make the voice. It is chosen once it can speak, even if the person has left the pages meanwhile. */
+  const runMake = useCallback((source: Source, files?: File[]) => {
+    voiceGo('making', source);
+    void makeVoice(source, files).then((voice) => {
+      if (voice?.status === 'ready') dispatch({ type: 'settings', patch: { voiceId: voice.id } });
+      if (stateRef.current.screen.kind !== 'voice') return;
+      voiceGo(!voice ? 'error' : voice.status === 'ready' ? 'ready' : 'need-more');
+      play(voice?.status === 'ready' ? 'word' : 'unsure');
+    });
+  }, [voiceGo]);
+
+  const sample = useRef<Speech | null>(null);
+  const hear = useCallback((id: string | null) => {
+    sample.current?.cancel();
+    duck(true);
+    const s = speakInVoice(SAMPLE, () => {}, id, stateRef.current.settings.pacing);
+    sample.current = s;
+    void s.done.then(() => { if (sample.current === s) duck(false); });
+  }, []);
+
+  /** The browser opens its file list only straight after a click or a key, never from a dwell. */
+  const pickFiles = useCallback(() => {
+    const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+    if (activation && !activation.isActive) { setVoiceNote('Click Choose files to open the list of files.'); return; }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'audio/*,video/*';
+    input.onchange = () => {
+      const files = [...(input.files ?? [])];
+      if (!files.length) return;
+      lastFiles.current = files;
+      runMake('past', files);
+    };
+    input.click();
+  }, [runMake]);
+
+  const voiceAction = useCallback((action: string) => {
+    const s = stateRef.current.screen;
+    if (s.kind !== 'voice') return;
+    switch (action) {
+      case 'voice-leave': play('control'); leaveVoice(); return;
+      case 'voice-check': play('control'); void refreshVoices(); return;
+      case 'voice-record': play('control'); voiceGo('consent', 'current'); return;
+      case 'voice-old': play('control'); voiceGo('consent', 'past'); return;
+      case 'voice-agree':
+        play('control');
+        if (s.source === 'past') voiceGo('files');
+        else { voiceGo('record'); void openMic(); }
+        return;
+      case 'voice-mic': play('control'); void openMic(); return;
+      // No cue when a take starts, so none is recorded; Stop's cue plays once the take has ended.
+      case 'voice-take':
+        if (makerNow().recording !== null) void stopTake().then(() => play('control'));
+        else startTake();
+        return;
+      case 'voice-prev': play('control'); move(-1); return;
+      case 'voice-next': play('control'); move(1); return;
+      case 'voice-make': play('control'); lastFiles.current = undefined; runMake('current'); return;
+      case 'voice-files': play('control'); pickFiles(); return;
+      case 'voice-retry': play('control'); runMake(s.source, s.source === 'past' ? lastFiles.current : undefined); return;
+      case 'voice-more': play('control'); setMakerError(null); voiceGo('record', 'current'); void openMic(); return;
+      case 'voice-hear': hear(makerNow().made?.id ?? null); return;
+      case 'voice-done': play('control'); leaveVoice(); return;
+    }
+  }, [hear, leaveVoice, pickFiles, runMake, voiceGo]);
+
   // The latest labels, read by the select handler without re-subscribing every render.
   const shownRef = useRef({ primary, second, slots });
   shownRef.current = { primary, second, slots };
@@ -486,13 +590,7 @@ export function App() {
       if (action === 'get-started') getStarted();
       return;
     }
-    if (s.screen.kind === 'voice') {
-      if (action !== 'voice-continue') return;
-      play('control');
-      store({ setupDone: true });
-      dispatch({ type: 'screen', screen: { kind: 'talk' } });
-      return;
-    }
+    if (s.screen.kind === 'voice') { voiceAction(action); return; }
     if (s.screen.kind === 'options') {
       if (action === 'back') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
       if (action === 'page-prev' || action === 'page-next') {
@@ -517,7 +615,20 @@ export function App() {
         else { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); }
         return;
       }
-      if (action.startsWith('open-')) { page(action.slice(5) as MenuPage); return; }
+      if (action.startsWith('open-')) {
+        // My voice lists what the voice service holds now.
+        if (action === 'open-voice') void refreshVoices();
+        page(action.slice(5) as MenuPage);
+        return;
+      }
+      if (action === 'voice-hear') { hear(s.settings.voiceId); return; }
+      if (action === 'voice-new') {
+        play('control');
+        resetMaker();
+        void refreshVoices();
+        dispatch({ type: 'screen', screen: { kind: 'voice', step: 'intro', source: 'current', from: 'menu' } });
+        return;
+      }
       if (action === 'page-prev' || action === 'page-next') {
         dispatch({ type: 'screen', screen: { ...s.screen, at: (s.screen.at ?? 0) + (action === 'page-next' ? 1 : -1) } });
         play('control');
@@ -545,7 +656,7 @@ export function App() {
       // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
     }
-  }, [getStarted, leaveCalibration, resync, runPrimary, runSecond, startSpeaking]);
+  }, [getStarted, hear, leaveCalibration, resync, runPrimary, runSecond, startSpeaking, voiceAction]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;
@@ -573,6 +684,9 @@ export function App() {
         if (!(PHASES as readonly string[]).includes(name)) throw new Error(`unknown phase ${name}`);
         speech.current?.cancel();
         resetScript();
+        closeMic();
+        const shown = makerFor(name as PhaseName);
+        if (shown) showMaker(shown);
         dispatch({ type: 'replace', state: seedFor(name as PhaseName, stateRef.current) });
       },
       validate: validateNow,
@@ -607,11 +721,15 @@ export function App() {
     } : {};
     restKey = calibrationFailure ? 'calibration-failure' : 'calibration';
     rest = <Calibration failure={calibrationFailure} />;
-  } else if (screen.kind === 'welcome' || screen.kind === 'voice') {
-    const step = screen.kind;
-    slotViews = onboardingSlots(step, autoStart);
-    restKey = `onboarding-${step}`;
-    rest = <OnboardingPage step={step} />;
+  } else if (screen.kind === 'welcome') {
+    slotViews = welcomeSlots(autoStart);
+    restKey = 'onboarding-welcome';
+    rest = <WelcomePage />;
+  } else if (screen.kind === 'voice') {
+    const view = { step: screen.step, source: screen.source, maker, service: voices.service, note: voiceNote };
+    slotViews = voiceSlots(view);
+    restKey = `voice-${screen.step}`;
+    rest = <VoicePage {...view} />;
   } else if (screen.kind === 'menu' || screen.kind === 'options') {
     // The menu and Options open over the conversation, which stays in place, blurred.
     let title: string;

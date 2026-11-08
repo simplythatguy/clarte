@@ -335,9 +335,21 @@ def provision_ui_v0(env):
         ensure_npm_ci(UI / f"s{n}", env)
 
 
+def voice_wanted(env):
+    """The app speaks in the person's voice (NAT-32) through the voice service. Its environment is about
+    1 GB (CPU PyTorch for the speaker check), so `ui` installs it only once an ElevenLabs key is set,
+    and starts it whenever it is installed (voices already made still speak their cached phrases)."""
+    keyed = bool(env.get("ELEVENLABS_API_KEY") or env.get("ELEVENLABS_API_KEY_FILE"))
+    return keyed, keyed or (VOICE / "server" / ".venv").exists()
+
+
 def provision_app(env):
     provision_engine(env)
     ensure_npm_ci(APP, env)
+    keyed, _ = voice_wanted(env)
+    if keyed:
+        extra = ["--overrides", str(VOICE / "server" / "overrides.txt")] + (["--torch-backend", "cpu"] if sys.platform == "linux" else [])
+        ensure_venv(VOICE / "server" / ".venv", "3.11", [VOICE / "server" / "requirements.txt"], extra)
 
 
 def provision_eyes(env):
@@ -488,14 +500,33 @@ def start_app(env, log_dir, procs):
     engine_port = start_engine(env, log_dir, procs)
     # The app probes 8765 to 8769 for an engine; any other port has to be named in the URL.
     query = "" if engine_port == 8765 else f"?engine=http://127.0.0.1:{engine_port}"
+    ports = [port, engine_port]
+    app_env = env
+    keyed, voice = voice_wanted(env)
+    if voice:
+        # The voice service answers only the pages it names: this app, on either host name.
+        service = pick_port(4322)
+        origins = ",".join(f"http://{host}:{port}" for host in ("localhost", "127.0.0.1"))
+        procs.append(Proc("voice", [venv_python(VOICE / "server" / ".venv"), "-m", "clarte_voice"], VOICE / "server",
+                          dict(env, TQDM_DISABLE="1", CLARTE_VOICE_PORT=str(service), CLARTE_VOICE_ORIGINS=origins), log_dir))
+        app_env = dict(env, VITE_CLARTE_VOICE_URL=f"http://localhost:{service}")
+        ports.append(service)
+        if not keyed:
+            log("voice: no ELEVENLABS_API_KEY in .env, so no new voices; voices already made speak their saved phrases")
+    else:
+        log("voice: not installed; put ELEVENLABS_API_KEY in .env to make and speak in the person's own voice")
     home = ensure_node()
-    procs.append(Proc("app", [node_exe(home), APP / "node_modules" / "vite" / "bin" / "vite.js", "--port", port, "--strictPort"], APP, env, log_dir))
+    procs.append(Proc("app", [node_exe(home), APP / "node_modules" / "vite" / "bin" / "vite.js", "--port", port, "--strictPort"], APP, app_env, log_dir))
 
     def smoke():
         expect_200(f"http://localhost:{port}/")
         expect_200(f"http://localhost:{port}/vendor/webeyetrack/worker.js")
         expect_json(f"http://127.0.0.1:{engine_port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0])
-    return [port, engine_port], [f"http://localhost:{port}/{query}"], smoke
+        if voice:
+            status, data = http(f"http://127.0.0.1:{service}/health")
+            if status != 200 or json.loads(data).get("ok") is not True:
+                raise RuntimeError(f"voice /health: status {status}, {data[:200]!r}")
+    return ports, [f"http://localhost:{port}/{query}"], smoke
 
 
 def start_ui_v0(env, log_dir, procs):

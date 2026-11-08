@@ -5,7 +5,24 @@
  */
 import { EMPTY_COMPOSITION, acceptWord, reduce, type Composition } from './core/composer.ts';
 import { signatureOf } from './core/decoder.ts';
-import { type MenuPage, type State, type Turn } from './model.ts';
+import { type MenuPage, type State, type Turn, type VoiceStep } from './model.ts';
+import { type MakerState } from './myvoice/maker.ts';
+
+/**
+ * What the recording session shows in each voice phase (App passes it to `showMaker`): a session
+ * three sentences in, recording the fourth, and a voice made from 52 s.
+ */
+export function makerFor(name: PhaseName): Partial<MakerState> | null {
+  const takes = { ah: 4.2, 'cape-1': 3.1, 'cape-2': 2.6 };
+  const made = { id: 'sample', name: 'My voice', source: 'current' as const, status: 'ready' as const, createdAt: 0, updatedAt: 0, problems: [], reference: { seconds: 52, segments: [] } };
+  switch (name) {
+    case 'voice-record': return { mic: true, index: 3, takes, recording: null, error: null, made: null };
+    case 'voice-recording': return { mic: true, index: 3, takes, recording: 7.4, error: null, made: null };
+    case 'voice-ready': return { mic: false, made, error: null };
+    case 'voice-error': return { mic: false, error: 'The voice service answered 502.', made: null };
+    default: return name.startsWith('voice') ? { mic: false, index: 0, takes: {}, recording: null, error: null, made: null } : null;
+  }
+}
 
 export const PHASES = [
   'idle',
@@ -32,6 +49,15 @@ export const PHASES = [
   'worst-nomatch',
   'welcome',
   'voice',
+  'voice-consent',
+  'voice-record',
+  'voice-recording',
+  'voice-files',
+  'voice-making',
+  'voice-ready',
+  'voice-need-more',
+  'voice-error',
+  'menu-voice',
 ] as const;
 
 export type PhaseName = (typeof PHASES)[number];
@@ -110,6 +136,7 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'menu-appearance':
     case 'menu-sound':
     case 'menu-dev-tools':
+    case 'menu-voice':
       return { ...withTurns(clean, HISTORY), screen: { kind: 'menu', page: name.slice(5) as MenuPage } };
     case 'worst-case': {
       const worst = withTurns(clean, WORST);
@@ -123,6 +150,16 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'welcome':
       return { ...clean, screen: { kind: 'welcome' } };
     case 'voice':
-      return { ...clean, screen: { kind: 'voice' } };
+      return { ...clean, screen: { kind: 'voice', step: 'intro', source: 'current', from: 'first-run' } };
+    case 'voice-consent':
+    case 'voice-record':
+    case 'voice-files':
+    case 'voice-making':
+    case 'voice-ready':
+    case 'voice-need-more':
+    case 'voice-error':
+      return { ...clean, screen: { kind: 'voice', step: name.slice(6) as VoiceStep, source: name === 'voice-files' ? 'past' : 'current', from: 'first-run' } };
+    case 'voice-recording':
+      return { ...clean, screen: { kind: 'voice', step: 'record', source: 'current', from: 'first-run' } };
   }
 }

@@ -1,0 +1,142 @@
+/**
+ * Making the person's voice (NAT-32), in place of the first run's voice placeholder and from
+ * Menu › My voice. The recording and the clone come from prototypes/Voice (myvoice/); the pages are
+ * this app's own: the onboarding's tall ink card over Q4 and Q8 holds each page's main action,
+ * Not now sits in Q1 where Back sits in the menu, and the bottom row holds the page's other actions.
+ * The text sits in the rest zone between them (Q2–Q3), under a smaller orb.
+ *
+ *   intro      Record my voice · Old recordings · Not now
+ *   consent    I agree · Not now            (the service's consent statement, word for word)
+ *   record     Record / Stop / Record again · Back · Skip · Make my voice · Not now
+ *   files      Choose files · Not now       (a helper picks them; the browser needs a click)
+ *   making     Not now                      (the voice is made and chosen even if the person leaves)
+ *   ready      Continue · Hear it
+ *   need-more  Record more · Not now
+ *   error      Try again · Record more · Not now
+ *
+ * While a page records, it is the only thing listening: look + sound selection pauses (App), so
+ * reading aloud never selects a card, and no interface cue plays into the recording.
+ */
+import type { ReactNode } from 'react';
+import type { SlotView, Slots } from './Tile.tsx';
+import type { VoiceStep } from './model.ts';
+import type { Source } from './myvoice/service.ts';
+import type { ServiceState } from './myvoice/voices.ts';
+import { ENOUGH_SECONDS, MINIMUM_SECONDS, PROMPTS, recordedSeconds, type MakerState } from './myvoice/maker.ts';
+import { tallCard } from './Onboarding.tsx';
+import { longest } from './text.ts';
+import { Again, Back, Check, Close, Mic, Next, Speaker, StopSquare, Waveform } from './icons.tsx';
+
+/** Word for word the statement the voice service stores with every voice it makes. */
+export const CONSENT =
+  'These recordings are of my own voice, or I am authorized to make this voice for the person speaking in them. ' +
+  'I agree that the selected speech is sent to ElevenLabs to create the voice.';
+
+export type VoiceView = { step: VoiceStep; source: Source; maker: MakerState; service: ServiceState; note: string | null };
+
+const card = (action: string, label: string, icon: ReactNode, disabled = false): SlotView => ({
+  action, tone: 'surface', icon, disabled, bodyKey: `${action}:${label}`,
+  body: <span className="card-label" style={longest(label)}>{label}</span>,
+});
+const notNow = () => card('voice-leave', 'Not now', <Close />);
+
+/** Why voice making cannot start, or null when it can. */
+function blocked(service: ServiceState): string | null {
+  if (service.kind === 'offline') return service.message;
+  if (service.kind === 'no-key') return 'Voice making needs an ElevenLabs key on this computer.';
+  return null;
+}
+
+export function voiceSlots({ step, source, maker, service }: VoiceView): Slots {
+  switch (step) {
+    case 'intro':
+      return blocked(service)
+        ? { q1: notNow(), q4: tallCard('voice-check', 'Try again', <Again />) }
+        : { q1: notNow(), q4: tallCard('voice-record', 'Record my voice', <Mic />), q5: card('voice-old', 'Old recordings', <Waveform />) };
+    case 'consent':
+      return { q1: notNow(), q4: tallCard('voice-agree', 'I agree', <Check />) };
+    case 'record': {
+      if (!maker.mic) return { q1: notNow(), q4: tallCard('voice-mic', 'Try again', <Again />) };
+      const live = maker.recording !== null;
+      const prompt = PROMPTS[maker.index];
+      const take = live
+        ? tallCard('voice-take', 'Stop', <StopSquare />, `Recording · ${Math.floor(maker.recording ?? 0)} s`)
+        : tallCard('voice-take', maker.takes[prompt.id] ? 'Record again' : 'Record', <Mic />);
+      return {
+        q1: notNow(),
+        q4: take,
+        q5: card('voice-prev', 'Back', <Back />, live || maker.index === 0),
+        q6: card('voice-next', 'Skip', <Next />, live || maker.index === PROMPTS.length - 1),
+        q7: card('voice-make', 'Make my voice', <Check />, live || recordedSeconds(maker) < MINIMUM_SECONDS),
+      };
+    }
+    case 'files':
+      return { q1: notNow(), q4: tallCard('voice-files', 'Choose files', <Waveform />) };
+    case 'making':
+      return { q1: notNow() };
+    case 'ready':
+      return { q4: tallCard('voice-done', 'Continue', <Check />), q5: card('voice-hear', 'Hear it', <Speaker />) };
+    case 'need-more':
+      return { q1: notNow(), q4: tallCard('voice-more', 'Record more', <Mic />) };
+    case 'error':
+      return source === 'current'
+        ? { q1: notNow(), q4: tallCard('voice-retry', 'Try again', <Again />), q5: card('voice-more', 'Record more', <Mic />) }
+        : { q1: notNow(), q4: tallCard('voice-retry', 'Try again', <Again />) };
+  }
+}
+
+/** The page's words: a title and at most one line under it, or the prompt to read. */
+export function VoicePage({ step, source, maker, service, note }: VoiceView) {
+  let body: ReactNode;
+  let label = 'Your voice';
+  switch (step) {
+    case 'intro': {
+      const why = blocked(service);
+      body = <><h1 className="page-title">Make your voice</h1><p className="voice-line">{why ?? 'Read a few short sentences aloud, about a minute in all.'}</p></>;
+      break;
+    }
+    case 'consent':
+      body = <><h1 className="page-title">{source === 'past' ? 'Before you choose' : 'Before you record'}</h1><p className="voice-line voice-consent">{CONSENT}</p></>;
+      break;
+    case 'record': {
+      const prompt = PROMPTS[maker.index];
+      const seconds = Math.round(recordedSeconds(maker));
+      label = 'Recording';
+      body = maker.mic ? (
+        <>
+          <p className="voice-progress">
+            {maker.recording !== null && <span className="voice-dot" aria-hidden="true" />}
+            {maker.recording !== null ? 'Recording' : `Sentence ${maker.index + 1} of ${PROMPTS.length}`} · {seconds} s of about {ENOUGH_SECONDS} s
+          </p>
+          <p className="voice-prompt">{prompt.text}</p>
+          {prompt.hint && <p className="voice-line">{prompt.hint}</p>}
+          {/* Assistive technology hears the recording start and stop, not every second of it. */}
+          <span className="sr-only" aria-live="polite">{maker.recording !== null ? 'Recording' : ''}</span>
+        </>
+      ) : <><h1 className="page-title">The microphone is off</h1><p className="voice-line">{maker.error ?? 'Clarté needs the microphone to record.'}</p></>;
+      break;
+    }
+    case 'files':
+      body = <><h1 className="page-title">Recordings from before</h1><p className="voice-line">{note ?? 'Videos, voicemails, anything where you speak. Clarté keeps the clearest speech.'}</p></>;
+      break;
+    case 'making':
+      body = <><h1 className="page-title">Making your voice</h1><p className="voice-line">This takes a minute or two.</p></>;
+      break;
+    case 'ready': {
+      const made = maker.made;
+      body = <><h1 className="page-title">Your voice is ready</h1>{made && <p className="voice-line">Made from {Math.round(made.reference.seconds)} s of your speech.</p>}</>;
+      break;
+    }
+    case 'need-more':
+      body = <><h1 className="page-title">It needs more speech</h1><p className="voice-line">Record a few more sentences, then make it again.</p></>;
+      break;
+    case 'error':
+      body = <><h1 className="page-title">Your voice wasn’t made</h1><p className="voice-line">{maker.error ?? 'Something went wrong.'}</p></>;
+      break;
+  }
+  return (
+    <section className="onboarding voice-page" aria-label={label}>
+      <div className="voice-text">{body}</div>
+    </section>
+  );
+}

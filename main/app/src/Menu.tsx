@@ -2,7 +2,7 @@
  * Menu pages (owner, 2026-11-08). The menu replaces the conversation screen and keeps its geometry:
  * Q1 goes back one level and names where it goes (Home, Menu, Settings), and Q2–Q3 stay a rest zone
  * that shows the page name with its path above it (Menu › Settings › Dwell). The Menu page holds two wide cards, Recalibrate (Q5–Q6) and
- * Settings (Q7–Q8). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
+ * Settings (Q7–Q8), and My voice top right (Q4, NAT-32). Every other page lays out up to five entries, four along the bottom (Q5–Q8)
  * and a fifth top right (Q4); more than five page two at a time with arrows (Pager.tsx). Settings show their current value and advance to the next value on
  * selection, so every change is one look.
  */
@@ -11,7 +11,8 @@ import type { MenuPage, Settings } from './model.ts';
 import type { SlotName, SlotView } from './Tile.tsx';
 import { pageList, type Paged } from './Pager.tsx';
 import { longest } from './text.ts';
-import { Again, Back, Blob, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave } from './icons.tsx';
+import { Again, Back, Blob, Check, Flask, Mic, Palette, Sliders, Sparkle, Speaker, Target, TextSize, Timer, Wave, Waveform } from './icons.tsx';
+import { readyVoices, voiceName } from './myvoice/voices.ts';
 
 type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[K][]; format: (v: Settings[K]) => string };
 
@@ -19,6 +20,7 @@ type Cycle<K extends keyof Settings> = { key: K; name: string; values: Settings[
 const SETTING_ICON: Record<keyof Settings, () => ReactNode> = {
   letterDwell: Timer, controlDwell: Timer, textScale: TextSize, sound: Speaker, mode: Target,
   wordColours: Palette, suggestions: Sparkle, noise: Wave, repeat: Again, partner: Mic, orbMotion: Blob, volume: Speaker,
+  voiceId: Waveform, pacing: Timer,
 };
 
 const seconds = (ms: number) => `${+(ms / 1000).toFixed(2)} s`;
@@ -37,6 +39,9 @@ const CYCLES = {
   repeat: { key: 'repeat', name: 'Repeat', values: ['leave', 'redwell'], format: (v: string) => (v === 'leave' ? 'Look away' : 'Hold') },
   partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'Microphone' : 'Script') },
   orbMotion: { key: 'orbMotion', name: 'Motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
+  // The system voice, then every voice made on this computer that can speak (NAT-32).
+  voiceId: { key: 'voiceId', name: 'Voice', get values() { return [null, ...readyVoices().map((v) => v.id)]; }, format: voiceName },
+  pacing: { key: 'pacing', name: 'Pacing', values: ['like-me', 'clearer'], format: (v: string) => (v === 'clearer' ? 'Steadier' : 'Like my recordings') },
 } as { [K in keyof Settings]: Cycle<K> };
 
 export type SettingKey = keyof Settings;
@@ -47,11 +52,12 @@ export function nextValue<K extends SettingKey>(key: K, settings: Settings): Set
   return values[(i + 1) % values.length];
 }
 
-/** What a menu page offers: a setting to cycle, a page to open, or Recalibrate. */
+/** What a menu page offers: a setting to cycle, a page to open, Recalibrate, or another command. */
 type Entry =
   | { kind: 'setting'; key: SettingKey }
   | { kind: 'page'; page: MenuPage; glyph: () => ReactNode }
-  | { kind: 'recalibrate' };
+  | { kind: 'recalibrate' }
+  | { kind: 'command'; action: string; label: string; glyph: () => ReactNode };
 
 type Page = { title: string; parent: MenuPage | null; entries: Entry[] };
 
@@ -63,7 +69,18 @@ const open = (page: MenuPage, glyph: () => ReactNode): Entry => ({ kind: 'page',
  * settings together, appearance together, Sound, and Dev Tools (the old Demo page) last.
  */
 const PAGES: Record<MenuPage, Page> = {
-  main: { title: 'Menu', parent: null, entries: [{ kind: 'recalibrate' }, open('settings', Sliders)] },
+  main: { title: 'Menu', parent: null, entries: [{ kind: 'recalibrate' }, open('settings', Sliders), open('voice', Waveform)] },
+  // NAT-32: which voice speaks, how it paces, a sample, and making a new one.
+  voice: {
+    title: 'My voice',
+    parent: 'main',
+    entries: [
+      setting('voiceId'),
+      setting('pacing'),
+      { kind: 'command', action: 'voice-hear', label: 'Hear it', glyph: Speaker },
+      { kind: 'command', action: 'voice-new', label: 'Make my voice', glyph: Check },
+    ],
+  },
   settings: {
     title: 'Settings',
     parent: 'main',
@@ -127,11 +144,13 @@ export function menuSlots(page: MenuPage, settings: Settings, at = 0): Paged {
       case 'setting': return settingSlot(e.key, settings);
       case 'page': return card(`open-${e.page}`, PAGES[e.page].title, e.glyph(), span);
       case 'recalibrate': return card('recalibrate', 'Recalibrate', <Target />, span);
+      case 'command': return card(e.action, e.label, e.glyph(), span);
     }
   };
   const { entries } = PAGES[page];
-  // The Menu page's two entries are wide cards, each across two quadrants (Q5–Q6, Q7–Q8).
-  if (page === 'main') return { slots: { q1: back, q5: view(entries[0], 2), q7: view(entries[1], 2) }, strip: null };
+  // The Menu page's first two entries are wide cards, each across two quadrants (Q5–Q6, Q7–Q8),
+  // and My voice sits top right (Q4).
+  if (page === 'main') return { slots: { q1: back, q4: view(entries[2]), q5: view(entries[0], 2), q7: view(entries[1], 2) }, strip: null };
   const paged = pageList(entries.map((e) => view(e)), at, placesFor(entries.length));
   return { slots: { q1: back, ...paged.slots }, strip: paged.strip };
 }

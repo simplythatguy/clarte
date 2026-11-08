@@ -62,9 +62,10 @@ try {
 
   const gaze = await page.evaluate(() => window.clarteDebug?.engine.snapshot);
   console.log('the photo\'s gaze is on', gaze?.quadrant, gaze?.looked);
-  if ((await phase()) === 'voice') await page.getByRole('button', { name: 'Continue' }).click();
-  const reached = await until('the conversation', async () => { const p = await phase(); return !['voice', 'welcome', 'calibration'].includes(p) && p; }, 10_000).catch(() => null);
-  check('Continue opens the conversation', Boolean(reached), await phase());
+  // The voice page (NAT-32): no voice is made here, so Not now goes on to the conversation.
+  if ((await phase()).startsWith('voice')) await page.getByRole('button', { name: 'Not now' }).click();
+  const reached = await until('the conversation', async () => { const p = await phase(); return !p.startsWith('voice') && !['welcome', 'calibration'].includes(p) && p; }, 10_000).catch(() => null);
+  check('Not now on the voice page opens the conversation', Boolean(reached), await phase());
   await page.mouse.move(-1, -1);
   await page.waitForTimeout(1500);
   const samples = await page.evaluate(() => window.clarteDebug?.engine.snapshot);
@@ -77,7 +78,7 @@ try {
   await page.reload();
   await until('the app', () => page.evaluate(() => Boolean(window.clarteDebug)), 10_000);
   await page.evaluate(() => { const seen = (window.__eyes = []); setInterval(() => { const e = window.clarteDebug?.eyes(); const k = e && (e.reason ? `${e.kind}(${e.reason})` : e.kind); if (k && seen.at(-1) !== k) seen.push(k); }, 50); });
-  check('a returning person goes straight to the conversation', !['voice', 'welcome', 'calibration'].includes(await phase()), await phase());
+  check('a returning person goes straight to the conversation', !(await phase()).startsWith('voice') && !['welcome', 'calibration'].includes(await phase()), await phase());
   await until('the restored calibration', async () => (await eyes())?.kind === 'tracking', 120_000);
   const afterReload = await page.evaluate(() => window.__eyes);
   const restored = await eyes();
