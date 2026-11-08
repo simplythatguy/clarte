@@ -1,7 +1,7 @@
 # Autocomplete v0
 
 One completion: the matching word with the highest context probability, with its
-conditional probability and up to three alternatives. No groups means next-word
+conditional probability and one alternative (two choices total). No groups means next-word
 prediction. A suggestion is committed only by Accept.
 
 ## Dependency and run
@@ -56,15 +56,15 @@ fallback notice belongs to the servers. Use one instance per worker or serialize
 calls, as in the engine.
 
 ```json
-{"word":"outside","probability":0.9999327172460807,"alternatives":[{"word":"stupid","probability":0.00002284689039406619},{"word":"puts","probability":0.000007383077977486796},{"word":"outstanding","probability":0.000006917588835096911}]}
+{"word":"outside","probability":0.9999327172460807,"alternatives":[{"word":"stupid","probability":0.00002284689039406619}]}
 ```
 
 The example is the measured response to the full-history HTTP request below. The probability is defined as:
 
 `probability(w) = P(w | history, message) / sum(P(v | history, message) for all v whose group code starts with groups)`.
 
-The denominator covers **all** matching words, not the top 12 or four displayed
-items. Alternatives are the next three `{word, probability}` entries, excluding
+The denominator covers **all** matching words, not just the displayed
+items. Alternatives contains the next `{word, probability}` entry, excluding
 the winner. Empty groups include the full vocabulary. No matching words returns
 `{"word":"","probability":0.0,"alternatives":[]}`. This probability is model mass,
 not calibrated confidence about what a person intends. It uses `likely`, not the
@@ -81,7 +81,7 @@ curl -sS http://127.0.0.1:8766/api/complete \
   -d '{"history":[["partner","Did you sleep at all?"],["user","Not much. My back hurts"],["partner","Do you want to go outside for a bit? It is sunny."]],"message":["i","would","love","to","go"],"groups":"3443"}'
 ```
 
-Returns the completion object above, with the real probability and up to three
-alternatives. Request defaults and HTTP validation are shared with Word
+Returns the completion object above, with the model probability and at most one
+alternative. Request defaults and HTTP validation are shared with Word
 Prediction: empty history/message/groups are accepted, malformed JSON/types/groups
 return 400, body limit is 64 KiB and group limit 128; unknown routes return 404.
