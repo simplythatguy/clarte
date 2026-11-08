@@ -186,16 +186,16 @@ body {
 .card[aria-disabled] > :not(.trace) { opacity: 0.32; }
 
 /* The dwell (owner, 2026-11-08; Tile.tsx): a line runs clockwise round the card's edge from the
-   top left and closes as the dwell completes; on a selection it floods inward to the centre as a
-   soft translucent tint and fades. Ink on grey and white cards, the group's colour on letters,
+   top left and closes as the dwell completes; on a selection a translucent tint floods in to the
+   centre behind a sharp, wavy water line, sends one ripple back out, and fades. Ink on grey and white cards, the group's colour on letters,
    white on dark cards. */
 .card { --trace: var(--ink); }
 .card-group { --trace: var(--gi); }
 .card-ink { --trace: #FFFFFF; }
 .trace { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; pointer-events: none; }
 .trace-line { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: calc(var(--radius-card) - 2.5px); fill: none; stroke: var(--trace); stroke-width: 3px; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
-.trace-flood { width: 100%; height: 100%; fill: var(--trace); fill-opacity: 0.16; }
-.trace-hole { transform-box: view-box; transform-origin: 50% 50%; }
+.trace-flood { fill: var(--trace); fill-opacity: 0.16; }
+.trace-ripple { fill: none; stroke: var(--trace); stroke-width: 2px; opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .card[data-step='1'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.75 !important; }
   .card[data-step='2'] .trace-line { opacity: 1 !important; stroke-dashoffset: 0.5 !important; }

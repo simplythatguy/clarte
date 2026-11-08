@@ -6,16 +6,18 @@
  *  - intent delay (150 ms groups, 250 ms controls): nothing changes, so a passing glance shows nothing;
  *  - trace: the glass brightens a step and the line runs round the edge, linear, so its length is
  *    the time left;
- *  - commit: the closed line floods inward as a translucent tint, like liquid: it wets the corners
- *    first and the last dry patch beads into an oval that closes at the centre (260 ms, launching
- *    promptly and settling), then the tint fades (280 ms, overlapping the flood's last 40 ms). The
+ *  - commit: the closed line floods inward as a translucent tint, like water: its edge is sharp and
+ *    wavy, two or three long, random waves that travel round as it closes in on the centre (260 ms,
+ *    launching promptly and settling). Where the water meets it sends one faint ripple back out to
+ *    the edges as the tint fades (280 ms, overlapping the flood's last 40 ms). The
  *    card is back at rest about half a second after the selection, even while gaze stays on it,
  *    and the tint never hides the card's new content, so nothing waits for it;
  *  - cancel: the line retracts the way it came over 150 ms.
  * Every step is a Web Animation started on a state transition, never a per-frame write. Under
  * reduced motion the line steps round in quarters and the commit is a brief tint without the flood.
  */
-import { isValidElement, useEffect, useId, useRef, type ReactNode } from 'react';
+import { isValidElement, useEffect, useRef, type ReactNode } from 'react';
+import { animate, type AnimationPlaybackControls } from 'motion';
 import type { GroupId } from '../../shared/decoder.ts';
 import { engine, intentDelay, isQuiet } from './gaze.ts';
 import { Swap } from './Swap.tsx';
@@ -72,26 +74,57 @@ const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const FLOOD_MS = 260;
 const FADE_MS = 280;
 const FADE_AT = FLOOD_MS - 40;
-const EASE_STATE = 'cubic-bezier(0.2, 0, 0, 1)';
+/** The ripple the water sends back out, from where it meets to the edges. */
+const RIPPLE_MS = 340;
 const RETRACT_MS = 150;
 
 const reducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
+/** A flood's water line: two long waves (two and three crests round the edge), random per selection. */
+type Wave = { a: number; b: number; p: number; q: number };
+const randomWave = (): Wave => ({ a: 0.07 + Math.random() * 0.04, b: 0.04 + Math.random() * 0.03, p: Math.random() * Math.PI * 2, q: Math.random() * Math.PI * 2 });
+
 /**
- * The edge line (one rounded rect inset in the card, pathLength 1) and the flood: a tint masked by
- * a soft oval hole that starts larger than the card and shrinks to nothing at its centre.
+ * A closed, smooth, wavy loop round the card's centre: `scale` 1 just reaches past the corners, 0 is
+ * the centre, and `phase` moves the waves round. Catmull-Rom through 48 points, as cubic Béziers.
+ */
+function wavyLoop(w: number, h: number, scale: number, wave: Wave, phase: number): string {
+  const n = 48;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * Math.PI * 2;
+    const f = 1 + wave.a * Math.sin(2 * t + wave.p + phase) + wave.b * Math.sin(3 * t + wave.q - 1.4 * phase);
+    pts.push([w / 2 + (w / 2) * 1.42 * scale * f * Math.cos(t), h / 2 + (h / 2) * 1.42 * scale * f * Math.sin(t)]);
+  }
+  const at = (i: number) => pts[(i + n) % n];
+  let d = `M${at(0)[0].toFixed(1)} ${at(0)[1].toFixed(1)}`;
+  for (let i = 0; i < n; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += `C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return `${d}Z`;
+}
+
+/**
+ * The edge line (one rounded rect inset in the card, pathLength 1), the flood (the card's tint with
+ * a wavy dry patch cut out, even-odd) and the ripple the water sends back out.
  */
 function traceController(svg: SVGSVGElement) {
   const line = svg.querySelector<SVGRectElement>('.trace-line')!;
-  const hole = svg.querySelector<SVGEllipseElement>('.trace-hole')!;
+  const flood = svg.querySelector<SVGPathElement>('.trace-flood')!;
+  const ripple = svg.querySelector<SVGPathElement>('.trace-ripple')!;
   let anims: Animation[] = [];
+  let tweens: AnimationPlaybackControls[] = [];
   let floodEnds: Promise<void> | null = null;
-  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; floodEnds = null; };
+  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; tweens.forEach((t) => t.stop()); tweens = []; floodEnds = null; };
   const offset = () => parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
   const reset = () => {
     line.style.strokeDashoffset = '1';
     line.style.opacity = '0';
-    hole.style.transform = 'scale(1)';
+    flood.setAttribute('d', '');
+    ripple.setAttribute('d', '');
     svg.style.opacity = '1';
   };
   const play = (el: Element, frames: Keyframe[], ms: number, easing: string, delay = 0) => {
@@ -119,15 +152,31 @@ function traceController(svg: SVGSVGElement) {
       reset();
       if (ms > 0 && from < 0.999) play(line, [{ strokeDashoffset: from, opacity: 1 }, { strokeDashoffset: 1, opacity: 1 }], ms, EASE_OUT);
     },
-    /** The commit: the tint floods in from the edge and closes at the centre, then fades, then rest. */
+    /** The commit: the water floods in to the centre, a ripple runs back out, the tint fades, rest. */
     flood(reduce: boolean) {
       stop();
       line.style.opacity = '1';
       line.style.strokeDashoffset = '0';
-      hole.style.transform = 'scale(0)';
-      // From 0.8 the corners are already wet (0.86 is where the oval's edge meets them), so the flood
-      // shows from its first frame; it launches promptly and the last dry drop closes gently.
-      if (!reduce) play(hole, [{ transform: 'scale(0.8)' }, { transform: 'scale(0)' }], FLOOD_MS, EASE_STATE);
+      const { width: w, height: h } = svg.getBoundingClientRect();
+      const card = `M0 0H${w.toFixed(1)}V${h.toFixed(1)}H0Z`;
+      flood.setAttribute('d', card);
+      if (!reduce) {
+        const wave = randomWave();
+        // From 0.8 the corners are already wet, so the water shows from the first frame.
+        tweens.push(animate(0, 1, {
+          duration: FLOOD_MS / 1000, ease: [0.2, 0, 0, 1],
+          onUpdate: (k) => flood.setAttribute('d', k < 1 ? card + wavyLoop(w, h, 0.8 * (1 - k), wave, 2.2 * k) : card),
+        }));
+        tweens.push(animate(0, 1, {
+          delay: (FLOOD_MS - 30) / 1000, duration: RIPPLE_MS / 1000, ease: [0.23, 1, 0.32, 1],
+          onUpdate: (k) => {
+            // The tween reports its start value during its delay; the ripple exists only once the water meets.
+            if (k <= 0) return;
+            ripple.setAttribute('d', wavyLoop(w, h, 0.05 + 0.95 * k, wave, 2.2 + 1.5 * k));
+            ripple.style.opacity = String(0.5 * (1 - k));
+          },
+        }));
+      }
       const fade = play(svg, [{ opacity: 1 }, { opacity: 0 }], reduce ? 200 : FADE_MS, EASE_OUT, reduce ? 0 : FADE_AT);
       floodEnds = fade.finished.then(() => { stop(); reset(); }, () => {});
     },
@@ -141,7 +190,6 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
   const disabled = disabledProp || gone;
   const card = useRef<HTMLButtonElement>(null);
   const traceRef = useRef<SVGSVGElement>(null);
-  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
 
   useEffect(() => {
     let phase: Phase = 'rest';
@@ -210,14 +258,8 @@ export function Tile({ action, tone, group, icon, label, disabled: disabledProp 
       onClick={() => { if (!disabled) onActivate(action); }}
     >
       <svg ref={traceRef} className="trace" aria-hidden="true">
-        <defs>
-          <filter id={`${id}-soft`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" /></filter>
-          <mask id={`${id}-wet`}>
-            <rect width="100%" height="100%" fill="#fff" />
-            <ellipse className="trace-hole" cx="50%" cy="50%" rx="82%" ry="82%" fill="#000" filter={`url(#${id}-soft)`} />
-          </mask>
-        </defs>
-        <rect className="trace-flood" mask={`url(#${id}-wet)`} />
+        <path className="trace-flood" fillRule="evenodd" />
+        <path className="trace-ripple" />
         <rect className="trace-line" pathLength={1} />
       </svg>
       {icon && <span className="card-icon" aria-hidden="true"><Swap swapKey={iconKey(icon)} className="glyph-swap" leavingClass="glyph-leaving" fast={fast}>{icon}</Swap></span>}
