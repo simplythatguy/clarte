@@ -1,0 +1,546 @@
+{
+ "note": "Copied from prototypes/Gaze Lab (itself copied from prototypes/Eye Tracking; see its SOURCE.json and ADAPTATIONS.md). Every file is byte-identical to its source at the commit below; the worker bundle is Gaze Lab's build, whose quick-calibration options main/app turns on in src/eyes/tracker.ts.",
+ "commit": "bc1382fb593c77a0e199f36ad7ff22f09ce14f71",
+ "files": [
+  {
+   "path": "src/eyes/core/calibration-models.ts",
+   "from": "prototypes/Gaze Lab/src/core/calibration-models.ts",
+   "sha256": "0ed49c1f09201bd44eae3da26e37b537757a613739d2cbe24c974567a62f3ee6",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/camera-motion.ts",
+   "from": "prototypes/Gaze Lab/src/core/camera-motion.ts",
+   "sha256": "e0dc8a4ec7e5a406607b668c636b69401de1a8fa123608c06a35e9ee5d080a9b",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/dwell.ts",
+   "from": "prototypes/Gaze Lab/src/core/dwell.ts",
+   "sha256": "ceee6d3b8eae594ed9fe2bb75e72cd30738447776ad4a5284edda8da2807cbb5",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/geometric-gaze.ts",
+   "from": "prototypes/Gaze Lab/src/core/geometric-gaze.ts",
+   "sha256": "b453961268d87d8f04ae82d62e049ce8652031c228101b44b40dd6201520496f",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/head-position.ts",
+   "from": "prototypes/Gaze Lab/src/core/head-position.ts",
+   "sha256": "aa3a71a40e07a237c9030a54ca81c00b9e9343665a767c58364658d9473991d4",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/one-euro.ts",
+   "from": "prototypes/Gaze Lab/src/core/one-euro.ts",
+   "sha256": "d290406aa5a6dc873431b2d3413881bf6d445c921807e7fdae5d66dda10802cc",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/saved-calibration.ts",
+   "from": "prototypes/Gaze Lab/src/core/saved-calibration.ts",
+   "sha256": "cc75c923e2a3e04d4ee8a7fa6d6d07e234a5c10e23292b6cde39a8103f8cf0c9",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/tracking.ts",
+   "from": "prototypes/Gaze Lab/src/core/tracking.ts",
+   "sha256": "f2ca257d033e17ee9de018cd4c960b024cf32914d252628405dde1f82c26d1bf",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/training.ts",
+   "from": "prototypes/Gaze Lab/src/core/training.ts",
+   "sha256": "a5e35a881c06a72374bc1401f02cca560155d4e854cb13d60a7f58b477941a06",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/webeyetrack.ts",
+   "from": "prototypes/Gaze Lab/src/core/webeyetrack.ts",
+   "sha256": "edf2195fbfd28717297b7ab890c048b3622335b08c132a7bf5fc6780c0ad31d9",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/worker-client.ts",
+   "from": "prototypes/Gaze Lab/src/core/worker-client.ts",
+   "sha256": "401fd9f0d4c6c4a0626b0d11b1926d20854d80e3f3dfbbe6b4aef92cee7a3a1b",
+   "identical": true
+  },
+  {
+   "path": "src/eyes/core/worker-engine.ts",
+   "from": "prototypes/Gaze Lab/src/core/worker-engine.ts",
+   "sha256": "99fa0fe8d1652a024e60a42136e70825d67f608029de2c6acb34bea8a6b1c3ea",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/licenses/APACHE-2.0.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/licenses/APACHE-2.0.txt",
+   "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/BUILD.json",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/BUILD.json",
+   "sha256": "142eab4ab488b858311ebed49ead56580deb96df2e4891ed095696cb16fb9960",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/APACHE-2.0.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/APACHE-2.0.txt",
+   "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/DEPENDENCIES.json",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/DEPENDENCIES.json",
+   "sha256": "1dc04847f9bd5592a4f1b2d6cf5b7c0bfcea9e2fdc91ec8401bf04e992b8e014",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@tensorflow_tfjs-core_node_modules_@types_offscreencanvas_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@tensorflow_tfjs-core_node_modules_@types_offscreencanvas_LICENSE",
+   "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@types_long_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@types_long_LICENSE",
+   "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@types_node_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@types_node_LICENSE",
+   "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@types_node-fetch_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@types_node-fetch_LICENSE",
+   "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@types_offscreencanvas_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@types_offscreencanvas_LICENSE",
+   "sha256": "dea9265341829002e2c23a7372393eb2ed6e26085fb623f38a4ba0af833f30a6",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@types_seedrandom_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@types_seedrandom_LICENSE",
+   "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_@webgpu_types_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_@webgpu_types_LICENSE",
+   "sha256": "ad88400fc55c2871ba2ed33930dc13001ef01907c2ddcbfa3caa8656e9142f05",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ansi-regex_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ansi-regex_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ansi-styles_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ansi-styles_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_argparse_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_argparse_LICENSE",
+   "sha256": "c8442419dc614089ea022b3da6bfc089b41a58fb7b9030d1e651f2f36189dce2",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_asynckit_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_asynckit_LICENSE",
+   "sha256": "1953150d5d4b10c7542cee6f6e0c613b2682545233f069d75cfff1936386ce10",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_call-bind-apply-helpers_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_call-bind-apply-helpers_LICENSE",
+   "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_chalk_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_chalk_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_cliui_LICENSE.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_cliui_LICENSE.txt",
+   "sha256": "2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_color-convert_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_color-convert_LICENSE",
+   "sha256": "693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_color-name_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_color-name_LICENSE",
+   "sha256": "c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_combined-stream_License",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_combined-stream_License",
+   "sha256": "47eb8ca82c798246774946d1be0f9aa08f025fa8325ced0947aeeb4c05fe5547",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_core-js_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_core-js_LICENSE",
+   "sha256": "66c014a988c01fdfd53ea344563c0aca795b321c66fe619a0cf40049fe0912de",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_delayed-stream_License",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_delayed-stream_License",
+   "sha256": "47eb8ca82c798246774946d1be0f9aa08f025fa8325ced0947aeeb4c05fe5547",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_dunder-proto_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_dunder-proto_LICENSE",
+   "sha256": "2b770a704c15de238c3f622b01b0044ddd60b49ee30608ea6991ebf19db7a7a1",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_emoji-regex_LICENSE-MIT.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_emoji-regex_LICENSE-MIT.txt",
+   "sha256": "483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_es-define-property_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_es-define-property_LICENSE",
+   "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_es-errors_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_es-errors_LICENSE",
+   "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_es-object-atoms_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_es-object-atoms_LICENSE",
+   "sha256": "5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_es-set-tostringtag_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_es-set-tostringtag_LICENSE",
+   "sha256": "1a3aeb1f1398bd697d57c3c585faadf59d825aca6e3162cd7eeb72ff76eb2466",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_escalade_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_escalade_license",
+   "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_form-data_License",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_form-data_License",
+   "sha256": "e5b780d4f38d1d3328e3e53186c4e62d3fa149ea6f2bacd5de5ad0c30ac85343",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_function-bind_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_function-bind_LICENSE",
+   "sha256": "773e131a7684726005a7e4688a80b4620033bc08499bc1404dd1a1eb3bca725e",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_get-caller-file_LICENSE.md",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_get-caller-file_LICENSE.md",
+   "sha256": "902dbb4154679fb2b8d7c33878183f45b268d01eae5e5033dddaa8852d45f213",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_get-intrinsic_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_get-intrinsic_LICENSE",
+   "sha256": "39c5ec504cf6bd5cd782a7c695828e09189df79f5d94840e4f08feb97b9fd416",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_get-proto_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_get-proto_LICENSE",
+   "sha256": "be46ce1e3b0479af9ce82d22b465a6d7d2ff084fca0aaf3d54172da2b5eb5781",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_gopd_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_gopd_LICENSE",
+   "sha256": "d90bf0a089da4cf43d644ed240a0b3825dcdb705e64e38371d56995a4cc9e4c5",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_has-flag_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_has-flag_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_has-symbols_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_has-symbols_LICENSE",
+   "sha256": "206c1adcf206dc0031b11232f5b054ec5f1662407ab1ca415247921cab2068ab",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_has-tostringtag_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_has-tostringtag_LICENSE",
+   "sha256": "e2560e002e13281578c75c850061d9255c33d16d732939e8c2db64c2506642fa",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_hasown_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_hasown_LICENSE",
+   "sha256": "bf9b0d665be2a689851eea667ca9f42066ea1d903b38349c51e6a44b2577680a",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_is-any-array_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_is-any-array_LICENSE",
+   "sha256": "22ecd753de087c4ab9db906a518daf58a2c2e8a8336cebc43649b5587d4c6650",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_is-fullwidth-code-point_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_is-fullwidth-code-point_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_long_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_long_LICENSE",
+   "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_math-intrinsics_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_math-intrinsics_LICENSE",
+   "sha256": "2b770a704c15de238c3f622b01b0044ddd60b49ee30608ea6991ebf19db7a7a1",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_mime-db_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_mime-db_LICENSE",
+   "sha256": "cc1dfd4dafa27271e8212cd3b274eeb3f262e40a6fdab36ddc3f9696f706f58b",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_mime-types_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_mime-types_LICENSE",
+   "sha256": "71f83c4c0621102a56d9853812777b85751bce7e9726f686f5b056c1f8a4b0e6",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ml-array-max_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ml-array-max_LICENSE",
+   "sha256": "0103da9edf0666a0c855f75e6d661d19bad8e51bcdeb0eafac5c70ace30da838",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ml-array-min_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ml-array-min_LICENSE",
+   "sha256": "b7c250e3df983b26576d03a86baeb2ce7432ce5bd4666553686a2ac33cade9e9",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ml-array-rescale_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ml-array-rescale_LICENSE",
+   "sha256": "b7c250e3df983b26576d03a86baeb2ce7432ce5bd4666553686a2ac33cade9e9",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_ml-matrix_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_ml-matrix_LICENSE",
+   "sha256": "ac84c8235d52c5ed36243732bd33b96e37f2f8879a701682023194ad5dad8e67",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_node-fetch_LICENSE.md",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_node-fetch_LICENSE.md",
+   "sha256": "84eaa985e1ef71b8c630e8aba73404c219ff425c6fdb45c62e998b58d4fbdc8e",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_regenerator-runtime_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_regenerator-runtime_LICENSE",
+   "sha256": "51887a3d47051ac2fce1210562e5b9fe0830a8a8fabeb272c2d586eeb18a05fd",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_require-directory_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_require-directory_LICENSE",
+   "sha256": "a92e52eb1fa7cd746e3827bf01d3a3589bbc8e1e51348b1da042aad165525ad1",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_safe-buffer_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_safe-buffer_LICENSE",
+   "sha256": "c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_sprintf-js_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_sprintf-js_LICENSE",
+   "sha256": "a4cdda44b5adea4731d53dcae78fb5124f8fd853e994f01e25d8c33a7daf818b",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_string_decoder_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_string_decoder_LICENSE",
+   "sha256": "11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_string-width_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_string-width_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_strip-ansi_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_strip-ansi_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_supports-color_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_supports-color_license",
+   "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_undici-types_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_undici-types_LICENSE",
+   "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_webidl-conversions_LICENSE.md",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_webidl-conversions_LICENSE.md",
+   "sha256": "a889cc4dbee2ae172c179856b25d75b0b7a5a136e1b97109b9b590b2ff1a879c",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_whatwg-url_LICENSE.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_whatwg-url_LICENSE.txt",
+   "sha256": "6b7a1792144374d84dc5ed3655b8bbe2754d06f4f1f64a9fb8b9de2d6f448b85",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_wrap-ansi_license",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_wrap-ansi_license",
+   "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_y18n_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_y18n_LICENSE",
+   "sha256": "2034cce3b6fafcddd642c4175e01d3ddfc332a53b9f20fdc46b1466dc89ac469",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_yargs_LICENSE",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_yargs_LICENSE",
+   "sha256": "2f1a503bfab84b3ba7393627308b3274501e459e3b5185bbb56bbf16cb1602d4",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/node_modules_yargs-parser_LICENSE.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/node_modules_yargs-parser_LICENSE.txt",
+   "sha256": "365496ca1f56da40b23c9815fc40fa9005847b2f8f8fd1c1a4929ef25ec8cd1d",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/NOTICE.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/NOTICE.txt",
+   "sha256": "a6abf96857e9c20f2c51f4cae1d2a43fc5fb3e5e3eb1dffbfec263d9d7c34b74",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/licenses/WebEyeTrack-MIT.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/licenses/WebEyeTrack-MIT.txt",
+   "sha256": "f779143d708f5f3d510a155fa751fbf205e0aace2660ccfce972fc9503992c19",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/vision/face_landmarker.task",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/vision/face_landmarker.task",
+   "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/vision/wasm/vision_wasm_internal.js",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/vision/wasm/vision_wasm_internal.js",
+   "sha256": "2b120e1c7272905719f7893e5f09e033ead468b46b510e6b490d93e3d94ec69c",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/vision/wasm/vision_wasm_internal.wasm",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/vision/wasm/vision_wasm_internal.wasm",
+   "sha256": "35d67ac01df034a04a38cb0533d6438595bcc65c485aed61dd47c86c6c3839cd",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/vision/wasm/vision_wasm_nosimd_internal.js",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/vision/wasm/vision_wasm_nosimd_internal.js",
+   "sha256": "d206ba4e27c42a5863b4001c6d9366345f4507979cd6efd087a149ef7781ccd3",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/vision/wasm/vision_wasm_nosimd_internal.wasm",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/vision/wasm/vision_wasm_nosimd_internal.wasm",
+   "sha256": "17c2bff095305fcae98faa0817cbf72f13df9baf76f2067992a8624ef54d18cb",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/web/group1-shard1of1.bin",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/web/group1-shard1of1.bin",
+   "sha256": "c030a762a2d21ac0f3c59700a723b2d8790f2003b3f8e72fbe31129fcb234e58",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/web/model.json",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/web/model.json",
+   "sha256": "a214f074ccd4724cf4ebf008814a05485e7eaa5faf5aaeb85e66b24a1af55688",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/worker.js",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/worker.js",
+   "sha256": "f26e95813ee4dd151d32c8a10830b32729454579f612109d9f830a7dc6a48509",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/worker.js.LEGAL.txt",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/worker.js.LEGAL.txt",
+   "sha256": "a061d880425bc63a5682ef257140b72f66b39f2b5e9fca88f700e3ead23dba60",
+   "identical": true
+  },
+  {
+   "path": "public/vendor/webeyetrack/worker.js.map",
+   "from": "prototypes/Gaze Lab/public/vendor/webeyetrack/worker.js.map",
+   "sha256": "58c999be8ec35b4f17f1f03d819ebe28d5aed412d0a62a51280c75a3972c3922",
+   "identical": true
+  }
+ ]
+}

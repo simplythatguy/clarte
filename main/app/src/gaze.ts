@@ -62,20 +62,21 @@ export function useLooked(): string | null {
 }
 
 /**
- * The mouse as a gaze tracker. A real tracker streams samples continuously; a still mouse sends
+ * The mouse as a gaze tracker, while `active()` says so (the eye tracker is off, failed or not yet
+ * calibrated, or `?input=mouse`). A real tracker streams samples continuously; a still mouse sends
  * no events, and the shared engine counts 600 ms without samples as lost gaze. So, like
  * `attachPointer`, this feeds pointer positions, and it also repeats the last position at 30 Hz
  * while the pointer is over the page (which also keeps simulator noise moving). Leaving the
  * window is looking away.
  */
-export function attachPointerStream(target: GazeEngine = engine): () => void {
+export function attachPointerStream(target: GazeEngine = engine, active: () => boolean = () => true): () => void {
   let last: { x: number; y: number } | null = null;
-  const move = (e: PointerEvent) => { outside = false; last = { x: e.clientX, y: e.clientY }; target.sample(last.x, last.y, e.timeStamp); };
+  const move = (e: PointerEvent) => { last = { x: e.clientX, y: e.clientY }; if (!active()) return; outside = false; target.sample(last.x, last.y, e.timeStamp); };
   // Leaving the page is looking away: cancel the dwell now (blink grace is for blinks, not exits).
-  const leave = () => { last = null; outside = true; target.sample(null, null); target.cancel(); };
+  const leave = () => { last = null; if (!active()) return; outside = true; target.sample(null, null); target.cancel(); };
   // Off the page is "no eyes": keep reporting it, so the engine drops the quadrant after its
   // 200 ms blink grace and cancels the dwell (looking off screen cancels, BRIEF "Selection").
-  const timer = setInterval(() => { if (last) target.sample(last.x, last.y); else target.sample(null, null); }, 33);
+  const timer = setInterval(() => { if (!active()) { outside = false; return; } if (last) target.sample(last.x, last.y); else target.sample(null, null); }, 33);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerdown', move);
   document.addEventListener('pointerleave', leave);

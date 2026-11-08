@@ -92,7 +92,7 @@ The shared folder is owned by the v0 brief, not by any one style. A style that n
 
 Style 8 moved on to become UI v1's first prototype: [`../v1/s1`](../v1/s1/DESIGN.md) (2026-11-08).
 
-Run everything with one command from the repository root: `./clarte ui` (Windows: `clarte ui`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
+Run everything with one command from the repository root: `./clarte ui-v0` (Windows: `clarte ui-v0`) sets up Node, the six styles and the prediction engine, starts them all and opens http://localhost:5100; see the root README. With your own Node and engine set up, the underlying script does the same and starts any style server and the engine that are not already running:
 
 ```sh
 node prototypes/UI/v0/s_all/serve.mjs

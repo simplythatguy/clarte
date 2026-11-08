@@ -30,14 +30,8 @@ export const PHASES = [
   'options-many-end',
   'worst-case',
   'worst-nomatch',
-  'calibrate-position',
-  'calibrate-points',
-  'calibrate-validate',
-  'calibrate-ready',
-  'setup-eyes',
-  'setup-voice',
-  'setup-voice-sample',
-  'setup-ready',
+  'welcome',
+  'voice',
 ] as const;
 
 export type PhaseName = (typeof PHASES)[number];
@@ -126,21 +120,9 @@ export function seedFor(name: PhaseName, base: State): State {
       const worst = withTurns(clean, WORST);
       return { ...worst, dismissed: worst.nextId - 1, composition: typeGroupsOf(typeWord(EMPTY_COMPOSITION, 'ask'), 'wojciechowski') };
     }
-    case 'calibrate-position':
-      return { ...clean, screen: { kind: 'calibration', step: 'position' } };
-    case 'calibrate-points':
-      return { ...clean, screen: { kind: 'calibration', step: 'points' } };
-    case 'calibrate-validate':
-      return { ...clean, screen: { kind: 'calibration', step: 'validate' } };
-    case 'calibrate-ready':
-      return { ...clean, screen: { kind: 'calibration', step: 'ready' } };
-    case 'setup-eyes':
-      return { ...clean, screen: { kind: 'setup', step: 'eyes' } };
-    case 'setup-voice':
-      return { ...clean, screen: { kind: 'setup', step: 'voice' } };
-    case 'setup-voice-sample':
-      return { ...clean, screen: { kind: 'setup', step: 'voice', sample: true } };
-    case 'setup-ready':
-      return { ...clean, screen: { kind: 'setup', step: 'ready' } };
+    case 'welcome':
+      return { ...clean, screen: { kind: 'welcome' } };
+    case 'voice':
+      return { ...clean, screen: { kind: 'voice' } };
   }
 }

@@ -25,7 +25,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .tools
-          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/clarte.py', 'clarte', 'clarte.cmd', '**/requirements*.txt', '**/build-requirements.txt', '**/overrides.txt', 'prototypes/**/package-lock.json') }}
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/clarte.py', 'clarte', 'clarte.cmd', '**/requirements*.txt', '**/build-requirements.txt', '**/overrides.txt', 'prototypes/**/package-lock.json', 'main/**/package-lock.json') }}
           restore-keys: |
             tools-${{ runner.os }}-${{ runner.arch }}-
       - name: clarte check

@@ -1,8 +1,8 @@
-# UI v1 · s1
+# Clarte app (UI v1 · s1)
 
 The first UI v1 prototype (owner, 2026-11-08). It began as UI v0's style 8 ("Cloud, second pass", itself a copy of style 7 · Cloud, PR #17) and moved here from `prototypes/UI/v0/s8`. The sections below record its decisions in the order they were made; where a later one replaces an earlier one, the later one says so. For what it inherits, see v0's [style 7](../../v0/s7/DESIGN.md) and [style 6](../../v0/s6/DESIGN.md).
 
-It still runs on UI v0's shared engine (`prototypes/UI/v0/shared`: gaze, decoder, composer, speech, sound, quadrants and the layout check). Run it with `npm install && npm run dev` in this folder, then open `http://localhost:5201/?onboarding=off`, or add `&palette=vibrant` for the Vibrant palette. `npm run check` walks every phase with the layout check while the dev server runs.
+It now lives in `main/app` as the app itself (owner, 2026-11-08), with v0's shared engine copied into `src/core`, the prediction engine's words, the first run (Welcome, eye calibration, voice cloning) and the webcam eye tracker; see [main/README.md](../README.md). Run it with `./clarte ui` from the repository root, or `npm ci && npm run dev` in this folder, then open `http://localhost:5200/?onboarding=off`, or add `&palette=vibrant` for the Vibrant palette. `npm run check` walks every phase with the layout check while the dev server runs.
 
 ## The main card in Q4, Menu and Delete in Q1 (owner, 2026-11-08)
 

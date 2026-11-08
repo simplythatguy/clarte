@@ -14,9 +14,13 @@ cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_
 ```
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
-URLs; Ctrl+C stops everything it started. The apps are `ui` (the S0–S6 switcher with the
-prediction engine), `predict` (the prediction engine and its test page), `voice` and `eyes`; `clarte` alone lists them,
+URLs; Ctrl+C stops everything it started. The apps are `ui` (Clarte itself, from [`main/`](main/README.md):
+the conversation screen with eye calibration and the prediction engine), `ui-v0` (the UI v0 S0–S6 switcher),
+`predict` (the prediction engine and its test page), `voice` and `eyes`; `clarte` alone lists them,
 and `clarte check` starts and smoke-tests every app without a browser (this is what CI runs).
+
+[`main/`](main/README.md) holds the app as it stands: `main/app` and the prediction engine in `main/engine`.
+`prototypes/` keeps the explorations it was put together from.
 
 The first run downloads about 1.6 GB (pinned uv, Python, Node, the 880 MB of models and the
 dependencies) into the git-ignored `.tools/` folder and the prototypes' own `.venv` and

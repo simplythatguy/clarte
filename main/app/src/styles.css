@@ -31,7 +31,6 @@
   --destructive: #D42A1E;
   /* The selection box around the word in progress (editor reference). */
   --select-line: #C9C6CF;
-  --report-hairline: #DAD7DF;
   /* Letter groups (owner palette, 2026-11-08): vibrant letters on the same grey glass as every other
      card, Q5–Q8. The palette's yellow (#FFBE0B, 1.5:1 on the grey) could not be read, so the same
      palette's purple takes its place (owner's pick of the options). On the grey: purple 5.2:1,
@@ -137,6 +136,9 @@ body {
    widths and the space between them, drawn above the neighbour it covers. */
 .card.card-span { width: calc(var(--card-w) * 2 + var(--space)); }
 .cell:has(> .card-span) { z-index: 3; }
+/* A tall card spans its quadrant and the one below it (the voice page's Continue, Q4–Q8). */
+.card.card-tall { height: calc(var(--card-h) * 2 + var(--space)); }
+.cell:has(> .card-tall) { z-index: 3; }
 /* A list longer than five cards pages two at a time over Q5–Q6 (Pager.tsx): a strip clipped to the
    two cards' own box, so a sliding card never crosses into the arrows' quadrants. One arrow press
    slides the row one card (--ease-move, 320 ms); under reduced motion it moves at once. */
@@ -556,132 +558,18 @@ body {
 .thread-behind + .thread-title { z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .thread-behind > .thread { transition-property: opacity; } }
 
-/* ── Setup reports ── */
-.layer[data-surface='report'] .card { padding: 22px 26px 24px; gap: 12px; }
-
-.report {
-  grid-area: 1 / 2 / 3 / 4;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  min-width: 0;
-  min-height: 0;
-  padding: 0 40px;
-  color: var(--ink);
-}
-.report-short { grid-area: 1 / 2 / 2 / 4; grid-template-rows: minmax(0, 1fr); }
-/* Each half lines up with one backend row; text keeps 40 px from the row boundary. */
-.report-upper { display: flex; flex-direction: column; min-height: 0; padding: var(--edge-y) 0 40px; }
-.report-lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 40px; align-items: start; min-height: 0; padding: 40px 0 var(--edge-y); }
-.report-column { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
-
-.report-top { display: flex; align-items: center; justify-content: space-between; height: 48px; flex: none; font-size: calc(20px * var(--scale)); }
-.report-counter { display: inline-flex; align-items: center; gap: 14px; }
-.report-counter b { font-weight: 700; }
-.report-bars { display: inline-flex; gap: 3px; }
-.report-bars i { display: block; width: 5px; height: 18px; border-radius: 1px; background: currentColor; opacity: 0.22; }
-.report-bars i[data-on] { opacity: 1; }
-.report-where { font-weight: 700; padding-bottom: 6px; border-bottom: 1px solid var(--report-hairline); }
-.report-sample { font-weight: 450; color: var(--ink-2); }
-
-.report-heading { margin: auto 0 0; font-size: calc(30px * var(--scale)); font-weight: 450; line-height: 1.2; }
-.report-heading b { font-weight: 700; }
-.report-heading > span[aria-hidden] { color: var(--ink-3); }
-.report-detail { color: var(--ink-2); }
-
-.metrics { display: flex; flex-wrap: wrap; gap: 20px 44px; margin-top: 28px; }
-.metric { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.metric-caption { font-size: calc(20px * var(--scale)); color: var(--ink-2); }
-.metric-value { font-size: calc(36px * var(--scale)); font-weight: 650; line-height: 1.1; white-space: nowrap; }
-.metric-value small, .figure-value small { font-size: 0.55em; font-weight: 500; color: var(--ink-2); margin-left: 0.25em; }
-
-/* The thin progress line under a section, as in the report reference. */
-.rule-line { position: relative; height: 1px; margin-top: 32px; background: var(--report-hairline); flex: none; }
-.rule-line i { position: absolute; left: 0; top: -1px; height: 3px; border-radius: 2px; background: var(--ink); transition: width var(--dur-phase) var(--ease-state); }
-
-.figure { display: flex; gap: 22px; align-items: stretch; }
-.figure-bar { width: 8px; border-radius: 2px; background: var(--ink); flex: none; }
-.figure-value { margin: 0; font-size: calc(96px * var(--scale)); font-weight: 600; line-height: 0.95; }
-.figure-caption { margin: 12px 0 0; font-size: calc(22px * var(--scale)); color: var(--ink-2); line-height: 1.3; }
-.figure-caption b { color: var(--ink); font-weight: 700; }
-
-.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-.rows li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--report-hairline); font-size: calc(20px * var(--scale)); }
-.row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-name b { font-weight: 650; }
-.row-value { color: var(--ink-2); white-space: nowrap; }
-
-.chart-caption { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; white-space: nowrap; margin-top: 14px; font-size: calc(20px * var(--scale)); color: var(--ink-2); }
-.chart-key { display: inline-flex; align-items: center; gap: 8px; }
-.chart-key i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink-2); }
-.chart-key i[data-seen] { background: var(--ink); border-color: var(--ink); }
-
-/* Places chart: the eight places as a 2 × 4 map. */
-.places { margin: 0; }
-.places-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 6px; aspect-ratio: 2 / 1; }
-.place { display: grid; place-items: center; border-radius: 14px; border: 1.5px solid var(--report-hairline); }
-.place i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink-3); transition: background-color var(--dur-cue) var(--ease-state), border-color var(--dur-cue) var(--ease-state); }
-.place[data-seen] i { background: var(--ink); border-color: var(--ink); }
-
-/* Voice strip: two minutes, clearest first; the one-minute mark is ElevenLabs' recommendation. */
-.strip { margin: 0; }
-.strip-track { position: relative; display: flex; gap: 3px; height: 64px; padding-top: 28px; }
-.strip-track i { display: block; min-width: 3px; border-radius: 4px; border: 1.5px solid var(--ink-3); }
-.strip-rest { display: block; }
-.strip-track i[data-on] { background: var(--ink); border-color: var(--ink); }
-.strip-track i[data-other] { background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, transparent 2px 6px); }
-.strip-empty .strip-track { border-bottom: 1.5px dashed var(--report-hairline); }
-.strip-mark { position: absolute; top: 0; bottom: -8px; width: 0; border-left: 1.5px solid var(--ink); }
-.strip-mark span { position: absolute; top: 0; left: 8px; font-size: calc(18px * var(--scale)); color: var(--ink-2); white-space: nowrap; line-height: 1; }
-
-/* A warning in the Q5 rest zone, as the report reference's corner warning. */
-.report-note {
-  grid-area: 2 / 1;
-  z-index: 1;
-  align-self: end;
-  justify-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  max-width: var(--card-w);
-  padding-bottom: calc(var(--edge-y) + 8px);
-  text-align: center;
-  font-size: calc(20px * var(--scale));
-  line-height: 1.3;
-}
-.report-note-title { color: var(--ink-2); }
-.report-note-body { font-weight: 650; }
-.report-note .icon { width: 44px; height: 44px; margin-top: 10px; }
-/* Short windows: the lower report half holds the figure and two rows, never content at the edge. */
-@media (max-height: 820px) {
-  .rows li:nth-child(n + 3) { display: none; }
-  .report-column { gap: 20px; }
-  .figure-value { font-size: calc(80px * var(--scale)); }
-}
-/* Large text on the setup reports: the cards (the actions) scale fully; the report's figures grow
-   to about 150% and keep their two halves by showing the first two metrics, one row and no chart
-   key. Nothing the person must read to act is dropped: every action is on a card. */
-:root[data-large] .report-top { font-size: min(calc(20px * var(--scale)), 28px); }
-:root[data-large] .report-heading { font-size: min(calc(30px * var(--scale)), 44px); }
-:root[data-large] .metrics { margin-top: 16px; gap: 12px 36px; flex-wrap: nowrap; }
-:root[data-large] .metrics > :nth-child(n + 3) { display: none; }
-:root[data-large] .metric-caption { font-size: min(calc(20px * var(--scale)), 28px); }
-:root[data-large] .metric-value { font-size: min(calc(36px * var(--scale)), 52px); }
-:root[data-large] .rule-line { margin-top: 20px; }
-:root[data-large] .figure-value { font-size: min(calc(96px * var(--scale)), 120px); }
-:root[data-large] .figure-caption { font-size: min(calc(22px * var(--scale)), 30px); }
-:root[data-large] .chart-caption { display: none; }
-:root[data-large] .strip-mark span { font-size: min(calc(18px * var(--scale)), 24px); }
-:root[data-large] .rows li:nth-child(n + 2) { display: none; }
-:root[data-large] .rows li { font-size: min(calc(20px * var(--scale)), 28px); }
-:root[data-large] .report-note { font-size: min(calc(20px * var(--scale)), 26px); }
-@media (max-height: 820px) {
-  :root[data-large] .rows { display: none; }
-  :root[data-large] .figure-value { font-size: min(calc(80px * var(--scale)), 96px); }
-  :root[data-large] .report-heading { font-size: min(calc(30px * var(--scale)), 38px); }
-  :root[data-large] .metric-value { font-size: min(calc(36px * var(--scale)), 44px); }
-}
+/* ── First run ── */
+/* The greeting and the voice note sit at the centre of the screen: Q2, Q3, Q6 and Q7 are rest zones here. */
+.onboarding { position: absolute; inset: 0; grid-column: 1 / -1; grid-row: 1 / -1; display: grid; place-items: center; padding: 0 var(--card-w); text-align: center; pointer-events: none; }
+/* The voice note is centred between the left edge and the right edge of Q3–Q7, beside Continue. */
+.onboarding.onboarding-voice { grid-column: 1 / 4; padding: 0; }
+/* The voice placeholder (owner, 2026-11-08): one line of ordinary text, not a title. */
+.onboarding-note { margin: 0; font-size: var(--fs-turn); font-weight: 500; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+/* The camera feeds the tracker only; it is never shown. */
+.camera-feed { display: none !important; }
+.cal-caption { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.cal-caption[data-hidden='true'] { opacity: 0; }
+.cal-message { text-wrap: balance; }
 
 :root[data-palette='vibrant'] {
   /* White letters on solid group colours: the deeper inks keep their contrast. */

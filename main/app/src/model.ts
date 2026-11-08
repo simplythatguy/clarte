@@ -27,18 +27,17 @@ export type Turn = {
 };
 
 export type MenuPage = 'main' | 'settings' | 'dwell' | 'appearance' | 'sound' | 'dev-tools';
-export type CalibrationStep = 'position' | 'points' | 'validate' | 'ready';
-/** The first-run setup pages (owner concept: a report per step). */
-export type SetupStep = 'eyes' | 'voice' | 'ready';
-export const SETUP_STEPS: SetupStep[] = ['eyes', 'voice', 'ready'];
 
 export type Screen =
   | { kind: 'talk' }
   | { kind: 'menu'; page: MenuPage; at?: number }
   /** Every whole word the typed groups spell, to choose from; `at` is the first one in view. */
   | { kind: 'options'; at: number }
-  | { kind: 'calibration'; step: CalibrationStep }
-  | { kind: 'setup'; step: SetupStep; sample?: boolean };
+  /** The first run (Onboarding.tsx): Welcome, then calibration, then voice cloning. */
+  | { kind: 'welcome' }
+  /** Eye calibration; `then` is where it leads once a calibration is in use. */
+  | { kind: 'calibration'; then: 'voice' | 'talk' }
+  | { kind: 'voice' };
 
 /** What the device is doing out loud right now. `token` 0 marks a static debug frame. */
 export type Live =
@@ -89,19 +88,16 @@ export type State = {
   dismissed: number | null;
   settings: Settings;
   nextId: number;
-  /** When the simulated calibration last finished, this session. */
-  calibratedAt: number | null;
 };
 
 export const INITIAL_STATE: State = {
-  screen: { kind: 'setup', step: 'eyes' },
+  screen: { kind: 'welcome' },
   live: { kind: 'quiet' },
   turns: [],
   composition: EMPTY_COMPOSITION,
   dismissed: null,
   settings: DEFAULT_SETTINGS,
   nextId: 1,
-  calibratedAt: null,
 };
 
 export type Action =
@@ -123,7 +119,6 @@ export type Action =
   | { type: 'speak-cancel' }
   | { type: 'say-again-expired' }
   | { type: 'screen'; screen: Screen }
-  | { type: 'calibrated'; at: number }
   | { type: 'phrase'; text: string }
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'replace'; state: State };
@@ -236,8 +231,7 @@ export function secondKey(fn: SecondFn): string {
 /** A name for every distinct screen state, used by the layout check and the debug hook. */
 export function phaseOf(state: State, words: Words): string {
   const { screen } = state;
-  if (screen.kind === 'calibration') return `calibrate-${screen.step}`;
-  if (screen.kind === 'setup') return `setup-${screen.step}`;
+  if (screen.kind === 'welcome' || screen.kind === 'voice' || screen.kind === 'calibration') return screen.kind;
   if (screen.kind === 'menu') return screen.page === 'main' ? 'menu' : `menu-${screen.page}`;
   if (screen.kind === 'options') return 'options';
   const { primary, second } = slotsFor(state, words);
@@ -323,8 +317,6 @@ export function reducer(state: State, action: Action): State {
       return state.live.kind === 'spoken' ? { ...state, live: { kind: 'quiet' } } : state;
     case 'screen':
       return { ...state, screen: action.screen };
-    case 'calibrated':
-      return { ...state, calibratedAt: action.at };
     case 'phrase':
       return { ...compose(state, { type: 'phrase', text: action.text }), screen: { kind: 'talk' }, live: state.live.kind === 'spoken' ? { kind: 'quiet' } : state.live };
     case 'settings':

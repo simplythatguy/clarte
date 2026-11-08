@@ -1,248 +1,114 @@
 /**
- * Simulated calibration and first run (MOTION.md "The calibration sequence"), on the working
- * light canvas so the calibrated brightness is the working brightness (RESEARCH §10).
+ * Eye calibration, driving the real tracker (`eyes/session.ts`) with UI v1's calibration visuals.
  *
- *  1. Position: one ring, 38% of the shorter side. The caption types "Sit so your face fills the
- *     circle." At 1.3 s the simulated check passes: stroke to accent and a 12% accent fill over
- *     200 ms; the caption types "Good."; a 600 ms beat.
- *  2. Nine points: all outlines fade in together at 30% ink. The guide dot travels to each point
- *     (1200 ms, the move curve), the point's ring fills clockwise in accent over the 1800 ms settle
- *     (the same arc as the app's dwell ring), blooms (450 ms) and returns to a 30% outline; a
- *     400 ms beat; then the next. Caption: "Follow the dot."
- *  3. Check: four other points, travel 900 ms, settle 1200 ms. Caption: "One more look."
- *  4. Ready: title and result in the rest zone, Start in Q1 (the primary quadrant).
- * Escape skips. Under reduced motion the guide jumps and rings fill in one step.
+ *  1. Face: one ring, 38% of the shorter side, until the camera finds a face with open eyes.
+ *  2. Intro, 2 s: "Look at each dot".
+ *  3. Eight dots, one at the centre of each backend quadrant in snake order. The guide travels to
+ *     the dot (600 ms), rests (300 ms), then the dot's ring fills clockwise while the tracker
+ *     collects (1 s), as the app's dwell ring fills.
+ *  4. "Calibrating" while the worker trains.
+ *
+ * Gaze cannot select anything here: the tracker is not calibrated yet. A failure shows its message
+ * with Try again (Q4) and Use the mouse (Q1), which a click or Enter activates.
+ *
+ * This is a view only. The flow (starting the camera, arming the run, leaving when the new
+ * calibration is in use, Escape) lives in App, because the stage keeps a copy of an outgoing screen
+ * for its cross-fade and that copy must not start anything.
  */
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { CalibrationStep } from './model.ts';
-import { play } from './core/sound.ts';
+import { useEffect, useRef } from 'react';
+import { RUN_MS, TIMING, beginRun, faceInView, positionAt, runDots, tickRun, useEyesStatus } from './eyes/session.ts';
 import { Tile } from './Tile.tsx';
-import { ArrowRight } from './icons.tsx';
+import { ArrowRight, Back } from './icons.tsx';
 
-type Point = [number, number];
-
-const POINTS: Point[] = [
-  [0.05, 0.08], [0.5, 0.08], [0.95, 0.08],
-  [0.05, 0.5], [0.5, 0.5], [0.95, 0.5],
-  [0.05, 0.92], [0.5, 0.92], [0.95, 0.92],
-];
-const CHECKS: Point[] = [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]];
-const TIMING = { points: { move: 1200, settle: 1800 }, validate: { move: 900, settle: 1200 } };
-const BEAT = 400;
 const R = 13;
 const C = 100; // pathLength
-const TYPE_MS = 32;
-const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
-const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-type Line = { text: string; key?: string };
-
-/** Caption lines typing themselves at 32 ms per character, 180 ms rest after punctuation. */
-function useTyped(lines: Line[]): { done: number; typed: number } {
-  const [state, setState] = useState({ done: 0, typed: 0 });
-  const progress = useRef({ done: 0, typed: 0 });
-  useEffect(() => {
-    if (reduce()) { progress.current = { done: lines.length, typed: 0 }; setState(progress.current); return; }
-    let timer: ReturnType<typeof setTimeout>;
-    const tick = () => {
-      const { done, typed } = progress.current;
-      if (done >= lines.length) return;
-      const text = lines[done].text;
-      const next = typed + 1 > text.length ? { done: done + 1, typed: 0 } : { done, typed: typed + 1 };
-      progress.current = next;
-      setState(next);
-      const ch = text[next.typed - 1] ?? '';
-      timer = setTimeout(tick, /[.,]/.test(ch) ? TYPE_MS + 180 : TYPE_MS);
-    };
-    timer = setTimeout(tick, TYPE_MS);
-    return () => clearTimeout(timer);
-  }, [lines]);
-  return state;
-}
-
-function renderLine(line: Line, count: number) {
-  const text = line.text.slice(0, count);
-  if (!line.key) return text;
-  const at = line.text.indexOf(line.key);
-  if (at < 0 || count <= at) return text;
-  const end = Math.min(count, at + line.key.length);
-  return <>{text.slice(0, at)}<mark>{text.slice(at, end)}</mark>{text.slice(end)}</>;
-}
-
-/** A white pill holding one line at a time; finished lines settle to secondary ink. */
-function Caption({ lines, style }: { lines: Line[]; style: CSSProperties }) {
-  const { done, typed } = useTyped(lines);
-  return (
-    <p className="caption" style={style} aria-live="polite">
-      {lines.map((line, i) => {
-        if (i > done || (i === done && typed === 0 && i > 0)) return null;
-        const finished = i < done;
-        return (
-          <span key={i} className={`caption-line${i < lines.length - 1 && (finished || i < done) ? ' done-line' : ''}`}>
-            {/* The pill holds the whole line's size from the start; the typed text sits over it. */}
-            <span className="caption-reserve" aria-hidden="true">{line.text}</span>
-            <span className="caption-typed">
-              {renderLine(line, finished ? line.text.length : typed)}
-              {!finished && <i className="caret" aria-hidden="true" />}
-            </span>
-          </span>
-        );
-      })}
-    </p>
-  );
-}
-
-function px(p: Point): { x: number; y: number } {
-  return { x: p[0] * window.innerWidth, y: p[1] * window.innerHeight };
-}
-
-/** The targets, a travelling guide dot, an arc that fills per point, one bloom per point. */
-function PointRun({ points, timing, onDone }: { points: Point[]; timing: { move: number; settle: number }; onDone: () => void }) {
-  const [active, setActive] = useState(-1);
-  const guide = useRef<HTMLSpanElement>(null);
-  const arcs = useRef<(SVGCircleElement | null)[]>([]);
-  const bloom = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
-    const still = reduce();
-    let from = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    const place = (p: { x: number; y: number }) => { if (guide.current) guide.current.style.transform = `translate(${p.x}px, ${p.y}px)`; };
-    place(from);
-    let t = 700; // the outlines fade in and the caption types before the first travel
-    points.forEach((point, i) => {
-      const to = px(point);
-      const start = from;
-      at(t, () => {
-        place(to);
-        if (guide.current) guide.current.style.opacity = '1';
-        if (!still) guide.current?.animate([{ transform: `translate(${start.x}px, ${start.y}px)` }, { transform: `translate(${to.x}px, ${to.y}px)` }], { duration: timing.move, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' });
-      });
-      at(t + timing.move, () => {
-        setActive(i);
-        // The guide hands over to the target, so its small high-contrast centre stays visible.
-        guide.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: EASE_OUT });
-        if (guide.current) guide.current.style.opacity = '0';
-        const arc = arcs.current[i];
-        if (arc) {
-          arc.style.strokeDashoffset = '0';
-          arc.style.opacity = '1';
-          if (!still) arc.animate([{ strokeDashoffset: C }, { strokeDashoffset: 0 }], { duration: timing.settle, easing: 'linear' });
-          else {
-            // Reduced motion: the whole ring steps its opacity across the settle, complete at the end.
-            arc.style.opacity = '0.25';
-            // Relative to arrival (this callback), so the steps land inside this point's settle.
-            [0.25, 0.5, 0.75].forEach((f, k) => timers.push(setTimeout(() => { arc.style.opacity = String(0.5 + k * 0.25); }, timing.settle * f)));
-          }
-        }
-      });
-      at(t + timing.move + timing.settle, () => {
-        setActive(-1);
-        play('calibration-step', { step: i });
-        arcs.current[i]?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: EASE_OUT, fill: 'forwards' });
-        if (!still && bloom.current) {
-          bloom.current.style.left = `${to.x}px`;
-          bloom.current.style.top = `${to.y}px`;
-          bloom.current.animate([{ transform: 'scale(1)', opacity: 0.35 }, { transform: 'scale(2.4)', opacity: 0 }], { duration: 450, easing: EASE_OUT });
-        }
-      });
-      t += timing.move + timing.settle + BEAT;
-      from = to;
-    });
-    at(t, onDone);
-    return () => timers.forEach(clearTimeout);
-  }, [points, timing, onDone]);
-
-  return (
-    <div className="cal-targets">
-      {points.map(([x, y], i) => (
-        <svg key={i} className="cal-target" data-state={i === active ? 'active' : 'waiting'} style={{ left: `${x * 100}%`, top: `${y * 100}%` }} viewBox="-14 -14 28 28" aria-hidden="true">
-          <circle className="cal-ring" r={R} />
-          <circle ref={(el) => { arcs.current[i] = el; }} className="cal-arc" r={R} pathLength={C} strokeDasharray={C} transform="rotate(-90)" style={{ strokeDashoffset: C, opacity: 0 }} />
-          <circle className="cal-dot" r="3" />
-        </svg>
-      ))}
-      <span ref={bloom} className="cal-bloom" />
-      <span ref={guide} className="cal-guide" style={{ left: 0, top: 0 }} />
-    </div>
-  );
-}
 
 type Props = {
-  step: CalibrationStep;
-  onStep: (step: CalibrationStep) => void;
-  onDone: () => void;
-  /** Route a tile activation through the gaze engine, like every other target. */
-  activate: (action: string) => void;
+  /** What went wrong, when the camera failed or a run did not train. */
+  failure: string | null;
+  onRetry: () => void;
+  onUseMouse: () => void;
 };
 
-const FIRST_LINE: Record<CalibrationStep, Line[]> = {
-  position: [{ text: 'Sit so your face fills the circle.', key: 'circle' }],
-  points: [{ text: 'Follow the dot.', key: 'dot' }],
-  validate: [{ text: 'One more look.', key: 'look' }],
-  ready: [],
-};
+export function Calibration({ failure, onRetry, onUseMouse }: Props) {
+  const status = useEyesStatus();
+  const guide = useRef<HTMLSpanElement>(null);
+  const arc = useRef<SVGCircleElement>(null);
+  const target = useRef<SVGSVGElement>(null);
+  const caption = useRef<HTMLParagraphElement>(null);
+  const lastIndex = useRef(-1);
 
-export function Calibration({ step, onStep, onDone, activate }: Props) {
-  const [found, setFound] = useState(false);
-  const [lines, setLines] = useState<Line[]>(FIRST_LINE[step]);
-
+  // One animation loop drives the run: it starts the dots once a face is in view, moves the guide,
+  // fills the active ring and ends the run on time.
   useEffect(() => {
-    if (step !== 'position') return;
-    const a = setTimeout(() => { setFound(true); setLines((l) => [...l, { text: 'Good.' }]); }, 1300);
-    const b = setTimeout(() => onStep('points'), 2400);
-    return () => { clearTimeout(a); clearTimeout(b); };
-  }, [step, onStep]);
+    if (status.kind !== 'calibrating') return;
+    let frame = 0;
+    const loop = (now: number) => {
+      frame = requestAnimationFrame(loop);
+      if (status.startedAt === null) { if (faceInView()) beginRun(now); return; }
+      tickRun(now);
+      const pos = positionAt(now - status.startedAt, runDots());
+      const g = guide.current, a = arc.current, t = target.current, c = caption.current;
+      if (!g || !a || !t || !c) return;
+      c.dataset.hidden = pos && pos.phase !== 'intro' ? 'true' : 'false';
+      if (!pos || pos.phase === 'intro') { g.style.opacity = '0'; t.style.opacity = '0'; return; }
+      const { dot } = pos;
+      g.style.opacity = '1';
+      t.style.opacity = '1';
+      if (pos.index !== lastIndex.current) {
+        lastIndex.current = pos.index;
+        t.style.left = `${dot.x}px`;
+        t.style.top = `${dot.y}px`;
+        g.style.transition = pos.index === 0 ? 'none' : `transform ${TIMING.moveMs}ms cubic-bezier(0.23, 1, 0.32, 1)`;
+        g.style.transform = `translate(${dot.x}px, ${dot.y}px)`;
+      }
+      a.style.strokeDashoffset = String(C * (1 - (pos.phase === 'collect' ? pos.progress : 0)));
+      a.style.opacity = pos.phase === 'collect' ? '1' : '0';
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [status]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onDone(); } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onDone]);
-
-  const toValidate = useRef(() => onStep('validate')).current;
-  const toReady = useRef(() => onStep('ready')).current;
-
-  if (step === 'ready') {
+  if (failure) {
+    const retry = () => { lastIndex.current = -1; onRetry(); };
     return (
       <>
         <div className="cell cell-q1">
-          <Tile action="start" tone="ink" icon={<ArrowRight />} onActivate={activate}>
-            <span className="card-label">Start</span>
+          <Tile action="use-mouse" tone="surface" icon={<Back />} label="Use the mouse" onActivate={onUseMouse}>
+            <span className="card-label">Use the mouse</span>
           </Tile>
         </div>
-        <section className="thread thread-title" aria-label="Ready">
-          <h1 className="page-title">Ready</h1>
-          <p className="page-sub">Tracking is steady across the screen.</p>
+        <div className="cell cell-q4">
+          <Tile action="calibrate-retry" tone="ink" icon={<ArrowRight />} label="Try again" onActivate={retry}>
+            <span className="card-label">Try again</span>
+          </Tile>
+        </div>
+        <section className="thread thread-title" aria-label="Calibration">
+          <p className="page-title cal-message">{failure}</p>
         </section>
       </>
     );
   }
 
-  const side = Math.min(window.innerWidth, window.innerHeight) * 0.38;
+  const waiting = status.kind === 'starting' || status.kind === 'off' || (status.kind === 'calibrating' && status.startedAt === null);
+  const side = 'min(38vw, 38vh)';
+  const text = status.kind === 'training' ? 'Calibrating'
+    : status.kind === 'starting' || status.kind === 'off' ? 'Starting the camera'
+    : waiting ? 'Sit so the camera sees your face'
+    : 'Look at each dot';
   return (
-    <div className="calibration" aria-label="Calibration">
-      {step === 'position' && (
-        <>
-          <svg className="cal-face" data-found={found || undefined} width={side} height={side} viewBox="-50 -50 100 100" aria-hidden="true">
-            <circle r="49" />
-          </svg>
-          <Caption lines={lines} style={{ left: '50%', top: `calc(50% + ${side / 2 + 24}px)`, transform: 'translateX(-50%)' }} />
-        </>
+    <div className="calibration" aria-label="Calibration" data-run-ms={RUN_MS}>
+      {waiting && (
+        <svg className="cal-face" width="100%" height="100%" style={{ width: side, height: side }} viewBox="-50 -50 100 100" aria-hidden="true">
+          <circle r="49" />
+        </svg>
       )}
-      {step === 'points' && (
-        <>
-          <PointRun points={POINTS} timing={TIMING.points} onDone={toValidate} />
-          <Caption lines={lines} style={{ left: 'calc(5% + 38px)', top: 'calc(8% - 22px)' }} />
-        </>
-      )}
-      {step === 'validate' && (
-        <>
-          <PointRun points={CHECKS} timing={TIMING.validate} onDone={toReady} />
-          <Caption lines={lines} style={{ left: 'calc(27% + 38px)', top: 'calc(27% - 22px)' }} />
-        </>
-      )}
+      <svg ref={target} className="cal-target" data-state="active" style={{ opacity: 0 }} viewBox="-14 -14 28 28" aria-hidden="true">
+        <circle className="cal-ring" r={R} />
+        <circle ref={arc} className="cal-arc" r={R} pathLength={C} strokeDasharray={C} transform="rotate(-90)" style={{ strokeDashoffset: C, opacity: 0 }} />
+      </svg>
+      <span ref={guide} className="cal-guide" style={{ left: 0, top: 0, opacity: 0 }} />
+      <p ref={caption} className="caption cal-caption" aria-live="polite">{text}</p>
     </div>
   );
 }

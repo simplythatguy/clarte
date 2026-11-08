@@ -1,13 +1,9 @@
 /**
- * Style 8: style 7's grid with the owner's mesh-gradient companion (Companion.tsx) in place of the
- * Cloud, there only while the middle is blank, and a Soft or Vibrant palette (variant.ts).
- * Style 6's notes follow.
- *
- * Style 6 · Orb (owner concept, 2026-11-07), built on style 5 · Dialogue's grid and engine.
- *
- * The conversation screen keeps style 5's quadrants and adds the companion (Companion.tsx) behind the thread
- * in the Q2–Q3 rest zone, an Options screen for word conflicts, and a report-style
- * first-run setup (Setup.tsx).
+ * Clarte: UI v1's conversation screen (from v0's style 8) with the mesh-gradient companion
+ * (Companion.tsx), there only while the middle is blank, and a Soft or Vibrant palette (variant.ts);
+ * an Options screen for word conflicts; the first run (Onboarding.tsx: Welcome, eye calibration,
+ * voice cloning); words from the prediction engine (useWords.ts); and looks from the webcam eye
+ * tracker (eyes/session.ts), or the mouse with `?input=mouse` or while the tracker is not calibrated.
  *
  * Q1 is the contextual primary slot, Q4 the contextual delete slot, Q2–Q3 a rest zone holding
  * the conversation thread, Q5–Q8 the letter groups. Every activation (dwell, digit key, click,
@@ -30,7 +26,6 @@ import {
   reducer,
   secondKey,
   slotsFor,
-  type CalibrationStep,
   type MenuPage,
   type PrimaryFn,
   type SecondFn,
@@ -53,19 +48,22 @@ import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
 import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { OptionsFace } from './OptionsFace.tsx';
-import { SetupReport, openVoiceApp, setupSlots, useVoiceReport } from './Setup.tsx';
-import { SETUP_STEPS } from './model.ts';
+import { OnboardingPage, onboardingSlots } from './Onboarding.tsx';
+import { cancelRun, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
 /** "More" walks the three settings pages in a loop. */
 // Style 8 (owner, 2026-11-07): the floor-holder is "Wait!" (style 7: "One moment").
 const HOLDER = "Wait! I'm answering.";
-const STORE = 'clarte.style8.v1';
+const STORE = 'clarte.v1';
+const PARAMS = new URLSearchParams(location.search);
+/** `?input=mouse`: the mouse stands in for the eyes and no camera starts. */
+const MOUSE_ONLY = PARAMS.get('input') === 'mouse';
 
 function loadStored(): State {
-  // `?onboarding=off` opens straight into the app (used by the style switcher).
-  const skip = new URLSearchParams(location.search).get('onboarding') === 'off';
+  // `?onboarding=off` opens straight into the app.
+  const skip = PARAMS.get('onboarding') === 'off';
   try {
     const raw = localStorage.getItem(STORE);
     if (!raw) return skip ? { ...INITIAL_STATE, screen: { kind: 'talk' } } : INITIAL_STATE;
@@ -175,7 +173,7 @@ const GROUP_QUADRANT: Record<GroupId, SlotName> = { G1: 'q5', G2: 'q6', G3: 'q7'
  * that each paint the canvas and blend with `plus-lighter`, at the same duration and easing, so
  * the sum is exactly linear and luminance never dips. The outgoing layer is inert.
  */
-function Stage({ id, surface = 'talk', children }: { id: string; surface?: 'talk' | 'report'; children: ReactNode }) {
+function Stage({ id, children }: { id: string; children: ReactNode }) {
   const last = useRef<{ id: string; node: ReactNode }>({ id, node: children });
   const [leaving, setLeaving] = useState<{ id: string; node: ReactNode } | null>(null);
   useLayoutEffect(() => {
@@ -190,7 +188,7 @@ function Stage({ id, surface = 'talk', children }: { id: string; surface?: 'talk
   return (
     <div className="stage">
       {leaving && <div key={`leaving-${leaving.id}`} className="layer layer-leaving" inert aria-hidden="true">{leaving.node}</div>}
-      <main key={id} className="layer" data-surface={surface}>{children}</main>
+      <main key={id} className="layer">{children}</main>
     </div>
   );
 }
@@ -209,7 +207,8 @@ export function App() {
   const words = useWords(state);
   const slots = slotsFor(state, words);
   const shown = shownWord(state.composition, words.prediction)?.word ?? null;
-  const voiceReport = useVoiceReport(screen.kind === 'setup' && screen.step === 'voice', screen.kind === 'setup' && Boolean(screen.sample));
+  /** The mouse drives looks for the rest of the session (`?input=mouse`, or chosen after a camera failure). */
+  const mouseOnly = useRef(MOUSE_ONLY);
   // Bumped when an activation landed on a stale label, so the label catches up at once.
   const [syncs, setSyncs] = useState(0);
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
@@ -248,7 +247,7 @@ export function App() {
   // Gaze sources and the per-frame clock.
   useEffect(() => {
     const detach = [
-      attachPointerStream(engine),
+      attachPointerStream(engine, () => mouseOnly.current || eyesStatus().kind !== 'tracking'),
       startTicking(engine),
       unlockOnGesture(),
       // In development the overlay tracks actionables itself (main.tsx); here for production builds.
@@ -362,13 +361,44 @@ export function App() {
     }
   }, [startSpeaking]);
 
-  // Calibration returns to the setup report until setup is finished, then to the conversation.
-  const finishCalibration = useCallback(() => {
-    play('calibrated');
-    dispatch({ type: 'calibrated', at: Date.now() });
-    dispatch({ type: 'screen', screen: setupDone() ? { kind: 'talk' } : { kind: 'setup', step: 'eyes' } });
+  // Calibration leads on to voice cloning on the first run, else back to the conversation.
+  const afterCalibration = useCallback(() => {
+    const s = stateRef.current;
+    dispatch({ type: 'screen', screen: s.screen.kind === 'calibration' && s.screen.then === 'voice' ? { kind: 'voice' } : { kind: 'talk' } });
   }, []);
-  const calibrationStep = useCallback((step: CalibrationStep) => dispatch({ type: 'screen', screen: { kind: 'calibration', step } }), []);
+  const chooseMouse = useCallback(() => { mouseOnly.current = true; cancelRun(); afterCalibration(); }, [afterCalibration]);
+
+  // The calibration flow: start the camera, arm a run once it runs (a recalibration arms one over
+  // the calibration in use), and leave when the new calibration is in use. Escape leaves a run and
+  // keeps the calibration in use.
+  const eyes = useEyesStatus();
+  const calibrating = screen.kind === 'calibration';
+  const armed = useRef(false);
+  useEffect(() => {
+    if (!calibrating) { armed.current = false; return; }
+    if (eyes.kind === 'off') { void startEyes(engine); return; }
+    if (!armed.current && (eyes.kind === 'tracking' || eyes.kind === 'uncalibrated')) { armed.current = true; prepareRun(); return; }
+    if (armed.current && eyes.kind === 'tracking') { play('calibrated'); afterCalibration(); }
+  }, [calibrating, eyes, afterCalibration]);
+  useEffect(() => {
+    if (!calibrating) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { cancelRun(); afterCalibration(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [calibrating, afterCalibration]);
+  const calibrationFailure = eyes.kind === 'failed' ? eyes.message : armed.current && eyes.kind === 'uncalibrated' ? eyes.reason : null;
+  const retryCalibration = useCallback(() => {
+    if (eyesStatus().kind === 'failed') { armed.current = false; void startEyes(engine); } else prepareRun();
+  }, []);
+
+  // A returning person goes straight to the conversation: the camera starts and the saved
+  // calibration is restored, or calibration runs first when there is none that fits.
+  useEffect(() => {
+    if (mouseOnly.current || !setupDone() || PARAMS.get('onboarding') === 'off') return;
+    void startEyes(engine).then((reached) => {
+      if (reached.kind === 'uncalibrated' && stateRef.current.screen.kind === 'talk') dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } });
+    });
+  }, []);
 
   // The latest labels, read by the select handler without re-subscribing every render.
   const shownRef = useRef({ primary, second, slots });
@@ -384,16 +414,18 @@ export function App() {
       dispatch({ type: 'settings', patch });
       play('control');
     };
-    if (s.screen.kind === 'calibration') { if (action === 'start') finishCalibration(); return; }
-    if (s.screen.kind === 'setup') {
-      const at = SETUP_STEPS.indexOf(s.screen.step);
-      const go = (i: number) => { dispatch({ type: 'screen', screen: { kind: 'setup', step: SETUP_STEPS[i] } }); play('control'); };
-      if (action === 'setup-back') { go(Math.max(0, at - 1)); return; }
-      if (action === 'setup-next') { go(Math.min(SETUP_STEPS.length - 1, at + 1)); return; }
-      if (action === 'setup-calibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
-      if (action === 'setup-voice-app') { play('control'); openVoiceApp(); return; }
-      if (action === 'setup-start') { play('control'); store({ setupDone: true }); dispatch({ type: 'screen', screen: { kind: 'talk' } }); return; }
-      if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
+    if (s.screen.kind === 'calibration') return;
+    if (s.screen.kind === 'welcome') {
+      if (action !== 'get-started') return;
+      play('control');
+      dispatch({ type: 'screen', screen: mouseOnly.current ? { kind: 'voice' } : { kind: 'calibration', then: 'voice' } });
+      return;
+    }
+    if (s.screen.kind === 'voice') {
+      if (action !== 'voice-continue') return;
+      play('control');
+      store({ setupDone: true });
+      dispatch({ type: 'screen', screen: { kind: 'talk' } });
       return;
     }
     if (s.screen.kind === 'options') {
@@ -426,7 +458,7 @@ export function App() {
         play('control');
         return;
       }
-      if (action === 'recalibrate') { play('control'); dispatch({ type: 'screen', screen: { kind: 'calibration', step: 'position' } }); return; }
+      if (action === 'recalibrate') { play('control'); mouseOnly.current = false; dispatch({ type: 'screen', screen: { kind: 'calibration', then: 'talk' } }); return; }
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
@@ -448,7 +480,7 @@ export function App() {
       // Choosing a letter group is silent (owner, 2026-11-07: a note per letter was distracting).
       dispatch({ type: 'group', group: action as GroupId });
     }
-  }, [finishCalibration, resync, runPrimary, runSecond, startSpeaking]);
+  }, [resync, runPrimary, runSecond, startSpeaking]);
 
   useEffect(() => engine.subscribe((_snapshot, event) => {
     if (event?.type !== 'select') return;
@@ -480,6 +512,8 @@ export function App() {
       },
       validate: validateNow,
       engine,
+      eyes: eyesStatus,
+      words: () => wordsNow(stateRef.current),
     };
     // `#phase=<name>` opens a phase directly, for demos and fresh-browser checks.
     const linked = /^#phase=([\w-]+)$/.exec(location.hash)?.[1];
@@ -487,10 +521,9 @@ export function App() {
   }, []);
 
   if (screen.kind === 'calibration') {
-    // Keyed by step: each step starts from its own first point (the point list changes length).
     return (
-      <Stage id={`calibration-${screen.step === 'ready' ? 'ready' : 'run'}`}>
-        <Calibration key={screen.step} step={screen.step} onStep={calibrationStep} onDone={finishCalibration} activate={activate} />
+      <Stage id="calibration">
+        <Calibration failure={calibrationFailure} onRetry={retryCalibration} onUseMouse={chooseMouse} />
       </Stage>
     );
   }
@@ -506,11 +539,11 @@ export function App() {
   let strip: Strip | null = null;
   let rest: ReactNode;
   let restKey: string;
-  if (screen.kind === 'setup') {
-    const ctx = { step: screen.step, settings, calibratedAt: state.calibratedAt, voice: voiceReport };
-    slotViews = setupSlots(ctx);
-    restKey = `setup-${screen.step}`;
-    rest = <SetupReport ctx={ctx} />;
+  if (screen.kind === 'welcome' || screen.kind === 'voice') {
+    const step = screen.kind;
+    slotViews = onboardingSlots(step);
+    restKey = `onboarding-${step}`;
+    rest = <OnboardingPage step={step} />;
   } else if (screen.kind === 'menu' || screen.kind === 'options') {
     // The menu and Options open over the conversation, which stays in place, blurred.
     let title: string;
@@ -576,8 +609,8 @@ export function App() {
   const still = settings.orbMotion === 'still';
 
   return (
-    <Stage id="app" surface={screen.kind === 'setup' ? 'report' : 'talk'}>
-      {screen.kind !== 'setup' && <Companion visible={blank} still={still} />}
+    <Stage id="app">
+      {screen.kind !== 'welcome' && screen.kind !== 'voice' && <Companion visible={blank} still={still} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
       {strip && <PagedStrip strip={strip} activate={activate} />}
@@ -648,6 +681,8 @@ declare global {
       setPhase(name: string): void;
       validate(): ReturnType<typeof validateNow>;
       engine: typeof engine;
+      eyes: typeof eyesStatus;
+      words(): ReturnType<typeof wordsNow>;
     };
   }
 }
