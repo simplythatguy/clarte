@@ -61,7 +61,7 @@ Durations over 300 ms that are deliberate and must not be flagged: dwell progres
 ## Privacy and evidence
 
 - Everything runs locally except two services, each named on screen where it is used. No accounts, uploads, analytics or other remote inference. Don't add a dependency or a call that sends data off the machine; a new one needs the owner's decision and an entry here.
-  - **Google speech recognition** (Chrome's Web Speech API) receives the partner's speech only when the engine's Whisper cannot hear (engine not running, transcriber off or failed). Listen uses this computer's Whisper first (NAT-55), and while Google stands in, the Stop card says "Via Google".
+  - **Google speech recognition** (Chrome's Web Speech API) receives the partner's speech whenever Listen uses it. Listen tries it first because it is faster; the engine's Whisper takes over on this computer when it is missing or fails. While Google listens, the Stop card says "Via Google" (NAT-55).
   - **ElevenLabs** receives the person's chosen recordings when a voice is made, and each message's text when it is spoken in that voice. The person agrees to this on the voice pages before any upload. The system voice and cached phrases do not use it.
 - The eye-tracking CSP and the voice service's 127.0.0.1 binding and CORS keep other pages from reaching local services. They do not keep data on the machine: the two services above are outside them.
 - Face video, eye crops, test sessions, voice recordings, cloned speech and partner transcripts identify people. Never put them in PRs, issues, diagrams, design tools, screenshots for review, or prompts to outside models. Test sessions live in git-ignored `sessions/`, and voices live in `~/.clarte/voices`.

@@ -1,10 +1,10 @@
 // Hearing the partner end to end (NAT-49), in headless Chromium on a fake microphone that plays a spoken
 // sentence. Playwright's Chromium has no Google speech service, the case that used to put the demo partner's
-// lines in the conversation: Listen must hear through the engine's Whisper and show what was really said.
+// lines in the conversation: Listen must hand over to the engine's Whisper and show what was really said.
 //
-// Privacy (NAT-55, audit C1): a stand-in browser recognition is installed, as Chrome's would send the audio to
-// Google. While the engine can hear, Listen must never start it; with no engine, it may stand in, and the Stop
-// card must say "Via Google".
+// Privacy (NAT-55, audit C1): the Stop card must say "Via Google" while the browser's recognition (Google's
+// service in Chrome) listens, and not once Whisper has taken over. A stand-in for Chrome's recognition checks
+// the first.
 //
 //   node scripts/e2e-partner-listen.mjs [app origin] [engine origin]
 //   node scripts/e2e-partner-listen.mjs http://localhost:5200 http://127.0.0.1:8765
@@ -75,7 +75,6 @@ const FAKE_GOOGLE = () => {
 
 const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined, args: ['--mute-audio', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-audio-capture=${mic}`, '--autoplay-policy=no-user-gesture-required'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['microphone'] });
-await context.addInitScript(FAKE_GOOGLE);
 const page = await context.newPage();
 const logs = [];
 page.on('console', (m) => logs.push(m.text()));
@@ -93,8 +92,9 @@ await page.waitForTimeout(4000); // the utterance's final transcription
 const shown = await page.evaluate(() => document.querySelector('.thread')?.textContent ?? '');
 check('the partner\'s real words appear while listening', heard, shown.slice(0, 160));
 check('no demo line was shown', !/how are you feeling|nurse said|are you hungry/i.test(shown));
-check('Google\'s recognition is never started while the engine can hear', await page.evaluate(() => window.__googleStarts) === 0, `${await page.evaluate(() => window.__googleStarts)} start(s)`);
-check('the Stop card does not say Google', !/via google/i.test(await page.evaluate(() => document.body.textContent ?? '')));
+const handover = logs.find((l) => l.startsWith('[listen]'));
+console.log(`     recognition: ${handover ?? 'the browser\'s own'}`);
+check('the Stop card does not say Google once Whisper listens', !/via google/i.test(await page.evaluate(() => document.body.textContent ?? '')));
 
 await page.keyboard.press('4'); // Stop
 await page.waitForFunction(() => window.clarteDebug.phase() !== 'listening', null, { timeout: 5000 });
@@ -102,15 +102,16 @@ const thread = await page.evaluate(() => document.querySelector('.thread')?.text
 check('Stop keeps what the partner said in the conversation', /outside/i.test(thread));
 check('no page errors', !logs.some((l) => l.startsWith('pageerror')), logs.filter((l) => l.startsWith('pageerror')).join('; '));
 
-// No engine: the browser's recognition may stand in, and the card must say where the speech goes.
+// A browser whose recognition works (Chrome): it listens first, and the card says where the speech goes.
 const page2 = await context.newPage();
-await page2.goto(`${ORIGIN}/?onboarding=off&input=mouse&engine=${encodeURIComponent('http://127.0.0.1:9')}`);
+await page2.addInitScript(FAKE_GOOGLE);
+await page2.goto(`${ORIGIN}/?onboarding=off&input=mouse&engine=${encodeURIComponent(ENGINE)}`);
 await page2.waitForFunction(() => window.clarteDebug?.phase() === 'idle', null, { timeout: 30000 });
 await page2.waitForTimeout(1500);
 await page2.keyboard.press('4'); // Listen
 await page2.waitForFunction(() => window.clarteDebug.phase() === 'listening', null, { timeout: 5000 });
 const google = await page2.waitForFunction(() => /words sent to google/i.test(document.querySelector('.thread')?.textContent ?? ''), null, { timeout: 15000 }).then(() => true, () => false);
-check('with no engine, the browser\'s recognition stands in', google);
+check('the browser\'s recognition listens first where it works', google);
 check('the Stop card says "Via Google" while it does', /via google/i.test(await page2.evaluate(() => document.body.textContent ?? '')));
 await page2.keyboard.press('4'); // Stop
 
