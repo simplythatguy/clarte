@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { GazeEngine, type GazeSnapshot } from './core/gaze.ts';
 import { actionIn, collectActionables, validateLayout, viewportOf, type QuadrantId } from './core/quadrants.ts';
 
-export const engine = new GazeEngine({ mode: 'dwell', dwellMs: 900, soundActions: ['accept-centre'] });
+export const engine = new GazeEngine({ mode: 'dwell', dwellMs: 900 });
 
 export const GROUP_ACTIONS = new Set(['G1', 'G2', 'G3', 'G4']);
 
