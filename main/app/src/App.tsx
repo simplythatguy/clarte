@@ -48,6 +48,7 @@ import { prefetchPunctuation, spokenText } from './prediction/punctuate.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
+import { reactionFor, type OrbMood } from './cloud/Cloud.tsx';
 import { PagedStrip, pageList, type Strip } from './Pager.tsx';
 import { OptionsFace } from './OptionsFace.tsx';
 import { WelcomePage, welcomeSlots, tallCard } from './Onboarding.tsx';
@@ -907,12 +908,21 @@ export function App() {
   const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || live.kind === 'speaking' || composing;
   const blank = screen.kind === 'talk' && !liveText && state.turns.length === 0;
   const still = settings.orbMotion === 'still';
+  // The Cloud (NAT-42) takes the conversation's state as its mood, and pulses on each word heard or spoken.
+  const mood: OrbMood = screen.kind !== 'talk' && screen.kind !== 'options' ? 'idle'
+    : status === 'listening' ? 'listening' : status === 'speaking' ? 'speaking' : status === 'composing' ? 'composing' : 'idle';
+  const pulse = live.kind === 'listening' ? (live.transcript.match(/\S+/g)?.length ?? 0) : live.kind === 'speaking' ? live.word + 1 : 0;
+  // Once a turn has joined the history, its feeling shows on the Cloud's face.
+  const newest = state.turns[state.turns.length - 1];
+  const finished = live.kind === 'quiet' || live.kind === 'spoken';
+  const feeling = finished && newest && !newest.holder ? reactionFor(newest.text) : null;
+  const reaction = feeling && newest ? { key: `reaction-${newest.id}`, kind: feeling } : null;
 
   return (
     <Stage id="app">
       {screen.kind === 'welcome' || screen.kind === 'voice' || screen.kind === 'calibration'
-        ? <GuideOrb calibrating={screen.kind === 'calibration'} />
-        : <Companion visible={blank} still={still} />}
+        ? <GuideOrb calibrating={screen.kind === 'calibration'} still={still} />
+        : <Companion visible={blank} still={still} mood={mood} pulse={pulse} listening={live.kind === 'listening'} reaction={reaction} />}
       <Board slots={slotViews} screen={restKey} activate={activate} />
       <RestZone id={restKey}>{rest}</RestZone>
       {strip && <PagedStrip strip={strip} activate={activate} />}

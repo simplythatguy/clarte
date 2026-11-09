@@ -1,5 +1,6 @@
 /**
- * The companion (owner, 2026-11-08): the mesh-gradient ball (components/ui/shader-svg.tsx). While
+ * The companion (owner, 2026-11-08): the Cloud (cloud/Cloud.tsx, NAT-42), which took the mesh-gradient
+ * ball's place; everything below is the ball's behaviour, unchanged. While
  * the middle holds no text it floats at the centre of the rest zone. When text arrives there (words heard,
  * the message typed, the sentence spoken, a menu title) it flies to the top-left of Q2 and docks as
  * a small mark in the thread's top row, and when the middle clears it flies back.
@@ -9,15 +10,16 @@
  * travels near Q1. Size and lean both derive from the same value, so a change of mind
  * mid-flight just turns it round from where it is.
  *
- * Its face travels too: the eyes look where it is going and narrow, as into the wind. On landing,
- * momentum carries them further up-left, they glance back up-right, then rest on the pointer again.
+ * Its face travels too: it looks where it is going. On landing, momentum carries it further
+ * up-left, it glances back up-right, then rests. Its mood colour, swell and reaction faces come
+ * from the conversation (App.tsx), docked or not.
  *
  * Still (the Motion setting) or reduced motion: no flight, it fades out and fades in at the other
  * place, and the face stays at rest.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { animate, MotionConfig, type AnimationPlaybackControls } from 'framer-motion';
-import { MeshGradientSVG } from '@/components/ui/shader-svg';
+import { animate, type AnimationPlaybackControls } from 'framer-motion';
+import { Cloud, type OrbMood, type ShownReaction } from './cloud/Cloud.tsx';
 
 type Pose = 'home' | 'dock';
 type Face = { look: { x: number; y: number } | null; squint: boolean };
@@ -54,8 +56,8 @@ type Geometry = { dx: number; dy: number; scale: number };
 function measure(root: HTMLElement, body: HTMLElement, ball: HTMLElement): Geometry {
   const r = root.getBoundingClientRect();
   const b = body.getBoundingClientRect();
-  const pad = parseFloat(getComputedStyle(ball).paddingLeft) || 0;
-  const svgHeight = (b.width - 2 * pad) / ASPECT;
+  // The Cloud's box is the visible orb (its canvas overflows it for the wobble and halo).
+  const svgHeight = ball.offsetWidth / ASPECT;
   const edgeY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge-y')) || 40;
   const home = { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2 };
   const dock = { x: DOCK.inset + (DOCK.height * ASPECT) / 2, y: edgeY + DOCK.row / 2 };
@@ -82,9 +84,13 @@ type Props = {
   /** The middle is blank: no live text and no title there. */
   visible: boolean;
   still: boolean;
+  mood: OrbMood;
+  pulse: number;
+  listening: boolean;
+  reaction: ShownReaction | null;
 };
 
-export function Companion({ visible, still }: Props) {
+export function Companion({ visible, still, mood, pulse, listening, reaction }: Props) {
   const target: Pose = visible ? 'home' : 'dock';
   const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -166,9 +172,9 @@ export function Companion({ visible, still }: Props) {
     <div ref={rootRef} className="companion" data-pose={target} data-still={still ? '' : undefined} aria-hidden="true">
       <div ref={bodyRef} className="companion-body">
         <div ref={flightRef} className="companion-flight">
-          <MotionConfig reducedMotion={still ? 'always' : 'user'}>
-            <MeshGradientSVG look={face.look} squint={face.squint} />
-          </MotionConfig>
+          <div className="companion-float">
+            <Cloud mood={mood} pulse={pulse} still={still || reducedMotion()} listening={listening} reaction={reaction} look={face.look} />
+          </div>
         </div>
       </div>
     </div>

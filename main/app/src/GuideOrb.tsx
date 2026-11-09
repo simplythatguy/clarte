@@ -1,5 +1,5 @@
 /**
- * The orb through onboarding (owner, 2026-11-08). It rests above the greeting and the voice note,
+ * The orb through onboarding (owner, 2026-11-08), drawn as the Cloud (cloud/Cloud.tsx, NAT-42). It rests above the greeting and the voice note,
  * and in calibration it is the point to look at: it glides to the centre of each backend quadrant
  * in turn, and while the tracker collects there a blue line draws round it, a little larger than
  * the orb so white shows between them, until it closes into a circle.
@@ -9,7 +9,7 @@
  * so the loop never re-renders React.
  */
 import { useEffect, useRef } from 'react';
-import { MeshGradientSVG } from '@/components/ui/shader-svg';
+import { Cloud } from './cloud/Cloud.tsx';
 import { TIMING, beginRun, eyesStatus, faceInView, positionAt, runDots, tickRun } from './eyes/session.ts';
 
 type Place = { x: number; y: number; size: number };
@@ -41,7 +41,7 @@ function rest(): Place {
 }
 const centre = (): Place => ({ x: window.innerWidth / 2, y: window.innerHeight / 2, size: SIZE.centre });
 
-export function GuideOrb({ calibrating }: { calibrating: boolean }) {
+export function GuideOrb({ calibrating, still }: { calibrating: boolean; still: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const arc = useRef<SVGCircleElement>(null);
 
@@ -82,7 +82,8 @@ export function GuideOrb({ calibrating }: { calibrating: boolean }) {
 
   return (
     <div ref={root} className="guide-orb" style={{ ['--move' as string]: `${TIMING.moveMs}ms` }} aria-hidden="true">
-      <MeshGradientSVG look={calibrating ? { x: 0, y: 0 } : null} />
+      {/* As the calibration target its centre holds still (no lean) and white shows round it (no halo). */}
+      <Cloud mood="idle" still={still} lean={!calibrating} halo={!calibrating} />
       <svg className="guide-ring" viewBox="-50 -50 100 100" style={{ ['--gap' as string]: `${GAP}px`, ['--line' as string]: `${LINE}px` }}>
         <circle ref={arc} r={50 - 2} pathLength={C} strokeDasharray={C} transform="rotate(-90)" style={{ strokeDashoffset: C, opacity: 0 }} />
       </svg>
