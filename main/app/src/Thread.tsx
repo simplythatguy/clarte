@@ -30,6 +30,8 @@ type Props = {
   /** The word the card offers for the pending groups, whose letters the typed groups show. */
   word: string | null;
   wordColours: boolean;
+  replayEnabled: boolean;
+  onReplay: (turn: Turn) => void;
 };
 
 function Spoken({ text, word }: { text: string; word: number }) {
@@ -119,7 +121,7 @@ function useLeaving(key: string, node: ReactNode): ReactNode {
   return leaving ? <span className="now-leaving" aria-hidden="true">{leaving.node}</span> : null;
 }
 
-export function Thread({ state, turns, live, composition, word, wordColours }: Props) {
+export function Thread({ state, turns, live, composition, word, wordColours, replayEnabled, onReplay }: Props) {
   const nowRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const highlight = live.kind === 'speaking' && live.turnId !== null ? live : null;
@@ -215,7 +217,14 @@ export function Thread({ state, turns, live, composition, word, wordColours }: P
         {turns.map((turn) => (
           <p key={turn.id} className={`turn turn-${turn.who}${turn.holder ? ' turn-holder' : ''}`}>
             {/* Heard turns carry a microphone on their left, spoken replies a speaker on their right. */}
-            <span className="turn-icon" aria-hidden="true">{turn.who === 'partner' ? <Mic /> : <Speaker />}</span>
+            {turn.who === 'partner' ? <span className="turn-icon" aria-hidden="true"><Mic /></span> : (
+              <button type="button" className="turn-icon turn-replay" aria-label={`Speak again: ${turn.text}`}
+                disabled={!replayEnabled}
+                onClick={() => onReplay(turn)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+                }}><Speaker /></button>
+            )}
             <span className="sr-only">{turn.who === 'partner' ? 'Heard: ' : 'Said: '}</span>
             <span className="turn-text">
               {highlight && highlight.turnId === turn.id ? <Spoken text={turn.text} word={highlight.word} /> : turn.text}

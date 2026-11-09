@@ -30,7 +30,7 @@ import {
   type PrimaryFn,
   type SecondFn,
   type Settings,
-  type State,
+  type State, type Turn,
   type VoiceStep,
 } from './model.ts';
 import { Tile, type SlotName, type SlotView, type Slots } from './Tile.tsx';
@@ -354,7 +354,7 @@ export function App() {
     const onKeyCapture = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const el = e.target as HTMLElement | null;
-      if (el?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      if (el?.closest?.('input, textarea, [contenteditable="true"], .turn-replay')) return;
       // A held key is not a second deliberate confirmation after the screen changes.
       if (e.repeat) { e.preventDefault(); e.stopPropagation(); return; }
       // Confirming a preview by key is a keyboard action: no bloom, no transitions.
@@ -437,6 +437,12 @@ export function App() {
     token.current += 1;
     dispatch({ type: 'speak-start', text, turnId, holder, token: token.current });
   }, []);
+
+  const replayTurn = useCallback((turn: Turn) => {
+    const s = stateRef.current;
+    if (s.screen.kind !== 'talk' || s.live.kind === 'speaking' || punctuating.current) return;
+    startSpeaking(turn.text, turn.id, false);
+  }, [startSpeaking]);
 
   const runPrimary = useCallback((fn: PrimaryFn) => {
     const s = stateRef.current;
@@ -790,6 +796,7 @@ export function App() {
     : (screen.kind === 'talk' || screen.kind === 'options') && (state.composition.words.length || state.composition.pending.length || (live.kind === 'quiet' && owedTurn(state))) ? 'composing'
     : null;
 
+  const replayEnabled = screen.kind === 'talk' && live.kind !== 'speaking';
   let slotViews: Slots;
   let strip: Strip | null = null;
   let rest: ReactNode;
@@ -815,7 +822,7 @@ export function App() {
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
-          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
         </div>
         <section className="thread thread-title" aria-label="My sound">
           <p className="page-trail">{[...trailOf('settings'), 'My sound'].join(' › ')}</p>
@@ -850,7 +857,7 @@ export function App() {
     };
     strip = paged.strip;
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />;
   } else if (screen.kind === 'menu') {
     // The menu opens over the conversation, which stays in place, blurred.
     const paged = menuSlots(screen.page, settings, screen.at);
@@ -862,7 +869,7 @@ export function App() {
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
-          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
         </div>
         <section className="thread thread-title" aria-label={title}>
           {/* The path above the title (owner, 2026-11-08), once there is more than the page itself. */}
@@ -890,7 +897,7 @@ export function App() {
       };
     }
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />;
   }
 
   // The companion (owner, 2026-11-08) floats at the centre only while the middle holds no text at
