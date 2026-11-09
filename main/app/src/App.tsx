@@ -60,7 +60,7 @@ import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
 import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
 import { TeachSound, type TeachStep } from './TeachSound.tsx';
-import { cancelRun, eyesDrive, eyesStatus, faceInView, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
+import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
@@ -299,9 +299,12 @@ export function App() {
   const centreEligible = screen.kind === 'talk' && live.kind === 'quiet' && state.composition.pending.length > 0 && Boolean(typedWord);
   const centreInput = useRef({ eligible: centreEligible, word: typedWord, context: centreContext });
   centreInput.current = { eligible: centreEligible, word: typedWord, context: centreContext };
+  // Readiness is the engine's preview, which already ends when the eyes are lost past its blink
+  // grace. A per-frame face check would restart the ready clock at every blink and reject the
+  // sound the person was making.
   const centreSound = useCentreSound(centreEligible && !mouseOnly.current && eyesDrive(), () => {
     const snapshot = engine.snapshot;
-    return centreInput.current.eligible && eyesDrive() && faceInView() && snapshot.looked === 'accept-centre'
+    return centreInput.current.eligible && eyesDrive() && snapshot.looked === 'accept-centre'
       && snapshot.action === 'accept-centre' && snapshot.state === 'previewed' && !isGuarded('accept-centre') && !gazeOutside();
   }, () => engine.confirm(performance.now(), 'sound'));
   useLayoutEffect(() => { engine.cancel(); }, [centreEligible, centreContext, typedWord]);
