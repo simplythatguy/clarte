@@ -25,7 +25,7 @@ export type Heard = {
 export type Subscriber = {
   onEvent?: (heard: Heard) => void;
   /** Every frame's level and the noise floor, for a live meter. */
-  onLevel?: (db: number, floor: number) => void;
+  onLevel?: (db: number, floor: number, at: number) => void;
 };
 
 const WORKLET = `
@@ -126,7 +126,7 @@ class Microphone {
     const events: SoundEvent[] = [];
     for (const f of frames) {
       this.cutter.push(f, events);
-      for (const s of this.subscribers) s.onLevel?.(f.db, this.cutter.floor);
+      for (const s of this.subscribers) s.onLevel?.(f.db, this.cutter.floor, f.t);
     }
     for (const event of events) {
       const end = this.written;

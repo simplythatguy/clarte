@@ -23,16 +23,24 @@ const REFRACTORY_S = 0.8;
  * Listen for the person's sound and call `onSound` at each one, while `enabled()` is true.
  * Rejects when the microphone is unavailable or blocked.
  */
-export async function startSoundSelect(onSound: () => void, enabled: () => boolean): Promise<SoundSelect> {
+export async function startSoundSelect(onSound: () => void, enabled: () => boolean, requireReadyOnset = false): Promise<SoundSelect> {
   const bank = await loadBank();
   let profile: Profile | null = loadProfile(bank);
   const offProfile = onProfileChange(() => { profile = loadProfile(bank); });
   let last = -Infinity;
+  let readySince = Infinity;
+  let wasReady = false;
   const stopListening = await microphone.subscribe({
+    onLevel: (_db, _floor, at) => {
+      const ready = enabled();
+      if (ready && !wasReady) readySince = at;
+      if (!ready) readySince = Infinity;
+      wasReady = ready;
+    },
     onEvent: ({ event }) => {
       const verdict = profile ? judge(profile, event) : judgeGeneric(event);
       const on = enabled();
-      const fires = on && verdict.accept && event.at - last >= REFRACTORY_S;
+      const fires = on && (!requireReadyOnset || event.start >= readySince) && verdict.accept && event.at - last >= REFRACTORY_S;
       if (fires) { last = event.at; onSound(); }
       import.meta.hot?.send('clarte:sound', { at: +event.at.toFixed(2), taught: Boolean(profile), accept: verdict.accept, reason: verdict.reason, distance: verdict.distance, enabled: on, fired: fires, peak: Math.round(event.stats.peakDb), settings: microphone.settings });
     },

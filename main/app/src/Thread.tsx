@@ -18,6 +18,7 @@ import type { Live, Turn } from './model.ts';
 import { wordsOf } from './voice.ts';
 import { displayWord } from './text.ts';
 import { Mic, Speaker } from './icons.tsx';
+import { CentreWord, type CentreAcceptance } from './CentreWord.tsx';
 
 export type StateName = 'listening' | 'composing' | 'speaking';
 const STATE_LABEL: Record<StateName, string> = { listening: 'Listening', composing: 'Replying', speaking: 'Speaking' };
@@ -32,6 +33,7 @@ type Props = {
   wordColours: boolean;
   replayEnabled: boolean;
   onReplay: (turn: Turn) => void;
+  centre?: CentreAcceptance;
 };
 
 function Spoken({ text, word }: { text: string; word: number }) {
@@ -63,7 +65,7 @@ type Slot = Glyph & { leaving?: boolean };
  * as ghost letters. Slots are keyed by position, so a new glyph fades in where it lands and
  * nothing slides; a removed trailing glyph lingers 120 ms while it fades out.
  */
-function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) {
+function WordInProgress({ glyphs, first, centre }: { glyphs: Glyph[]; first: boolean; centre?: CentreAcceptance }) {
   // The current glyphs render in this commit (so the live line's fit measures them); only a
   // removed trailing glyph is added back for its fade, one commit later.
   const [tail, setTail] = useState<Slot[]>([]);
@@ -78,8 +80,8 @@ function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) 
   }, [glyphs]);
   const slots: Slot[] = [...glyphs, ...tail];
   const hasLetters = glyphs.some((g) => g.letter !== null);
-  return (
-    <span className={`word in-progress${hasLetters ? '' : ' dots'}`}>
+  const body = (
+    <>
       <span className="sr-only">{hasLetters ? glyphs.map((g) => g.letter ?? '').join('') : `${glyphs.length} letters typed`}</span>
       {slots.map((g, i) => {
         const letter = g.letter === null ? null : first && i === 0 ? g.letter.toUpperCase() : g.letter;
@@ -90,17 +92,19 @@ function WordInProgress({ glyphs, first }: { glyphs: Glyph[]; first: boolean }) 
           </span>
         );
       })}
-    </span>
+    </>
   );
+  return centre ? <CentreWord acceptance={centre}>{body}</CentreWord>
+    : <span className={`word in-progress${hasLetters ? '' : ' dots'}`}>{body}</span>;
 }
 
-function Message({ composition, word, wordColours }: { composition: Composition; word: string | null; wordColours: boolean }) {
+function Message({ composition, word, wordColours, centre }: { composition: Composition; word: string | null; wordColours: boolean; centre?: CentreAcceptance }) {
   const glyphs = glyphsForWord(composition.pending, word);
   const { words } = composition;
   return (
     <span className={wordColours ? 'keep-colour' : undefined}>
       {words.map((w, i) => <span key={i}><AcceptedWord word={w} index={i} />{' '}</span>)}
-      {glyphs.length > 0 && <WordInProgress glyphs={glyphs} first={words.length === 0} />}
+      {glyphs.length > 0 && <WordInProgress glyphs={glyphs} first={words.length === 0} centre={centre} />}
     </span>
   );
 }
@@ -121,7 +125,7 @@ function useLeaving(key: string, node: ReactNode): ReactNode {
   return leaving ? <span className="now-leaving" aria-hidden="true">{leaving.node}</span> : null;
 }
 
-export function Thread({ state, turns, live, composition, word, wordColours, replayEnabled, onReplay }: Props) {
+export function Thread({ state, turns, live, composition, word, wordColours, centre, replayEnabled, onReplay }: Props) {
   const nowRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const highlight = live.kind === 'speaking' && live.turnId !== null ? live : null;
@@ -141,7 +145,7 @@ export function Thread({ state, turns, live, composition, word, wordColours, rep
     now = <span className="now-text"><Spoken text={live.text} word={live.word} /></span>;
   } else if (composition.words.length || composition.pending.length) {
     nowKey = 'compose';
-    now = <span className="now-text"><Message composition={composition} word={word} wordColours={wordColours} /></span>;
+    now = <span className="now-text"><Message composition={composition} word={word} wordColours={wordColours} centre={centre} /></span>;
   }
   const leaving = useLeaving(nowKey, now);
   // Fit: when the live line is taller than its room (long messages, large text), step its type
@@ -207,7 +211,7 @@ export function Thread({ state, turns, live, composition, word, wordColours, rep
   }, []);
 
   return (
-    <section className="thread" aria-label="Conversation">
+    <section className="thread" data-action={centre ? 'accept-centre' : undefined} aria-label="Conversation">
       {/* No pill (owner, 2026-11-08): the state is announced, not shown. The row keeps its height as
           the docked companion's place, so the history never runs under it. */}
       <div className="state-row" role="status" aria-live="polite">
@@ -237,6 +241,9 @@ export function Thread({ state, turns, live, composition, word, wordColours, rep
         {leaving}
         {now && <span key={nowKey} style={{ display: 'contents' }}>{now}</span>}
       </div>
+      {centre?.sound === 'starting' && <p className="centre-note" role="status">Preparing sound confirmation…</p>}
+      {centre?.sound === 'suspended' && <p className="centre-note" role="status">Click or press a key to enable sound, or use Options.</p>}
+      {centre?.sound === 'unavailable' && <p className="centre-note" role="status">Sound confirmation unavailable. Use Options.</p>}
     </section>
   );
 }
