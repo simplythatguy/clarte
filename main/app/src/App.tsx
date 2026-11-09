@@ -38,6 +38,7 @@ import { Thread, type StateName } from './Thread.tsx';
 import { TITLES, backCard, menuSlots, nextValue, parentOf, trailOf, type SettingKey } from './Menu.tsx';
 import { shownWord } from './words.ts';
 import { useWords, wordsNow } from './useWords.ts';
+import { useCentreSound } from './useCentreSound.ts';
 import { commit, peek } from './prediction/prediction.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, makerFor, seedFor, type PhaseName } from './debug.ts';
@@ -55,7 +56,7 @@ import { closeMic, makeVoice, makerNow, move, openMic, resetMaker, setMakerError
 import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
 import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
-import { cancelRun, eyesDrive, eyesStatus, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
+import { cancelRun, eyesDrive, eyesStatus, faceInView, prepareRun, startEyes, useEyesStatus } from './eyes/session.ts';
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
@@ -112,7 +113,7 @@ function store(patch: { settings?: Settings; setupDone?: boolean }): void {
  * relabelling). `force` is bumped right after the slot's own activation, so the change that
  * selection causes shows at once; every later change waits until gaze leaves the slot.
  */
-function useSettled<T>(slot: string, key: string, value: T, looked: string | null, force: number): { key: string; value: T } {
+function useSettled<T>(slot: string, key: string, value: T, looked: string | null, force: number | string): { key: string; value: T } {
   const shown = useRef({ key, value });
   const forced = useRef(force);
   const bySelection = forced.current !== force;
@@ -262,9 +263,27 @@ export function App() {
   // Bumped when an activation landed on a stale label, so the label catches up at once.
   const [syncs, setSyncs] = useState(0);
   const resync = useCallback(() => setSyncs((n) => n + 1), []);
-  const primary = useSettled('primary', primaryKey(slots.primary), slots.primary, looked, syncs);
+  const centreContext = JSON.stringify([state.composition.words.map(w => w.text), state.composition.pending]);
+  const primary = useSettled('primary', primaryKey(slots.primary), slots.primary,
+    looked === 'accept-centre' ? 'primary' : looked, `${syncs}:${centreContext}`);
   // The typed letters spell the word the card shows, which holds still while gaze rests on it.
   const typedWord = primary.value.kind === 'options' ? primary.value.words[0] ?? shown : shown;
+  const centreEligible = screen.kind === 'talk' && live.kind === 'quiet' && state.composition.pending.length > 0 && Boolean(typedWord);
+  const centreInput = useRef({ eligible: centreEligible, word: typedWord, context: centreContext });
+  centreInput.current = { eligible: centreEligible, word: typedWord, context: centreContext };
+  const centreSound = useCentreSound(centreEligible && !mouseOnly.current && eyesDrive(), () => {
+    const snapshot = engine.snapshot;
+    return centreInput.current.eligible && eyesDrive() && faceInView() && snapshot.looked === 'accept-centre'
+      && snapshot.action === 'accept-centre' && snapshot.state === 'previewed' && !isGuarded('accept-centre') && !gazeOutside();
+  }, () => engine.confirm(performance.now(), 'sound'));
+  useLayoutEffect(() => { engine.cancel(); }, [centreEligible, centreContext, typedWord]);
+  useEffect(() => {
+    const cancel = () => engine.cancel();
+    window.addEventListener('blur', cancel);
+    window.addEventListener('focus', cancel);
+    document.addEventListener('visibilitychange', cancel);
+    return () => { window.removeEventListener('blur', cancel); window.removeEventListener('focus', cancel); document.removeEventListener('visibilitychange', cancel); };
+  }, []);
 
   // No word fits the groups typed so far: a soft "not yet", a second late, and only if it lasts.
   const noMatch = slots.primary.kind === 'no-match';
@@ -314,13 +333,13 @@ export function App() {
       if (e.repeat) { e.preventDefault(); e.stopPropagation(); return; }
       // Confirming a preview by key is a keyboard action: no bloom, no transitions.
       if (engine.snapshot.state === 'previewed') { noteKeyActivation(true); suppressMotionBriefly(); }
-      const tile = el?.closest?.('[data-action]');
-      const action = tile?.getAttribute('data-action');
+      const tile = el?.closest?.('button[data-action], button.centre-activate');
+      const action = tile?.matches('.centre-activate') ? 'accept-centre' : tile?.getAttribute('data-action');
       const pinned = stateRef.current.screen.kind === 'options'
         && engine.snapshot.quadrant === 'Q4' && engine.snapshot.looked === 'pick-0';
       // A keyboard-focused tile takes the key; a preview waiting for confirmation always wins,
       // and a tile that merely kept focus after a click does not steal the confirm.
-      const confirmed = action && tile?.matches(':focus-visible') && engine.snapshot.state !== 'previewed'
+      const confirmed = action && tile?.matches(':focus-visible') && (action === 'accept-centre' || engine.snapshot.state !== 'previewed')
         ? action : pinned ? 'pick-0' : null;
       if (confirmed) {
         e.preventDefault();
@@ -641,6 +660,19 @@ export function App() {
       if (action.startsWith('set-')) changeSetting(action.slice(4) as SettingKey);
       return;
     }
+    if (action === 'accept-centre') {
+      const centre = centreInput.current;
+      const context = JSON.stringify([s.composition.words.map(w => w.text), s.composition.pending]);
+      if (!centre.eligible || !centre.word || s.live.kind !== 'quiet' || !s.composition.pending.length || centre.context !== context) return;
+      const prediction = peek(requestOf(s));
+      const index = prediction.words.findIndex(w => w.word === centre.word);
+      const rank = index < 0 ? 0 : prediction.offset + index;
+      commit(centre.word, historyOf(s), s.composition.words.map(w => w.text));
+      dispatch({ type: 'accept-word', word: centre.word, rank });
+      play('word');
+      resync();
+      return;
+    }
     const { primary: shownPrimary, second: shownSecond, slots: intended } = shownRef.current;
     if (action === 'primary') {
       // An activation (dwell, key or click) on a label that changed underneath it does nothing
@@ -788,7 +820,8 @@ export function App() {
       };
     }
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours}
+      centre={centreEligible && typedWord ? { word: typedWord, activate: () => activate('accept-centre'), sound: centreSound } : undefined} />;
   }
 
   // The companion (owner, 2026-11-08) floats at the centre only while the middle holds no text at
