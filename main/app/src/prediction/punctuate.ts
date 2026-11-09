@@ -94,6 +94,15 @@ function ask(history: [Role, string][], message: string[]): Promise<string | nul
   return request;
 }
 
+/**
+ * The message as the engine punctuates it, waiting as long as the engine may take, else the rule. For preparing
+ * the person's own voice ahead of Speak (NAT-54), where there is time to wait and the clip must be made for the
+ * text Speak will say.
+ */
+export async function settledText(history: [Role, string][], message: string[]): Promise<string> {
+  return (await ask(history, message)) ?? punctuateLocally(message);
+}
+
 /** The message as it should be spoken: the engine's punctuation when it arrives in time, else the rule. */
 export async function spokenText(history: [Role, string][], message: string[]): Promise<string> {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), WAIT_AT_SPEAK_MS));

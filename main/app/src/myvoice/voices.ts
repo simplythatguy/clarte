@@ -5,10 +5,11 @@
  * (Settings.voiceId), or the system voice (null). Speaking with a voice keeps voice.ts's contract
  * (`onWord(i)` as word i starts, `done`, `cancel`): the service returns audio without word timings,
  * so the words are paced across the clip's real duration by their spoken length. When the voice
- * cannot speak (the service is off, the key is missing, the request fails), the system voice says
- * it instead, so a message is never lost.
+ * cannot speak (the service is off, the key is missing, the request fails, or it takes longer than
+ * VOICE_WAIT_MS), the system voice says it instead, so a message is never lost.
  */
 import { useSyncExternalStore } from 'react';
+import { clipStore, within } from './clips.ts';
 import { health, listVoices, speak, type Pacing, type Voice } from './service.ts';
 import { speakWords, wordsOf, type Speech } from '../voice.ts';
 
@@ -62,27 +63,60 @@ function weight(word: string): number {
   return 3 + word.replace(/[^\p{L}\p{N}']/gu, '').length + pause;
 }
 
-/** Speak `text` in voice `id`, or the system voice when `id` is null or the voice cannot speak. */
-export function speakInVoice(text: string, onWord: (index: number) => void, id: string | null, pacing: Pacing): Speech {
+/**
+ * At Speak, how long the person's voice may stay silent before the system voice says the message instead
+ * (NAT-54, audit B6). A short pause and then the system voice is a repair the person can hear; a long silence
+ * is a failure. Usually the clip is ready long before this, because it is prepared when the eyes land on Speak.
+ */
+export const VOICE_WAIT_MS = 4000;
+const SLOW_VOICE = 'Your voice took too long, so the system voice said it.';
+const NO_VOICE = 'Your voice could not speak, so the system voice said it.';
+
+const clips = clipStore((id, text, pacing) => speak(id, text, pacing));
+
+/**
+ * Make the clip for `text` now, so Speak plays it at once (NAT-54). Called when the eyes land on Speak, when
+ * the message is almost always final: preparing it earlier, as each word is accepted, would pay ElevenLabs for
+ * every unfinished version of the message.
+ */
+export function prepareInVoice(text: string, id: string | null, pacing: Pacing): void {
+  if (id === null || !text.trim() || snapshot.service.kind === 'offline') return;
+  clips.get(id, text, pacing).catch(() => { /* Speak asks again, and falls back if it must */ });
+}
+
+/**
+ * Speak `text` in voice `id`, or the system voice when `id` is null or the voice cannot speak. `onFallback`
+ * hears why the system voice took over, so the screen can say so.
+ */
+export function speakInVoice(text: string, onWord: (index: number) => void, id: string | null, pacing: Pacing,
+  onFallback?: (why: string) => void): Speech {
   if (id === null) return speakWords(text, onWord);
   let cancelled = false;
+  let fellBack = false;
   let inner: Speech | null = null;
   let audio: HTMLAudioElement | null = null;
   let url: string | null = null;
-  const controller = new AbortController();
   let resolveDone: () => void = () => {};
   const done = new Promise<void>((resolve) => { resolveDone = resolve; });
   const finish = () => { if (url) URL.revokeObjectURL(url); url = null; resolveDone(); };
-  const fallback = () => {
+  // Once only: a failed play() and the audio's error event can both report the same failure.
+  const fallback = (why: string) => {
+    if (fellBack) return;
+    fellBack = true;
     if (cancelled) return finish();
+    onFallback?.(why);
     inner = speakWords(text, onWord);
     void inner.done.then(finish);
   };
 
   void (async () => {
     try {
-      const blob = await speak(id, text, pacing, controller.signal);
+      const blob = await within(clips.get(id, text, pacing), VOICE_WAIT_MS);
       if (cancelled) return finish();
+      if (blob === null) {
+        console.warn(`[voice] the chosen voice took over ${VOICE_WAIT_MS} ms; using the system voice`);
+        return fallback(SLOW_VOICE);
+      }
       url = URL.createObjectURL(blob);
       const a = new Audio(url);
       audio = a;
@@ -98,13 +132,13 @@ export function speakInVoice(text: string, onWord: (index: number) => void, id: 
       });
       a.addEventListener('playing', () => { if (shown < 0) { shown = 0; onWord(0); } });
       a.addEventListener('ended', finish);
-      a.addEventListener('error', () => { audio = null; fallback(); });
+      a.addEventListener('error', () => { audio = null; fallback(NO_VOICE); });
       await a.play();
     } catch (error) {
       if (cancelled) return finish();
       console.warn('[voice] the chosen voice could not speak; using the system voice', error);
       audio = null;
-      fallback();
+      fallback(NO_VOICE);
     }
   })();
 
@@ -112,7 +146,6 @@ export function speakInVoice(text: string, onWord: (index: number) => void, id: 
     done,
     cancel: () => {
       cancelled = true;
-      controller.abort();
       if (audio) { audio.pause(); audio = null; finish(); }
       inner?.cancel();
       if (!inner && !audio) finish();

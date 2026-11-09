@@ -63,20 +63,25 @@ export function createVoice(name: string, source: Source, files: File[]): Promis
   return request<Voice>('/voices', { method: 'POST', body: form }, 600_000);
 }
 
-/** The phrase as audio in the voice. Every phrase is cached, so saying it again is instant and free. */
-export async function speak(id: string, text: string, pacing: Pacing, signal: AbortSignal): Promise<Blob> {
-  let response: Response;
+/**
+ * The phrase as audio in the voice. Every phrase is cached, so saying it again is instant and free.
+ *
+ * The request is not cancelled when the person stops waiting for it (NAT-54): the voice service is charged for
+ * the clip either way, so it is better kept for the next time the phrase is said. How long the person waits
+ * is decided by the caller (voices.ts); this only gives up on a service that has stopped answering.
+ */
+export async function speak(id: string, text: string, pacing: Pacing, timeoutMs = 30_000): Promise<Blob> {
   try {
-    response = await fetch(`${SERVICE_URL}/voices/${encodeURIComponent(id)}/speak`, {
+    const response = await fetch(`${SERVICE_URL}/voices/${encodeURIComponent(id)}/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, style: pacing }),
-      signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),
+      signal: AbortSignal.timeout(timeoutMs),
     });
+    if (!response.ok) throw new ServiceError(await errorMessage(response));
+    return await response.blob();
   } catch (error) {
-    if (signal.aborted) throw error;
-    throw new ServiceError(OFFLINE);
+    if (error instanceof ServiceError) throw error;
+    throw new ServiceError((error as Error).name === 'TimeoutError' ? SLOW : OFFLINE);
   }
-  if (!response.ok) throw new ServiceError(await errorMessage(response));
-  return response.blob();
 }

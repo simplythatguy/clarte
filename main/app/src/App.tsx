@@ -45,7 +45,7 @@ import { PHASES, makerFor, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, type Speech } from './voice.ts';
 import { configureSound, duck, play, unlockOnGesture } from './core/sound.ts';
 import { longest } from './text.ts';
-import { prefetchPunctuation, spokenText } from './prediction/punctuate.ts';
+import { prefetchPunctuation, settledText, spokenText } from './prediction/punctuate.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
@@ -55,7 +55,7 @@ import { OptionsFace } from './OptionsFace.tsx';
 import { WelcomePage, welcomeSlots, tallCard } from './Onboarding.tsx';
 import { VoicePage, voiceSlots } from './VoiceSetup.tsx';
 import { closeMic, makeVoice, makerNow, move, openMic, resetMaker, setMakerError, showMaker, startTake, stopTake, useMaker } from './myvoice/maker.ts';
-import { refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
+import { prepareInVoice, refreshVoices, speakInVoice, useVoices } from './myvoice/voices.ts';
 import type { Source } from './myvoice/service.ts';
 import { GuideOrb } from './GuideOrb.tsx';
 import { startSoundSelect, type SoundSelect } from './soundSelect.ts';
@@ -64,6 +64,8 @@ import { cancelRun, eyesDrive, eyesStatus, faceInView, prepareRun, startEyes, us
 import { Again, ArrowRight, Back, Backspace, Check, Erase, Close, Hand, MenuLines, Mic, Options, Sparkle, Speaker, StopSquare } from './icons.tsx';
 
 const SAY_AGAIN_MS = 6000;
+/** How long the eyes rest on Speak before the person's own voice is prepared (NAT-54): longer than a glance across. */
+const PREPARE_LOOK_MS = 300;
 /** The first run's voice page: making the person's voice from today's recordings (NAT-32). */
 const FIRST_VOICE = { kind: 'voice', step: 'intro', source: 'current', from: 'first-run' } as const;
 /** What Hear it says in the person's voice. */
@@ -147,7 +149,7 @@ function Cell({ q, children }: { q: string; children?: ReactNode }) {
 type CardFace = { icon: ReactNode; label?: ReactNode; hint?: string; name?: string };
 
 /** What the primary card (ink, Q4) shows for each function. */
-function primaryFace(fn: PrimaryFn, listenNote: string | null = null, viaGoogle = false): CardFace {
+function primaryFace(fn: PrimaryFn, listenNote: string | null = null, voiceNote: string | null = null, viaGoogle = false): CardFace {
   switch (fn.kind) {
     // After a listen that could not hear (NAT-49): why, in the card's name, and a short note on it.
     case 'listen': return listenNote ? { icon: <Mic />, label: 'Listen', hint: "Couldn't hear", name: `Listen. ${listenNote}` } : { icon: <Mic />, label: 'Listen' };
@@ -156,8 +158,9 @@ function primaryFace(fn: PrimaryFn, listenNote: string | null = null, viaGoogle 
     case 'suggestion': return { icon: <Sparkle />, label: <span className="card-label is-quote" style={longest(fn.text)}>“{fn.text}”</span>, hint: 'Suggested' };
     case 'no-match': return { icon: <Check />, label: 'No word' };
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
-    case 'stop-speaking': return { icon: <StopSquare />, label: 'Stop' };
-    case 'say-again': return { icon: <Again />, label: 'Say again' };
+    // When the person's own voice could not speak in time (NAT-54): the system voice said it, and the card says so.
+    case 'stop-speaking': return voiceNote ? { icon: <StopSquare />, label: 'Stop', hint: 'System voice', name: `Stop. ${voiceNote}` } : { icon: <StopSquare />, label: 'Stop' };
+    case 'say-again': return voiceNote ? { icon: <Again />, label: 'Say again', hint: 'System voice', name: `Say again. ${voiceNote}` } : { icon: <Again />, label: 'Say again' };
     // Owner, 2026-11-08: "Options" at the bottom, the three most likely words above it, reordering
     // like a live leaderboard as typing changes them (OptionsFace.tsx).
     case 'options': return {
@@ -433,14 +436,17 @@ export function App() {
   // Speaking: one utterance per speak-start token, with the spoken word highlighted.
   const speakToken = live.kind === 'speaking' ? live.token : 0;
   const speakText = live.kind === 'speaking' ? live.text : '';
+  /** Why the system voice said the last message in place of the person's own voice (NAT-54), or null. */
+  const [speakNote, setSpeakNote] = useState<string | null>(null);
   useEffect(() => {
     if (!speakToken) return;
     // A short breath in, then every cue ducks under the voice until it ends (SOUND.md).
     play('speak-start');
     duck(true);
+    setSpeakNote(null);
     // In the person's own voice when one is chosen (Menu › My voice), else the system voice.
     const { voiceId, pacing } = stateRef.current.settings;
-    const s = speakInVoice(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }), voiceId, pacing);
+    const s = speakInVoice(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }), voiceId, pacing, setSpeakNote);
     speech.current = s;
     void s.done.then(() => { duck(false); dispatch({ type: 'speak-end', token: speakToken }); play('speak-end'); });
     return () => { s.cancel(); duck(false); };
@@ -471,6 +477,31 @@ export function App() {
     if (readyMessage.length) prefetchPunctuation(historyOf(stateRef.current), readyMessage);
   }, [readyKey, state.turns.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The person's own voice is prepared when the eyes land on Speak (NAT-54, audit B6), so Speak plays at once
+  // instead of waiting for ElevenLabs. Only then, and after a short steady look so a glance across the card does
+  // not count: by now the message is almost always final, and each clip made is charged. Preparing as each word
+  // is accepted would pay for every unfinished version of the message.
+  const speakLooked = looked === 'primary' && primary.value.kind === 'speak';
+  /** The text the voice was prepared for, and the message it was made from, so Speak says exactly that clip. */
+  const prepared = useRef<{ key: string; text: string } | null>(null);
+  useEffect(() => {
+    const { voiceId, pacing } = stateRef.current.settings;
+    if (!speakLooked || voiceId === null) return;
+    let left = false;
+    const timer = setTimeout(() => {
+      const s = stateRef.current;
+      const message = s.composition.words.map((w) => w.text);
+      const key = JSON.stringify([historyOf(s), message]);
+      void settledText(historyOf(s), message).then((text) => {
+        // Speak already chose its text while this waited: a clip for a different text would be charged for nothing.
+        if (left || punctuating.current) return;
+        prepared.current = { key, text };
+        prepareInVoice(text, voiceId, pacing);
+      });
+    }, PREPARE_LOOK_MS);
+    return () => { left = true; clearTimeout(timer); };
+  }, [speakLooked, readyKey, state.turns.length, state.settings.voiceId, state.settings.pacing]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const startSpeaking = useCallback((text: string, turnId: number | null, holder: boolean) => {
     token.current += 1;
     dispatch({ type: 'speak-start', text, turnId, holder, token: token.current });
@@ -497,7 +528,11 @@ export function App() {
         const message = s.composition.words.map((w) => w.text);
         const asked = messageText(s.composition);
         punctuating.current = true;
-        void spokenText(historyOf(s), message).then((text) => {
+        // The text the voice was prepared for, when it was prepared for this very message, so the clip already
+        // made is the one played and ElevenLabs is not asked for a second (NAT-54).
+        const key = JSON.stringify([historyOf(s), message]);
+        const ready = prepared.current?.key === key ? prepared.current.text : null;
+        void (ready !== null ? Promise.resolve(ready) : spokenText(historyOf(s), message)).then((text) => {
           punctuating.current = false;
           const now = stateRef.current;
           // Nothing else may have happened meanwhile: the same message, still not spoken.
@@ -900,7 +935,7 @@ export function App() {
       body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
     }));
     const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
-    const pFace = primaryFace(primary.value, listenNote, viaGoogle);
+    const pFace = primaryFace(primary.value, listenNote, speakNote, viaGoogle);
     slotViews = {
       q1: backCard('Home'),
       q4: { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, bodyKey: primary.key, body: <FaceBody face={pFace} /> },
@@ -930,7 +965,7 @@ export function App() {
       </>
     );
   } else {
-    const pFace = primaryFace(primary.value, listenNote, viaGoogle);
+    const pFace = primaryFace(primary.value, listenNote, speakNote, viaGoogle);
     const sFace = secondFace(second.value, state.composition.pending.length);
     const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
     // Menu is white (owner, 2026-11-08); every other light card stays grey glass.
