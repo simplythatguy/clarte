@@ -20,7 +20,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## The one real sequence
 
-Calibration (`MOTION.md` § "The calibration sequence") is the only multi-beat sequence: the guide dot travels with `--ease-move`, the ring fills, blooms, then a beat. The app's calibration run lives in `app/src/eyes/session.ts` and `app/src/GuideOrb.tsx`; its flow is described under First run in the root `README.md`. Choreograph changes there against that, not against the simulated sequences in the v0 styles.
+Calibration (`MOTION.md` § "The calibration sequence") is the only multi-beat sequence: the guide dot travels with `--ease-move`, the ring fills, blooms, then a beat. The app's calibration run lives in `app/src/eyes/session.ts` and `app/src/GuideOrb.tsx`; its flow is described under What the person sees in `docs/developers.md`. Choreograph changes there against that, not against the simulated sequences in the v0 styles.
 
 ## Output
 

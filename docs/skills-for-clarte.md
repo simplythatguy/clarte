@@ -15,7 +15,7 @@ Precedence when rules collide, highest first:
 1. The owner's newest explicit decision.
 2. The owner's `minimal-ui` rules. They live in the owner's skill library, not in this repository. When they are not available, say so and do not reconstruct them. Repository documents cite them as: one major thing per screen, neutral surfaces with colour spent only on function, no text that explains the UI on routine screens, and a "Verify a screen" pass on real screenshots.
 3. The backend quadrant contract: `docs/design/QUADRANTS.md`.
-4. The surface's own brief: `docs/design/BRIEF.md`, `docs/design/MOTION.md` and `app/DESIGN.md` for the gaze UI; `voice/README.md` and `voice/docs/RESEARCH.md` for voice; the first-run and input sections of the root `README.md` for tracking and calibration.
+4. The surface's own brief: `docs/design/BRIEF.md`, `docs/design/MOTION.md` and `app/DESIGN.md` for the gaze UI; `voice/README.md` and `voice/docs/RESEARCH.md` for voice; the first-run and input sections of `docs/developers.md` for tracking and calibration.
 5. [apple-hig-ui](../skills/apple-hig-ui/SKILL.md), Apple's guidelines already adapted to Clarte.
 6. The skill's `CLARTE.md` overlay.
 7. The upstream `SKILL.md`.
@@ -74,7 +74,7 @@ Durations over 300 ms that are deliberate and must not be flagged: dwell progres
 | Surface | Run |
 | --- | --- |
 | Skills and provenance | `python3 scripts/validate.py` |
-| App | in `app/`: `npm test`; `npx tsc --noEmit -p tsconfig.json`; `npm run check` (every debug phase through the backend-quadrant layout check, zero violations); the rest of the Check it list in the root `README.md` |
+| App | in `app/`: `npm test`; `npx tsc --noEmit -p tsconfig.json`; `npm run check` (every debug phase through the backend-quadrant layout check, zero violations); the rest of the Check it list in `docs/developers.md` |
 | Eye tracking | in `app/`: `npm run fixture`, then `node scripts/e2e-first-run.mjs` (the first run and a second launch on a fake camera), plus a live calibration for any tracker change |
 | Voice | in `voice/`: `.venv/bin/python -m pytest -q tests`; `scripts/evaluate.py` for similarity, rate and WER |
 | Word Prediction | the run and check steps in `engine/README.md`; Light must work without neural artifacts |

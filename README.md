@@ -1,110 +1,104 @@
 # Clarté
 
-Giving back clarity of speech to people with dysarthria and motor disabilities.
+**Clarté lets people who can no longer speak clearly, and who also find it hard to use their hands, say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud, in their own voice if they wish. All it needs is an ordinary laptop with a webcam and a microphone.**
 
-## Video demo
+Made at natHacks 2026, in the Healthcare & Accessibility theme.
+
+## Watch it
 
 https://github.com/user-attachments/assets/e22974f3-46f4-4d25-9882-0f3b3130ddf4
 
-78 seconds. Eye calibration, then "I want to walk", typed by looking at
-letter groups and confirming each with a sound, the word picked from Options, and the sentence spoken aloud.
+78 seconds. Clarté learns where the person is looking, they spell "I want to walk" by looking at groups of letters and making a short sound to choose each one, they pick the word from a short list, and Clarté says the sentence out loud.
 
-## Quickstart
+## Who it is for
 
-Needs only `git`, a browser and internet; no Python, Node, compiler, ffmpeg or Git LFS.
+Dysarthria is a speech condition. The muscles used for speaking become weak or hard to control, often after a stroke or a brain injury, or with Parkinson's, multiple sclerosis, ALS or cerebral palsy. Speech becomes slurred, slow or quiet, and strangers often can't understand it. Many people with dysarthria also have shaky or weak hands, so typing on a phone or keyboard is hard too.
+
+Clarté is for those everyday moments: answering a question, asking for something, joining a conversation.
+
+## How it works
+
+1. **Clarté learns your eyes.** A dot moves to eight spots on the screen and you follow it with your eyes. This takes about 20 seconds and is saved for next time.
+2. **Look to point.** The screen is split into eight large areas, two rows of four. Looking at one draws an outline around it. Looking alone never chooses anything, so you can read the screen freely.
+3. **Make a sound to choose.** A short "yeah" or "ah" chooses what you are looking at. Clarté can learn your own sound in about 30 seconds (Menu, then Settings, then My sound), so other people talking, coughs and background noise don't count. A key press, a click or an accessibility switch also works.
+4. **Spell with four groups of letters.** The letters are split into four groups: ABCDEF, GHIJKLMN, OPQRS and TUVWXYZ. For each letter of a word, you choose the group it belongs to. Clarté guesses the word from that pattern, the way a phone's predictive text does. If the guess is wrong, Options shows the other likely words.
+5. **Speak.** When the sentence is ready, Clarté says it aloud.
+
+Two more things help in a real conversation:
+
+- **Listen.** Clarté can turn what the other person says into text on the screen. It uses this to make better word guesses, and it offers a quick reply to greetings and thanks.
+- **Your own voice.** Clarté can make a copy of your voice from old recordings of you, from before your speech changed, or from about a minute of speaking today (Menu, then My voice). Until you choose a voice, it uses a ready-made one.
+
+## Why we made it this way
+
+- **Eight big areas instead of a full keyboard.** A laptop webcam can tell roughly where you are looking, but not precisely enough to pick one small key out of 26. Eight large areas are reliable. The cost is that four letter groups can spell more than one word, which is why Clarté has to guess and lets you correct it.
+- **Look first, then make a sound.** If looking alone chose things, every glance would type something by accident. Waiting for a sound means you choose only when you mean to. The cost is that you need some way to signal: a sound, a key, a click or a switch.
+- **Word guessing runs on the laptop itself.** It is fast and keeps working without the internet.
+
+## What we have tested, and what we haven't
+
+- **Tested:** the whole journey works on our team's laptops, from learning the eyes to typing and speaking a sentence, as the video shows. We also wrote automatic tests that run the app in a browser with a pretend camera and microphone, and check every screen.
+- **Not yet tested:** we have not yet tried Clarté with people who have dysarthria. That is the most important next step.
+- **Known limits:** eye tracking gets worse when you move or slump in your chair, or when the lighting changes. Choosing by sound only suits people who can make a short, steady sound, or who can use a key or switch instead.
+- Clarté is a prototype, not a medical device.
+
+## What stays on your computer
+
+- **The camera.** The images are used on your computer to work out where you are looking, and are not sent anywhere.
+- **Word guessing** happens on your computer.
+- **Listening to the other person.** In Google Chrome this uses Google's speech service, so that audio goes to Google, and Clarté shows "Via Google" while it does. If Google's service isn't available, for example without internet, the listening happens on your computer instead.
+- **Your own voice.** To make a copy of your voice, the recordings Clarté picks are sent to ElevenLabs, a voice company. After that, the text of each new phrase it speaks in your voice is sent too.
+
+## Try it
+
+You need a Mac, Windows or Linux computer with a webcam and a microphone, an internet connection, and [Git](https://git-scm.com/downloads). Google Chrome works best.
+
+Open a terminal and run:
 
 ```sh
 git clone https://github.com/simplythatguy/clarte.git
 cd clarte
-cp .env.example .env      # Windows: copy .env.example .env; then put the team's ElevenLabs key in it
-./clarte ui               # Windows: clarte ui
+./clarte ui        # on Windows: clarte ui
 ```
 
-Making a voice (Menu › My voice) needs `ELEVENLABS_API_KEY` in `.env`. `.env` is not in git, so each
-computer needs its own copy; without it the app says so and speaks with the browser's voice.
+The first time, this downloads everything Clarté needs (up to about 1.6 GB) and takes a few minutes. Clarté then opens in your browser at http://localhost:5200/. After that it opens in seconds, and word guessing is ready within about a minute. To stop it, press Ctrl+C in the terminal.
 
-`clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
-URLs; Ctrl+C stops everything it started, except that on macOS and Linux `clarte ui` keeps the prediction
-engine running so the next start skips its 30 to 80 second load (it is restarted by itself when the engine code
-changes, and `clarte stop` ends it; `CLARTE_KEEP_ENGINE=0` turns this off). The apps are `ui` (Clarté itself:
-the conversation screen with eye calibration, the prediction engine and the voice service), `predict` (the
-prediction engine and its test page) and `voice` (the voice service alone); `clarte` alone lists them, and
-`clarte check` starts and smoke-tests every app without a browser (this is what CI runs).
+- **No webcam, or just want to look around?** Choose **Keyboard and mouse** on the first screen and use the mouse instead of your eyes.
+- **Your own voice (optional).** Making a copy of your voice needs an [ElevenLabs](https://elevenlabs.io) account. Copy `.env.example` to a new file called `.env` and put your ElevenLabs key in it. Without a key, Clarté speaks with your computer's own voice.
 
-| Folder | What it is |
+## What's next
+
+Our plan for the nine months after natHacks:
+
+- **Months 1 to 3:** ask speech-language pathologists for advice, and test Clarté with people who have dysarthria.
+- **Months 4 to 6:** make eye tracking hold up when people move, and make fixing a wrong word quicker.
+- **Months 7 to 9:** longer trials in everyday conversations.
+
+We will measure how many messages come out as the person meant them, how long each one takes, how often they have to correct a word, how often something is chosen by accident, and how tiring it is.
+
+## What's in this repository
+
+| Folder | What it holds |
 | -- | -- |
-| [`app/`](app/DESIGN.md) | The app: the conversation screen, the first run, the webcam eye tracker and the prediction client. Vite, React and TypeScript. |
-| [`engine/`](engine/README.md) | The word-prediction engine and its HTTP contract ([`engine/CONTRACT.md`](engine/CONTRACT.md)). Python. |
-| [`voice/`](voice/README.md) | The voice service that makes and speaks the person's own voice with ElevenLabs. Python. |
-| [`docs/`](docs/) | Research, the design record ([`docs/design/`](docs/design/README.md)) and development setup. |
-| `skills/`, `AGENTS.md`, `CLAUDE.md` | Instructions and skills for coding agents ([`docs/skills-for-clarte.md`](docs/skills-for-clarte.md)). |
+| [`app/`](app/DESIGN.md) | The Clarté app you see on screen |
+| [`engine/`](engine/README.md) | The word guesser |
+| [`voice/`](voice/README.md) | The part that makes and speaks your own voice |
+| [`docs/`](docs/developers.md) | Technical details, design notes and research |
+| `skills/`, `AGENTS.md`, `CLAUDE.md` | Instructions for the AI coding assistants we used while building Clarté |
 
-The prototypes the app was put together from (UI v0 and v1, Eye Tracking, Gaze Lab, Voice's page) left the
-repository on 2026-11-09; they are in git history up to commit `d6a27ca`.
+Developers: start with the [developer guide](docs/developers.md).
 
-The first run downloads up to about 1.6 GB (pinned uv, Python, Node, the 880 MB of models and the
-dependencies) into the git-ignored `.tools/` folder and the apps' own `.venv` and `node_modules`
-folders. Later runs skip all of that: the prediction engine takes 40 to 80 seconds to load its models,
-the other apps a few seconds. Every step is resumable, so an interrupted first run continues where it
-stopped. Each folder's README keeps the manual setup as a fallback.
+## Credits
 
-The launcher installs what each part needs, starts the engine on port 8765 and the app on port 5200, and opens
-http://localhost:5200/. Until the engine answers, the app uses its local decoder, so typing works from the first
-second. To run the app alone, run `npm ci && npm run dev` in `app/`. The app finds an engine on ports 8765 to
-8769, or the one that `?engine=<origin>` names.
+Clarté builds on other people's work:
 
-[Development tooling and setup](docs/dependencies.md)
+- **Eye tracking:** [WebEyeTrack](https://github.com/RedForestAI/WebEyeTrack) (MIT licence), which uses Google's [MediaPipe](https://ai.google.dev/edge/mediapipe) and [TensorFlow.js](https://www.tensorflow.org/js) (Apache 2.0).
+- **Word guessing:** [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-135M) from Hugging Face (Apache 2.0), trained further by us on everyday conversation, including the [DailyDialog](http://yanran.li/dailydialog) dataset (for non-commercial use). Word lists come from [wordfreq](https://github.com/rspeer/wordfreq), from [Wiktionary](https://en.wiktionary.org) through [kaikki.org](https://kaikki.org) (CC BY-SA 4.0), and from the 2010 US Census surname list.
+- **Hearing the other person:** OpenAI's [Whisper](https://github.com/openai/whisper) (MIT licence) when listening happens on the computer, and Google's speech service in Chrome.
+- **Voice:** [ElevenLabs](https://elevenlabs.io) makes and speaks the voice copy, and [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) checks that recordings are of the right person.
+- **Sound tests:** recordings from the [CNVVE dataset](https://doi.org/10.18419/darus-3898) (CC BY 4.0).
+- **Lettering:** the [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) typeface from the Braille Institute, designed to be easy to read.
 
-## What the person sees
+The detailed licence notes are kept next to each part, for example [`engine/README.md`](engine/README.md) and [`app/fixtures/listen/SOURCE.md`](app/fixtures/listen/SOURCE.md).
 
-Every launch starts the same way (owner, 2026-11-08):
-
-1. **Welcome**, with **Get started** as a tall ink card over Q4 and Q8, and the orb and the words centred in the three columns to its left. **Keyboard and mouse** is quiet text at the foot of Q6, not a card: the owner wants people to try calibration, and the people who skip it point and click. Until calibration the eyes cannot select, so Get started counts down and starts by itself after 20 seconds. A key, a click or a mouse movement stops the countdown, since the person can then select another way.
-2. **Eye calibration**, after Get started. Get started slides off to the right and Keyboard and mouse fades. The orb becomes the point to look at. It glides to the centre of each of the eight backend quadrants, and a blue ring closes round it while the tracker collects there. The run takes about 20 seconds, then the tracker trains. The new calibration is saved on this browser. There are no captions. If the camera fails or a run does not train, the page says why and offers **Try again**. Escape during a run, or **Keep the old one** after a failed run, keeps the saved calibration from an earlier launch.
-3. **Making your voice**, until the person has finished these pages once, by **Continue** after making a voice or by **Not now**. Later launches go from calibration straight to the conversation. **Menu › My voice** opens the voice pages at any time. The voice made and the voice chosen stay across launches. Until the person chooses a voice, Clarté speaks with River, an ElevenLabs built-in voice; without the voice service or its key, it speaks with the browser's voice.
-4. **The conversation screen.**
-
-**Keyboard and mouse** skips calibration. No camera starts, and the session runs on the keyboard and the mouse, as **Use the mouse** does after a camera failure. A click or keys 1 to 8 select, and hovering never does.
-
-**Menu › Recalibrate** runs a new calibration in a fresh tracker worker. The new calibration replaces the saved one only once it has trained. Escape keeps the calibration in use, and so does **Keep the old one** after a run that did not train. If the camera fails during the conversation, or the calibration no longer fits the camera or the window, the calibration screen opens.
-
-## Input
-
-- **Eyes**, by default. Looks come from the webcam tracker. A look never selects (owner, 2026-11-08: no dwell): a steady look closes the line round a card and waits, and the person's **sound**, Space or Enter, a click or a switch selects it.
-- **The person's sound** (DEC-128). The person says "yeah" to select a card their look has armed. **Menu › Settings › My sound** teaches Clarté their own "yeah" in about 30 seconds; after that only their "yeah" selects, and other people talking, someone beside them, claps, coughs and traffic do not (`src/listen/`). Before it is taught, a generic rule stands in: a voiced sound that rises clearly out of the room. The microphone is raw (no echo cancellation, noise suppression or automatic gain), and listening pauses while the partner is heard or Clarté speaks. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration.
-- **Keyboard and mouse.** **Keyboard and mouse** on Welcome, `?input=mouse`, or **Use the mouse** after a camera failure: no camera. A click or keys 1 to 8 select; hovering never does.
-- **Hearing the partner.** **Listen** turns the partner's speech into text in the conversation. It uses the browser's own speech recognition where it works (Google Chrome, which sends the audio to Google), because it is faster; while it does, the Stop card says "Via Google" (NAT-55). Where it is missing or fails (Chromium builds, Electron, Brave, no network), the engine's Whisper takes over on this computer for the rest of the session and nothing leaves the machine (`src/listen/partner.ts`, the engine's `POST /api/v1/transcribe`). If neither can listen, Listen stops and its card says it couldn't hear, with the reason in its name; nothing is ever put in the partner's mouth. **Menu › Settings › Dev Tools › Partner voice** chooses Microphone (that order), This computer (Whisper only) or Script (the demo lines, only by choice).
-- **Keys and clicks**, always. Keys 1 to 8 select the quadrant with that number, and a click selects a card.
-
-Other URL options: `?reset` forgets everything the app saved on this browser (first-run state, settings, the calibration) and starts the first run again, `?onboarding=off` opens straight into the conversation with no camera, `&palette=vibrant` uses the vibrant letter colours, and `#phase=<name>` opens a debug phase (`window.clarteDebug.phases` lists them).
-
-## Check it
-
-Run these in `app/` while `./clarte ui` runs:
-
-- `node scripts/selftest.ts` checks the gaze engine, the quadrant rules and the composer.
-- `npm test` runs those checks plus the always-open Options regression tests, the centre guards and the partner speech cutter (`scripts/test-partner.ts`).
-- `npm run test:ui -- http://localhost:5200` checks the Options flow, late prediction updates, and all debug layouts at both supported sizes and 200% text against a running Vite dev server. Set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead of Playwright's Chromium.
-- `npm run check` puts every debug phase through the backend-quadrant layout check at four window sizes.
-- `node scripts/e2e-first-run.mjs` drives the first run and a second launch in Chromium on a fake camera. It needs the face fixture that `npm run fixture` builds from the photo in `fixtures/face`. A photo cannot move its eyes, so this check proves the plumbing, not gaze accuracy.
-- `node scripts/e2e-sound-select.mjs` checks the generic sound rule on a fake microphone: a look arms a card, steady noise does not select, and a short "ah" does.
-- `node scripts/e2e-partner-listen.mjs http://localhost:5200 http://127.0.0.1:8765` plays a spoken sentence (macOS `say`) into a fake microphone in Chromium, which has no Google speech service: Listen must hand over to the engine's Whisper and show the real words, never a demo line.
-- `node scripts/e2e-listen.mjs` teaches one person's sound on a fake microphone (CNVVE recordings in `fixtures/listen`): their held-out takes match; two other people's and a clap do not; with a card armed, only their own sound selects it.
-- `node scripts/listen-eval.ts <data dir>` scores the listener offline on public recordings against the old loudness detector (see its header for the data).
-- `npx tsc --noEmit -p tsconfig.json` typechecks the app.
-
-## Where things live in `app/`
-
-- `src/App.tsx` routes every selection and holds the launch flow, including the Get started countdown and whether the voice pages are done.
-- `src/model.ts` holds the state, the reducer and what Q1 and Q4 offer.
-- `src/suggest.ts` picks the suggested reply Q4 offers after the partner speaks: only a social formula (a greeting back, "You're welcome", a goodbye, "I'm okay, thanks" for a plain "How are you?"), never an answer to a question about the person (NAT-53).
-- `src/words.ts` orders the inline prediction and Options choices. During grouped typing Q4 always opens Options, including when just one word is predicted. Choosing a word there accepts it; opening Options never accepts or speaks. The chooser snapshots its list until Back or acceptance, so a late response cannot change the selected word.
-
-- `src/prediction/` holds the engine client and the local decoder. Rebuild its tables from `engine/models` with `app/scripts/build-*.mjs`.
-- `src/eyes/` holds the tracker, the calibration run and the saved calibration. `src/GuideOrb.tsx` draws the orb and drives the run. `src/eyes/core/` and `public/vendor/webeyetrack/` are byte-identical copies from the Gaze Lab prototype, listed with their hashes in `src/eyes/SOURCE.json`.
-- `src/core/` holds the gaze engine, the quadrant rules and the composer, from UI v0's shared folder. The backend quadrant rules they enforce are in [`docs/design/QUADRANTS.md`](docs/design/QUADRANTS.md).
-- `DESIGN.md` records the conversation screen's design decisions.
-
-The demo keeps the current fetched candidate bounds: up to 20 exact-length alternatives, plus the fetched prediction page and its current best completion. Confidence no longer hides the chooser, and longer completions remain selectable. Full-vocabulary API paging and a literal spelling screen are separate follow-ups; this change does not claim that every possible word is reachable.
-
-Opening Options changes only Q1 (Back) and the bottom row, where the words appear, most likely first; more than four page two at a time with arrows. Q4 keeps the Options card, and selecting it again closes Options. The conversation stays exactly as it was, with no blur and no title (owner, 2026-11-08).
+Clarté's own code is under the [MIT licence](LICENSE).
