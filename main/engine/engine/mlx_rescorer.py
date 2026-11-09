@@ -18,7 +18,9 @@ from pathlib import Path
 
 import numpy as np
 
-MODELS = Path(__file__).resolve().parents[1] / "models"
+from wordpred.paths import models_dir
+
+MODELS = models_dir()
 PUNCT = set(".,!?;:'\")(-…\n")
 SUPPORTED = {"qwen2", "qwen3", "llama"}
 
