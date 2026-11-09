@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/readme/brand/logo-dark.png">
-    <img src="docs/media/readme/brand/logo-light.png" alt="Clarté" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/readme/brand/wordmark-dark.png">
+    <img src="docs/media/readme/brand/wordmark-light.png" alt="Clarté" width="360">
   </picture>
 </h1>
 
