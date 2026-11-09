@@ -10,6 +10,24 @@ https://github.com/user-attachments/assets/e22974f3-46f4-4d25-9882-0f3b3130ddf4
 
 78 seconds. Clarté learns where the person is looking, they spell "I want to walk" by looking at groups of letters and making a short sound to choose each one, they pick the word from a short list, and Clarté says the sentence out loud.
 
+## Try it
+
+<p align="center"><img src="docs/media/readme/illustrations/try-it.jpg" alt="A laptop with its webcam and microphone highlighted." width="380"></p>
+
+You need a Mac, Windows or Linux computer with a webcam and a microphone, an internet connection, and [Git](https://git-scm.com/downloads). Google Chrome works best.
+
+Open a terminal and run:
+
+```sh
+git clone https://github.com/simplythatguy/clarte.git
+cd clarte
+./clarte ui        # on Windows: clarte ui
+```
+
+The first time, this downloads everything Clarté needs (up to about 1.6 GB) and takes a few minutes. Clarté then opens in your browser at http://localhost:5200/. After that it opens in seconds, and word guessing is ready within about a minute. To stop it, press Ctrl+C in the terminal.
+
+- **Voices (optional).** Clarté works as it is, speaking with your computer's own voice. If you want, an [ElevenLabs](https://elevenlabs.io) key gives it a ready-made ElevenLabs voice and lets you make a copy of your own voice. To add one, copy `.env.example` to a new file called `.env` and put your key in it.
+
 ## Who it is for
 
 Clarté is for people who live with two things at the same time:
@@ -130,24 +148,6 @@ Two more things help in a real conversation:
 - **Speaking.** Without an ElevenLabs key, Clarté speaks with your computer's own voice. If you add a key, it speaks through ElevenLabs, a voice company, so the text of each new phrase goes there, whichever voice you use.
 - **A copy of your own voice (optional).** Only if you choose to make one, the recordings Clarté picks are sent to ElevenLabs to make it.
 
-## Try it
-
-<p align="center"><img src="docs/media/readme/illustrations/try-it.jpg" alt="A laptop with its webcam and microphone highlighted." width="380"></p>
-
-You need a Mac, Windows or Linux computer with a webcam and a microphone, an internet connection, and [Git](https://git-scm.com/downloads). Google Chrome works best.
-
-Open a terminal and run:
-
-```sh
-git clone https://github.com/simplythatguy/clarte.git
-cd clarte
-./clarte ui        # on Windows: clarte ui
-```
-
-The first time, this downloads everything Clarté needs (up to about 1.6 GB) and takes a few minutes. Clarté then opens in your browser at http://localhost:5200/. After that it opens in seconds, and word guessing is ready within about a minute. To stop it, press Ctrl+C in the terminal.
-
-- **Voices (optional).** Clarté works as it is, speaking with your computer's own voice. If you want, an [ElevenLabs](https://elevenlabs.io) key gives it a ready-made ElevenLabs voice and lets you make a copy of your own voice. To add one, copy `.env.example` to a new file called `.env` and put your key in it.
-
 ## What's next
 
 <p align="center"><img src="docs/media/readme/illustrations/next.jpg" alt="A speech therapist takes notes beside an older man as they try Clarté together." width="480"></p>
@@ -181,7 +181,6 @@ Clarté builds on other people's work:
 - **Hearing the other person:** OpenAI's [Whisper](https://github.com/openai/whisper) (MIT licence) when listening happens on the computer, and Google's speech service in Chrome.
 - **Voice:** [ElevenLabs](https://elevenlabs.io) speaks the ready-made voice and, if you make one, your voice copy, and [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) checks that recordings are of the right person.
 - **Sound tests:** recordings from the [CNVVE dataset](https://doi.org/10.18419/darus-3898) (CC BY 4.0).
-- **Pictures:** the illustrations were made with OpenAI's image generator, and the diagrams were drawn in [Excalidraw](https://excalidraw.com) (their editable files are in [`docs/media/readme/diagrams/`](docs/media/readme/diagrams)). The photos of public figures are credited under [You may know them](#you-may-know-them).
 - **Lettering:** the [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) typeface from the Braille Institute, designed to be easy to read.
 
 The detailed licence notes are kept next to each part, for example [`engine/README.md`](engine/README.md) and [`app/fixtures/listen/SOURCE.md`](app/fixtures/listen/SOURCE.md).
