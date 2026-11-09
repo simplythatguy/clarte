@@ -1,6 +1,6 @@
 # Clarté
 
-**Clarté lets people who can no longer speak clearly, and who also find it hard to use their hands, say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud, in their own voice if they wish. All it needs is an ordinary laptop with a webcam and a microphone.**
+**Clarté is for people who have two problems at once: they can no longer speak clearly, and they can't easily use their hands. It lets them say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud, in their own voice if they wish. All it needs is an ordinary laptop with a webcam and a microphone.**
 
 Made at natHacks 2026, in the Healthcare & Accessibility theme.
 
@@ -12,15 +12,28 @@ https://github.com/user-attachments/assets/e22974f3-46f4-4d25-9882-0f3b3130ddf4
 
 ## Who it is for
 
-Dysarthria is a speech condition. The muscles used for speaking become weak or hard to control, often after a stroke or a brain injury, or with Parkinson's, multiple sclerosis, ALS or cerebral palsy. Speech becomes slurred, slow or quiet, and strangers often can't understand it. Many people with dysarthria also have shaky or weak hands, so typing on a phone or keyboard is hard too.
+Clarté is for people who live with two things at the same time:
 
-Clarté is for those everyday moments: answering a question, asking for something, joining a conversation.
+- **Dysarthria.** The muscles used for speaking become weak or hard to control, often after a stroke or a brain injury, or with Parkinson's, multiple sclerosis, ALS or cerebral palsy. Speech becomes slurred, slow or quiet, and strangers often can't understand it.
+- **Limited use of their hands.** The same illness or injury often leaves hands weak, shaky or hard to move.
+
+Either one alone has workarounds. Someone whose speech is unclear can type on a phone and let it talk for them. Someone whose hands don't work can speak. Someone with both loses both ways of being understood. That is who Clarté is for.
+
+### Julie's story
+
+Julie Tomaino was 38, a choreographer, and her whole life was movement. Then a stroke hit both sides of her brain. For more than a week she couldn't move her hands or her face, and she couldn't make a sound. Only her eyes still moved. When her voice came back, it came, in her words, "slowly, one word at a time." She has said she couldn't get her feet off the floor.
+
+Julie worked hard in rehabilitation and went back to choreographing. Many people don't recover that far. Almost a million people in Canada live with stroke, and up to 4 in 10 have unclear speech after a first stroke.
+
+That is why the sentence in our video is "I want to walk". Julie has no connection to Clarté; we tell her story, from [Heart & Stroke's article "Choreographing her own recovery"](https://www.heartandstroke.ca/articles/choreographing-her-own-recovery), because it shows who Clarté is for.
+
+<sub>Sources: [Heart & Stroke, 2024](https://www.heartandstroke.ca/-/media/pdf-files/what-we-do/news/hsf_fast_backgrounder_june_2024.pdf?rev=dadfcd1b3ba1468ba6448168d31bbaea) (almost a million Canadians living with stroke); [Flowers et al., 2013](https://pesquisa.bvsalud.org/bvsms/resource/pt/mdl-23642855) (42% had dysarthria after a first ischemic stroke; another study found 26%, so we say "up to 4 in 10").</sub>
 
 ## How it works
 
 1. **Clarté learns your eyes.** A dot moves to eight spots on the screen and you follow it with your eyes. This takes about 20 seconds and is saved for next time.
 2. **Look to point.** The screen is split into eight large areas, two rows of four. Looking at one draws an outline around it. Looking alone never chooses anything, so you can read the screen freely.
-3. **Make a sound to choose.** A short "yeah" or "ah" chooses what you are looking at. Clarté can learn your own sound in about 30 seconds (Menu, then Settings, then My sound), so other people talking, coughs and background noise don't count. A key press, a click or an accessibility switch also works.
+3. **Make a sound to choose.** A short "yeah" or "ah" chooses what you are looking at. Clarté can learn your own sound in about 30 seconds (Menu, then Settings, then My sound), so other people talking, coughs and background noise don't count. Someone who can't make a sound can press an accessibility switch instead.
 4. **Spell with four groups of letters.** The letters are split into four groups: ABCDEF, GHIJKLMN, OPQRS and TUVWXYZ. For each letter of a word, you choose the group it belongs to. Clarté guesses the word from that pattern, the way a phone's predictive text does. If the guess is wrong, Options shows the other likely words.
 5. **Speak.** When the sentence is ready, Clarté says it aloud.
 
@@ -32,14 +45,14 @@ Two more things help in a real conversation:
 ## Why we made it this way
 
 - **Eight big areas instead of a full keyboard.** A laptop webcam can tell roughly where you are looking, but not precisely enough to pick one small key out of 26. Eight large areas are reliable. The cost is that four letter groups can spell more than one word, which is why Clarté has to guess and lets you correct it.
-- **Look first, then make a sound.** If looking alone chose things, every glance would type something by accident. Waiting for a sound means you choose only when you mean to. The cost is that you need some way to signal: a sound, a key, a click or a switch.
+- **Look first, then make a sound.** If looking alone chose things, every glance would type something by accident. Waiting for a sound means you choose only when you mean to. The cost is that you need some way to signal: a sound, or a switch.
 - **Word guessing runs on the laptop itself.** It is fast and keeps working without the internet.
 
 ## What we have tested, and what we haven't
 
 - **Tested:** the whole journey works on our team's laptops, from learning the eyes to typing and speaking a sentence, as the video shows. We also wrote automatic tests that run the app in a browser with a pretend camera and microphone, and check every screen.
 - **Not yet tested:** we have not yet tried Clarté with people who have dysarthria. That is the most important next step.
-- **Known limits:** eye tracking gets worse when you move or slump in your chair, or when the lighting changes. Choosing by sound only suits people who can make a short, steady sound, or who can use a key or switch instead.
+- **Known limits:** eye tracking gets worse when you move or slump in your chair, or when the lighting changes. Choosing by sound only suits people who can make a short, steady sound, or who can press a switch instead.
 - Clarté is a prototype, not a medical device.
 
 ## What stays on your computer
@@ -63,7 +76,6 @@ cd clarte
 
 The first time, this downloads everything Clarté needs (up to about 1.6 GB) and takes a few minutes. Clarté then opens in your browser at http://localhost:5200/. After that it opens in seconds, and word guessing is ready within about a minute. To stop it, press Ctrl+C in the terminal.
 
-- **No webcam, or just want to look around?** Choose **Keyboard and mouse** on the first screen and use the mouse instead of your eyes.
 - **Your own voice (optional).** Making a copy of your voice needs an [ElevenLabs](https://elevenlabs.io) account. Copy `.env.example` to a new file called `.env` and put your ElevenLabs key in it. Without a key, Clarté speaks with your computer's own voice.
 
 ## What's next
