@@ -25,6 +25,7 @@ export type Health = { ok: boolean; engine: string; model: string; keyConfigured
 export class ServiceError extends Error {}
 
 const OFFLINE = 'Voice making is not running on this computer.';
+const SLOW = 'Voice making took too long to answer.';
 
 async function errorMessage(response: Response): Promise<string> {
   try {
@@ -41,8 +42,8 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 4000
   let response: Response;
   try {
     response = await fetch(`${SERVICE_URL}${path}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-  } catch {
-    throw new ServiceError(OFFLINE);
+  } catch (error) {
+    throw new ServiceError((error as Error).name === 'TimeoutError' ? SLOW : OFFLINE);
   }
   if (!response.ok) throw new ServiceError(await errorMessage(response));
   return (await response.json()) as T;

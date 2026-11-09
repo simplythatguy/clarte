@@ -138,6 +138,7 @@ export async function makeVoice(source: Source, files?: File[]): Promise<Voice |
     return voice;
   } catch (error) {
     set({ error: (error as Error).message });
+    void refreshVoices(); // the service may have stopped or lost its key: the voice pages should say so
     return null;
   }
 }
