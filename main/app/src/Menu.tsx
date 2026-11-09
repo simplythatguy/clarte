@@ -37,7 +37,7 @@ const CYCLES = {
   // Microphone: this computer's Whisper, else the browser's recognition (Google in Chrome; NAT-55). This computer: Whisper only (NAT-49).
   partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'local', 'script'], format: (v: string) => ({ microphone: 'Microphone', local: 'This computer', script: 'Script' })[v] ?? v },
   orbMotion: { key: 'orbMotion', name: 'Motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
-  // The system voice, then every voice made on this computer that can speak (NAT-32).
+  // The default voice (River), then every voice made on this computer that can speak (NAT-32).
   voiceId: { key: 'voiceId', name: 'Voice', get values() { return [null, ...readyVoices().map((v) => v.id)]; }, format: voiceName },
   pacing: { key: 'pacing', name: 'Pacing', values: ['like-me', 'clearer'], format: (v: string) => (v === 'clearer' ? 'Steadier' : 'Like my recordings') },
 } as { [K in keyof Settings]: Cycle<K> };

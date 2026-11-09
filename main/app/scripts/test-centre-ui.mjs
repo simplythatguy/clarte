@@ -8,7 +8,7 @@ const out=process.argv[3]??'../../reports/centre-implementation';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL||undefined,args:['--autoplay-policy=no-user-gesture-required']});
 const results=[],errors=[];
-const trackerStub=`export * from '/src/eyes/session.ts?centre-real';export const eyesDrive=()=>true;export const faceInView=()=>true;export const eyesStatus=()=>({kind:'tracking',calibratedAt:1});export const useEyesStatus=eyesStatus;export const cancelRun=async()=>{};export const prepareRun=async()=>{};export const startEyes=async()=>{};`;
+const trackerStub=`export * from '/src/eyes/session.ts?centre-real';export const eyesDrive=()=>true;export const faceInView=()=>window.__face!==false;export const eyesStatus=()=>({kind:'tracking',calibratedAt:1});export const useEyesStatus=eyesStatus;export const cancelRun=async()=>{};export const prepareRun=async()=>{};export const startEyes=async()=>{};`;
 async function pageFor(gaze=false,denied=false){
  const page=await browser.newPage({viewport:{width:1440,height:900}});
  page.setDefaultNavigationTimeout(60000);page.setDefaultTimeout(15000);
@@ -82,6 +82,17 @@ try{
  assert.equal(await g.evaluate(()=>window.clarteDebug.phase()),'composing-ready');
  results.push('Synthetic gaze + real Web Audio graph: readiness waits without auto-accepting in dwell mode; late ranking stays frozen; one tone onset accepts the displayed word once through the shared matcher and microphone.');
  await g.close();
+
+ console.log('blink');const b=await pageFor(true);await typeWant(b);
+ await b.waitForFunction(()=>typeof window.__level==='function');
+ await gazeAt(b,700,300);await b.waitForFunction(()=>document.querySelector('.centre-word')?.hasAttribute('data-centre-ready'));
+ await b.evaluate(()=>window.__level(.06));await b.waitForTimeout(150);
+ await b.evaluate(()=>{clearInterval(window.__sample);window.__face=false;const e=window.clarteDebug.engine;e.sample(null,null);window.__sample=setInterval(()=>e.sample(null,null),25)});
+ await b.waitForTimeout(150);await b.evaluate(()=>{window.__face=true});await gazeAt(b,700,300);await b.waitForTimeout(150);
+ await b.evaluate(()=>window.__level(.00005));
+ await b.getByRole('button',{name:'Speak',exact:true}).waitFor({timeout:3000});
+ results.push('A blink inside the engine blink grace, partway through the sound, does not stop the sound accepting the armed centre word.');
+ await b.close();
 
  console.log('denied');const denied=await pageFor(true,true);await typeWant(denied);await denied.getByText('Sound confirmation unavailable. Use Options.',{exact:true}).waitFor();
  await gazeAt(denied,700,300);await denied.waitForTimeout(1900);assert.equal(await denied.evaluate(()=>window.clarteDebug.phase()),'composing-options');

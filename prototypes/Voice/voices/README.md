@@ -17,3 +17,4 @@ for everyone. To change one, edit its `profile.json` here.
 | `mukhtar/` | Mukhtar's Voice |
 | `omer/` | Omer's Voice |
 | `amine/` | Amine's Voice |
+| `river/` | River, an ElevenLabs built-in voice. The app speaks with it until the person chooses another (`DEFAULT_VOICE_ID` in `main/app/src/myvoice/voices.ts`). |
