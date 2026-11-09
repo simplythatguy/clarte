@@ -6,6 +6,11 @@ import uvicorn
 
 
 def main() -> None:
+    from .store import seed_shared
+
+    seeded = seed_shared()
+    if seeded:
+        print(f"team voices: {len(seeded)} ready", flush=True)
     uvicorn.run(
         "clarte_voice.app:app",
         host="127.0.0.1",

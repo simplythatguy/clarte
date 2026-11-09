@@ -61,6 +61,15 @@ def _get(voice_id: str) -> dict:
         raise HTTPException(404, "That voice no longer exists.") from None
 
 
+def _own(voice_id: str) -> dict:
+    """A voice this laptop may change or delete. Team voices (prototypes/Voice/voices) are the
+    team's: changing or deleting one here would replace or delete the clone for everyone."""
+    profile = _get(voice_id)
+    if profile.get("shared"):
+        raise HTTPException(409, "This is a team voice. Change it in the repo's prototypes/Voice/voices.")
+    return profile
+
+
 async def _analyse_uploads(voice_id: str, files: list[UploadFile], source: str, first_n: int):
     if not files:
         raise HTTPException(400, "Add at least one recording.")
@@ -211,7 +220,7 @@ def get_voice(voice_id: str):
 
 @app.post("/voices/{voice_id}/recordings")
 async def add_recordings(voice_id: str, files: list[UploadFile] = File(...)):
-    profile = _get(voice_id)
+    profile = _own(voice_id)
     existing = [_restore(voice_id, s) for s in profile["segments"]]
     first_n = 1 + max((s.n for s in existing), default=-1)
     added, problems = await _analyse_uploads(voice_id, files, profile["source"], first_n)
@@ -241,7 +250,7 @@ class VoiceUpdate(BaseModel):
 
 @app.put("/voices/{voice_id}")
 def update_voice(voice_id: str, body: VoiceUpdate):
-    profile = _get(voice_id)
+    profile = _own(voice_id)
     if body.name is not None:
         profile["name"] = body.name.strip()
     if body.selected is not None:
@@ -258,7 +267,7 @@ def update_voice(voice_id: str, body: VoiceUpdate):
 
 @app.delete("/voices/{voice_id}")
 def delete_voice(voice_id: str):
-    profile = _get(voice_id)
+    profile = _own(voice_id)
     if profile.get("remoteVoiceId"):
         engine.delete_voice(profile["remoteVoiceId"])
     store.delete(voice_id)

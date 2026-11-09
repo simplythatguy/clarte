@@ -1,0 +1,22 @@
+{
+  "id": "26416f5b3c0f",
+  "name": "Mukhtar's Voice",
+  "source": "current",
+  "engine": "elevenlabs",
+  "status": "ready",
+  "remoteVoiceId": "9FVFDH6U4htZEzZC9JMW",
+  "createdAt": 1794074530357,
+  "updatedAt": 1794074532964,
+  "consent": {
+    "statement": "These recordings are of my own voice, or I am authorized to make this voice for the person speaking in them. I agree that the selected speech is sent to ElevenLabs to create the voice.",
+    "at": 1794074530357
+  },
+  "reference": {
+    "seconds": 46.54,
+    "segments": []
+  },
+  "segments": [],
+  "files": [],
+  "problems": [],
+  "shared": true
+}

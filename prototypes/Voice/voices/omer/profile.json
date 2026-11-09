@@ -1,0 +1,22 @@
+{
+  "id": "80b2d2818272",
+  "name": "Omer's Voice",
+  "source": "current",
+  "engine": "elevenlabs",
+  "status": "ready",
+  "remoteVoiceId": "4G4cbfzwd6uLufgGjKEw",
+  "createdAt": 1794074749112,
+  "updatedAt": 1794074752572,
+  "consent": {
+    "statement": "These recordings are of my own voice, or I am authorized to make this voice for the person speaking in them. I agree that the selected speech is sent to ElevenLabs to create the voice.",
+    "at": 1794074749112
+  },
+  "reference": {
+    "seconds": 43.32,
+    "segments": []
+  },
+  "segments": [],
+  "files": [],
+  "problems": [],
+  "shared": true
+}

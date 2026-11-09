@@ -1,0 +1,22 @@
+{
+  "id": "feeadf573d2d",
+  "name": "Amine's Voice",
+  "source": "current",
+  "engine": "elevenlabs",
+  "status": "ready",
+  "remoteVoiceId": "cJSfMi870X4sJg5ZeKr7",
+  "createdAt": 1794074991669,
+  "updatedAt": 1794074994431,
+  "consent": {
+    "statement": "These recordings are of my own voice, or I am authorized to make this voice for the person speaking in them. I agree that the selected speech is sent to ElevenLabs to create the voice.",
+    "at": 1794074991669
+  },
+  "reference": {
+    "seconds": 61.34,
+    "segments": []
+  },
+  "segments": [],
+  "files": [],
+  "problems": [],
+  "shared": true
+}

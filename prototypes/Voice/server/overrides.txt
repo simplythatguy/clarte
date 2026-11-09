@@ -2,5 +2,9 @@
 # webrtcvad-wheels in requirements.txt provides the webrtcvad module resemblyzer imports.
 webrtcvad; sys_platform == 'never'
 # numba and llvmlite stopped shipping macOS x86_64 wheels after these versions (librosa needs them).
+# An override replaces every requirement on the package, so every other platform needs its own
+# line, or uv leaves numba out there and making a voice fails.
 numba==0.62.1; sys_platform == 'darwin' and platform_machine == 'x86_64'
 llvmlite==0.45.1; sys_platform == 'darwin' and platform_machine == 'x86_64'
+numba; sys_platform != 'darwin' or platform_machine != 'x86_64'
+llvmlite; sys_platform != 'darwin' or platform_machine != 'x86_64'

@@ -7,6 +7,10 @@ Layout, under CLARTE_VOICE_DIR (default ~/.clarte/voices):
     <id>/reference.wav     the assembled reference the model listens to
     <id>/conds.pt          cached model conditioning for fast speaking
 
+Team voices (prototypes/Voice/voices/<person>/profile.json) hold only a name and an
+ElevenLabs id, never audio; seed_shared() adds them here so every laptop with the
+app's key can speak with them.
+
 Uploaded files themselves are never kept: they are decoded into a temporary
 directory, cut into speech segments, and deleted.
 """
@@ -32,6 +36,37 @@ def root() -> Path:
     base = Path(os.environ.get("CLARTE_VOICE_DIR", Path.home() / ".clarte" / "voices"))
     base.mkdir(parents=True, exist_ok=True)
     return base
+
+
+def shared_root() -> Path:
+    return Path(os.environ.get("CLARTE_SHARED_VOICES", Path(__file__).resolve().parents[2] / "voices"))
+
+
+def seed_shared() -> list[str]:
+    """Add the team voices to this laptop's voices, or refresh them (a rename in the repo
+    reaches every laptop). A voice made on this laptop is never touched. Returns the ids seeded."""
+    seeded = []
+    for path in sorted(shared_root().glob("*/profile.json")):
+        try:
+            team = json.loads(path.read_text())
+            folder = voice_dir(team.get("id", ""))
+        except (OSError, json.JSONDecodeError, KeyError):
+            continue
+        if team.get("status") != "ready" or not team.get("remoteVoiceId"):
+            continue
+        team["shared"] = True
+        target = folder / "profile.json"
+        if target.exists():
+            local = json.loads(target.read_text())
+            if not local.get("shared"):
+                continue
+            # Keep what this laptop knows (its recordings, if it made the voice); take the team's
+            # name and clone.
+            team = {**local, **{k: team[k] for k in ("name", "remoteVoiceId", "status", "shared")}}
+        folder.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(team, indent=2))
+        seeded.append(team["id"])
+    return seeded
 
 
 def new_id() -> str:
