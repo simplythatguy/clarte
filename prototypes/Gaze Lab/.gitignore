@@ -1,8 +1,0 @@
-# Recordings hold webcam video, face landmarks and eye images: they never leave the machine.
-sessions/
-evidence/
-fixtures/*.y4m
-node_modules/
-dist/
-.venv/
-__pycache__/

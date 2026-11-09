@@ -1,5 +1,0 @@
-/* Tailwind's theme and utilities for components/ui, without its preflight reset, so style 8's own
-   styles (unlayered, so they win any tie) render exactly as before. */
-@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);

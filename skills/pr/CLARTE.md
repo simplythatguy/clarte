@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Domain language
 
-There is no `GLOSSARY.md`. Clarte's vocabulary lives in the Glossary section of `AGENTS.md` and in `prototypes/UI/v0/README.md`. Use those terms as defined:
+There is no `GLOSSARY.md`. Clarte's vocabulary lives in the Glossary section of `AGENTS.md` and in `docs/design/QUADRANTS.md`. Use those terms as defined:
 
 - backend quadrant and Q1–Q8 in reading order; frontend quadrant; rest zone
 - G1–G4 with their letter ranges

@@ -2,7 +2,7 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: core.** `prototypes/UI/v0/MOTION.md` tells builders to cast every event with this skill's format before coding it.
+**Status: core.** `docs/design/MOTION.md` tells builders to cast every event with this skill's format before coding it.
 
 ## Start from what is already cast
 
@@ -20,7 +20,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## The one real sequence
 
-Calibration (`MOTION.md` § "The calibration sequence") is the only multi-beat sequence: the guide dot travels with `--ease-move`, the ring fills, blooms, then a beat. In v0 the product keeps the calibration flow in `prototypes/Eye Tracking/`. Choreograph changes there against its `docs/MINIMAL-FLOW.md`, not against the simulated sequences in the styles.
+Calibration (`MOTION.md` § "The calibration sequence") is the only multi-beat sequence: the guide dot travels with `--ease-move`, the ring fills, blooms, then a beat. The app's calibration run lives in `app/src/eyes/session.ts` and `app/src/GuideOrb.tsx`; its flow is described under First run in the root `README.md`. Choreograph changes there against that, not against the simulated sequences in the v0 styles.
 
 ## Output
 

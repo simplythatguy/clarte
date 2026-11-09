@@ -6,8 +6,8 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Inputs
 
-- **DESIGN.md equivalent:** `prototypes/UI/v0/s0/DESIGN.md` (tokens and measured contrast) together with `BRIEF.md` § Visual direction and `MOTION.md` tokens. Step 1.4 reads these as the system-level overrides.
-- **Approved reference:** `prototypes/UI/v0/s0/static.html` and `reference/11-light-direction-mock-1440x900.png`, the owner's minimum quality bar.
+- **DESIGN.md equivalent:** `docs/design/s0/DESIGN.md` (tokens and measured contrast) together with `BRIEF.md` § Visual direction and `MOTION.md` tokens. Step 1.4 reads these as the system-level overrides.
+- **Approved reference:** `docs/design/s0/static.html` and `docs/design/reference/11-light-direction-mock-1440x900.png`, the owner's minimum quality bar.
 - **Content:** real Clarte content only. Partner utterances, the six capabilities, the four letter groups printed in full, saved phrases. Never lorem ipsum, and never a made-up user quote or accuracy figure.
 
 ## Overrides

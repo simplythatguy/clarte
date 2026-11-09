@@ -4,7 +4,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 **Status: occasional.**
 
-The upstream glossary stays authoritative for general terms. Clarte also has named moments of its own, defined in `prototypes/UI/v0/MOTION.md`. When someone describes one of these, answer with the Clarte name first, then the closest general term.
+The upstream glossary stays authoritative for general terms. Clarte also has named moments of its own, defined in `docs/design/MOTION.md`. When someone describes one of these, answer with the Clarte name first, then the closest general term.
 
 - **Intent delay**: the first 150 ms (groups) or 250 ms (controls) of a look, during which nothing changes. General: *Delay*.
 - **Focus cue**: one static step when the intent delay ends; the tile face darkens one shade and the ring's track becomes opaque. Not a pulse.

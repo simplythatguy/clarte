@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Clarte already has a picker for whole screens
 
-To compare whole layouts, add a style to `prototypes/UI/v0/` and its switcher in `s_all/` (`node prototypes/UI/v0/s_all/serve.mjs`, port 5100). That is how s0–s5 were built. Use this skill's PICKER.md harness for a single piece within a screen, such as the dwell indicator or the word in progress.
+UI v0 compared whole layouts as separate styles with a switcher (`s_all/`); that is how s0–s5 were built, and they are in git history up to commit `d6a27ca`. To compare whole layouts now, build each as a debug phase in `app/` (`#phase=<name>`). Use this skill's PICKER.md harness for a single piece within a screen, such as the dwell indicator or the word in progress.
 
 ## The picker on a gaze screen
 

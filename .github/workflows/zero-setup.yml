@@ -1,6 +1,6 @@
 # Proves a clone runs with nothing installed but git: the LFS models are left as pointers
 # (lfs: false) so the launcher's own fetch path is exercised, and `clarte check` provisions,
-# starts, smoke-tests and stops every prototype. .tools holds every download (uv, Python,
+# starts, smoke-tests and stops every app. .tools holds every download (uv, Python,
 # Node, the LFS objects, wheels, Zig's cache); caching it keeps repeated runs off the owner's
 # LFS bandwidth quota, so keep the matrix to one job per platform.
 name: zero-setup
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .tools
-          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/clarte.py', 'clarte', 'clarte.cmd', '**/requirements*.txt', '**/build-requirements.txt', '**/overrides.txt', 'prototypes/**/package-lock.json', 'main/**/package-lock.json') }}
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/clarte.py', 'clarte', 'clarte.cmd', '**/requirements*.txt', '**/build-requirements.txt', '**/overrides.txt', 'app/package-lock.json') }}
           restore-keys: |
             tools-${{ runner.os }}-${{ runner.arch }}-
       - name: clarte check
@@ -38,4 +38,4 @@ jobs:
       - name: Sizes
         if: always()
         shell: bash
-        run: du -sh .tools prototypes/*/v0/.venv prototypes/Voice/server/.venv 2>/dev/null || true
+        run: du -sh .tools engine/.venv voice/.venv app/node_modules 2>/dev/null || true

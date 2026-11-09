@@ -1,8 +1,0 @@
-node_modules/
-dist/
-server/.venv/
-.pytest_cache/
-# Voice recordings are personal data; they live in ~/.clarte/voices, never here.
-*.wav
-*.webm
-*.m4a

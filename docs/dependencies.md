@@ -79,7 +79,7 @@ Use `frontend-design` to establish visual direction, `design-html` for the inlin
 
 Reviewed the [skills repository](https://github.com/emilkowalski/skills) README and every `skills/*/SKILL.md` at the commit recorded in `sources.lock.json`. The seventeen skills are prompt instructions for animation, motion review, choreography, performance, Apple-style design, UI breakage testing, prototyping and library choice; they call no runtime and install nothing. Each skill folder is an exact copy of the upstream folder with the upstream MIT license added as `LICENSE.txt`. The root cheat sheets are not copied because they duplicate the skills.
 
-Use `review-animations`, `choreograph`, `animation-performance` and `emil-design-eng` when reviewing or building the UI prototypes, alongside `better-ui`, `frontend-design` and the owner's `minimal-ui`. Where these skills and minimal-ui disagree about how much is on screen or what colour is for, minimal-ui wins; where they and the Clarte gaze research disagree about motion near armed targets, the research wins (nothing moves while a target is armed).
+Use `review-animations`, `choreograph`, `animation-performance` and `emil-design-eng` when reviewing or building the app's UI, alongside `better-ui`, `frontend-design` and the owner's `minimal-ui`. Where these skills and minimal-ui disagree about how much is on screen or what colour is for, minimal-ui wins; where they and the Clarte gaze research disagree about motion near armed targets, the research wins (nothing moves while a target is armed).
 
 ## Lint Apple
 

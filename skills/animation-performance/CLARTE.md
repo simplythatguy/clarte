@@ -8,7 +8,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 Upstream treats "the page is busy" as the rare case. In Clarte it is constant: the WebEyeTrack worker runs inference on every frame, the gaze engine updates, the decoder answers over the network to a local server, and speech recognition and synthesis run. Measure under those conditions:
 
-- Profile with the real tracker running (`prototypes/Eye Tracking`), not only with the mouse simulator. A mouse-driven dwell proves very little.
+- Profile with the real tracker running (`app/src/eyes/`), not only with the mouse simulator. A mouse-driven dwell proves very little.
 - The reference device is the laptop the person uses, running camera, model and page together, not a mid-range phone. The voice service is CPU-bound while it synthesises (it defaults to CPU on Apple Silicon), so check voice screens during synthesis too.
 - `MOTION.md` acceptance item 8 is the bar: during a dwell, no layout or paint beyond the ring's composite.
 

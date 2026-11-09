@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## The direction is decided
 
-The skill says: "Where the brief pins down a visual direction, follow it exactly." For the conversation UI, the owner pinned it on 2026-11-07 (`prototypes/UI/v0/BRIEF.md` § Visual direction):
+The skill says: "Where the brief pins down a visual direction, follow it exactly." For the conversation UI, the owner pinned it on 2026-11-07 (`docs/design/BRIEF.md` § Visual direction):
 
 - apple.com neutrals: canvas `#F5F5F7`, surfaces `#FFFFFF`, ink `#1D1D1F`
 - Satoshi at 500 and 700
@@ -15,7 +15,7 @@ The skill says: "Where the brief pins down a visual direction, follow it exactly
 - cards floating in canvas, oversized radii, thin outline icons
 - no gradients and no shadows
 
-The mock `prototypes/UI/v0/s0/static.html` (screenshot `reference/11-light-direction-mock-1440x900.png`) is the minimum quality bar. Don't propose a "distinctive" alternative, a new typeface, or a darker or warmer palette. Spend your judgement on proportion, whitespace and finish within that skin.
+The mock `docs/design/s0/static.html` (screenshot `docs/design/reference/11-light-direction-mock-1440x900.png`) is the minimum quality bar. Don't propose a "distinctive" alternative, a new typeface, or a darker or warmer palette. Spend your judgement on proportion, whitespace and finish within that skin.
 
 The voice prototype has its own look (Atkinson Hyperlegible Next, Clarte blue `#2152bf`, 64 px targets). Whether it adopts the UI v0 skin is the owner's call. Raise it; don't do it unasked.
 

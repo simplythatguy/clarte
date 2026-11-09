@@ -2,7 +2,7 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: core.** `prototypes/UI/v0/BRIEF.md` requires a break-ui pass on every style, with its table in `REPORT.md`. Use it on the voice screens too.
+**Status: core.** `docs/design/BRIEF.md` requires a break-ui pass on every style, with its table in `REPORT.md`. Use it on the voice screens too.
 
 ## Where the toggle goes
 
@@ -20,7 +20,7 @@ Upstream puts a segmented control fixed at the bottom centre. On a gaze screen t
 | Autocomplete candidate | `shared/decoder.ts`, `vocabulary.ts`, or the Word Prediction engine | the longest vocabulary word, which must fit without moving a target (`MOTION.md`: reserve space for it); no candidate; a candidate that changes while the slot is armed |
 | Accepted message | composer | a whole sentence that wraps to three lines at 200% text; a single word; empty |
 | Saved phrases, Menu items | Menu | zero, one, more items than quadrants allow |
-| Voice names | `prototypes/Voice` | long, emoji, non-Latin, duplicate, empty |
+| Voice names | `app/src/myvoice/` (Menu › My voice) | long, emoji, non-Latin, duplicate, empty |
 | Voice sources | upload and record screens | a 2-hour video; a file at the 300 MB cap; a clip with music or a second speaker; a 1-second recording; no usable speech |
 
 ## States that aren't datasets

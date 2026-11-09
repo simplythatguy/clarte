@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Constraints that come before the list
 
-- **UI v0 styles:** no UI kit and no CSS framework; plain CSS or CSS modules with tokens in `:root`; inline SVG only, no icon fonts (`prototypes/UI/v0/BRIEF.md` § Deliverables). base-ui, cmdk, Sonner, Motion, dnd kit, Leva, cva and next-themes are all out.
+- **UI v0 styles:** no UI kit and no CSS framework; plain CSS or CSS modules with tokens in `:root`; inline SVG only, no icon fonts (`docs/design/BRIEF.md` § Deliverables). base-ui, cmdk, Sonner, Motion, dnd kit, Leva, cva and next-themes are all out.
 - **Gaze screens** can't use components built around hover, focus traps for pointer users, drag, or timed dismissal, even when accessible. Every actionable element must sit in one backend quadrant and carry `data-action`.
 - **Voice prototype:** its only runtime dependencies are React and a self-hosted font. Adding one is a decision for the owner, not a default.
 - **Everything is local.** No library may phone home, load from a CDN at runtime, or need an account. The eye-tracking CSP and request guard block it anyway.

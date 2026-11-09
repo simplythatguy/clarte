@@ -1,7 +1,0 @@
-node_modules/
-dist/
-.vite/
-*.local
-# Demo recordings stay local; screenshots are committed.
-s*/evidence/**/*.webm
-s5/recording/

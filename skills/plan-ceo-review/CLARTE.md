@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Mode
 
-Prototypes exist "to decide, not to ship" (`prototypes/UI/v0/README.md`). Default to **HOLD SCOPE** for work on an existing prototype and **SCOPE REDUCTION** when a plan grows past one prototype. Use **EXPANSION** only when the owner asks for a product-level vision. No mode may trade away the gaze contract, consent, or local-only processing for scope.
+Prototypes exist "to decide, not to ship" (`docs/design/QUADRANTS.md`). Default to **HOLD SCOPE** for work on an existing prototype and **SCOPE REDUCTION** when a plan grows past one prototype. Use **EXPANSION** only when the owner asks for a product-level vision. No mode may trade away the gaze contract, consent, or local-only processing for scope.
 
 ## Prime directives, Clarte failure map
 
@@ -26,4 +26,4 @@ Directive 5 ("dashboards, alerts and runbooks are launch scope") becomes local e
 
 ## Dream state
 
-The 12-month ideal comes from `prototypes/UI/v0/RESEARCH.md` §11 (about 10 wpm, a cap near 20) and the BRIEF's "what a good session feels like". Measure plans against that, not against generic growth metrics.
+The 12-month ideal comes from `docs/design/RESEARCH.md` §11 (about 10 wpm, a cap near 20) and the BRIEF's "what a good session feels like". Measure plans against that, not against generic growth metrics.

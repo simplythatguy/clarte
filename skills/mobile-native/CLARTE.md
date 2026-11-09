@@ -2,7 +2,7 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: not in use.** Clarte runs on a laptop with a webcam. The voice service binds to 127.0.0.1, so a phone can't reach it as built. Use this skill only if a surface moves to a phone or tablet, for example a partner companion display (`prototypes/UI/v0/RESEARCH.md` §12, open question 8).
+**Status: not in use.** Clarte runs on a laptop with a webcam. The voice service binds to 127.0.0.1, so a phone can't reach it as built. Use this skill only if a surface moves to a phone or tablet, for example a partner companion display (`docs/design/RESEARCH.md` §12, open question 8).
 
 A few items matter on the laptop today:
 

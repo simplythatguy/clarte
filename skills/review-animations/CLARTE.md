@@ -2,11 +2,11 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: core.** `prototypes/UI/v0/BRIEF.md` requires this review on every style's own build, with its tables in that style's `REPORT.md`.
+**Status: core.** `docs/design/BRIEF.md` requires this review on every style's own build, with its tables in that style's `REPORT.md`.
 
 ## What changes
 
-The upstream bar assumes a pointer and a touch screen. Clarte's gaze screens add stillness and luminance rules, and they deliberately use some patterns the upstream escalation list flags. Review against `prototypes/UI/v0/MOTION.md` as the house standard: it is a documented decision, so findings that contradict it are not findings (upstream Guideline "don't re-litigate").
+The upstream bar assumes a pointer and a touch screen. Clarte's gaze screens add stillness and luminance rules, and they deliberately use some patterns the upstream escalation list flags. Review against `docs/design/MOTION.md` as the house standard: it is a documented decision, so findings that contradict it are not findings (upstream Guideline "don't re-litigate").
 
 Add three standards to the ten:
 

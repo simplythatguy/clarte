@@ -18,7 +18,7 @@ Before the upstream tree, delete on sight on any gaze screen:
 
 ## Keep: documented decisions
 
-These exist by decision in `prototypes/UI/v0/MOTION.md` and `BRIEF.md`. Upstream Hard Rule 4 protects them.
+These exist by decision in `docs/design/MOTION.md` and `BRIEF.md`. Upstream Hard Rule 4 protects them.
 
 - the dwell arc, its 150 ms drain, and its re-arm fade: removing them removes the selection feedback itself
 - the intent-delay focus cue (one static step)
