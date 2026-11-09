@@ -5,6 +5,13 @@
  * text to speak, to ElevenLabs.
  */
 export const SERVICE_URL: string = (import.meta.env.VITE_CLARTE_VOICE_URL as string | undefined) ?? 'http://localhost:4322';
+/**
+ * `./clarte ui` sets this to "off" when it started no voice service, because .env has no ElevenLabs key (NAT-57).
+ * .env is git-ignored, so every fresh clone starts this way until the key is put in it.
+ */
+export const SERVICE_STARTED = import.meta.env.VITE_CLARTE_VOICE !== 'off';
+/** What to do when there is no key: said the same way whether the service is off or running without one. */
+export const NO_KEY = 'Voice making needs the ElevenLabs key. Put ELEVENLABS_API_KEY in the .env file in the Clarté folder, then start Clarté again.';
 
 export type Source = 'past' | 'current';
 export type Pacing = 'like-me' | 'clearer';
@@ -24,7 +31,7 @@ export type Health = { ok: boolean; engine: string; model: string; keyConfigured
 
 export class ServiceError extends Error {}
 
-const OFFLINE = 'Voice making is not running on this computer.';
+const OFFLINE = 'Voice making is not answering. Start Clarté again with ./clarte ui.';
 const SLOW = 'Voice making took too long to answer.';
 
 async function errorMessage(response: Response): Promise<string> {

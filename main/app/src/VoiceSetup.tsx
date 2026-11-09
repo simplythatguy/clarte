@@ -22,7 +22,7 @@
 import type { ReactNode } from 'react';
 import type { SlotView, Slots } from './Tile.tsx';
 import type { VoiceStep } from './model.ts';
-import type { Source } from './myvoice/service.ts';
+import { NO_KEY, type Source } from './myvoice/service.ts';
 import type { ServiceState } from './myvoice/voices.ts';
 import { ENOUGH_SECONDS, MINIMUM_SECONDS, PROMPTS, recordedSeconds, type MakerState } from './myvoice/maker.ts';
 import { tallCard } from './Onboarding.tsx';
@@ -51,7 +51,7 @@ const pair = (left: SlotView, action: string, label: string, icon: ReactNode): S
 /** Why voice making cannot start, or null when it can. */
 function blocked(service: ServiceState): string | null {
   if (service.kind === 'offline') return service.message;
-  if (service.kind === 'no-key') return 'Voice making needs an ElevenLabs key on this computer.';
+  if (service.kind === 'no-key') return NO_KEY;
   return null;
 }
 

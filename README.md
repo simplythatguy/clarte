@@ -9,9 +9,12 @@ Needs only `git`, a browser and internet; no Python, Node, compiler, ffmpeg or G
 ```sh
 git clone https://github.com/simplythatguy/clarte.git
 cd clarte
-cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_API_KEY for Voice
+cp .env.example .env      # Windows: copy .env.example .env; then put the team's ElevenLabs key in it
 ./clarte ui               # Windows: clarte ui
 ```
+
+Making a voice (Menu › My voice) needs `ELEVENLABS_API_KEY` in `.env`. `.env` is not in git, so each
+computer needs its own copy; without it the app says so and speaks with the browser's voice.
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
 URLs; Ctrl+C stops everything it started, except that on macOS and Linux `clarte ui` keeps the prediction

@@ -11,7 +11,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { clipStore, within } from './clips.ts';
-import { health, listVoices, speak, type Pacing, type Voice } from './service.ts';
+import { health, listVoices, NO_KEY, SERVICE_STARTED, speak, type Pacing, type Voice } from './service.ts';
 import { speakWords, wordsOf, type Speech } from '../voice.ts';
 
 export type ServiceState =
@@ -31,6 +31,8 @@ let refreshing: Promise<void> | null = null;
 /** Ask the service again: its state and its voices, newest first. */
 export function refreshVoices(): Promise<void> {
   refreshing ??= (async () => {
+    // No service to ask: the launcher started none, because there is no key (NAT-57). The browser's voice speaks.
+    if (!SERVICE_STARTED) return emit({ service: { kind: 'offline', message: NO_KEY }, voices: [] });
     try {
       const [h, voices] = await Promise.all([health(), listVoices()]);
       emit({ service: h.keyConfigured ? { kind: 'ready' } : { kind: 'no-key' }, voices: [...voices].sort((a, b) => b.updatedAt - a.updatedAt) });

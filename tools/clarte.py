@@ -664,7 +664,10 @@ def start_app(env, log_dir, procs):
         if not keyed:
             log("voice: no ELEVENLABS_API_KEY in .env, so no new voices; voices already made speak their saved phrases")
     else:
-        log("voice: not installed; put ELEVENLABS_API_KEY in .env to make and speak in the person's own voice")
+        # Without this the app would only see the service not answering; with it, it says to add the key (NAT-57).
+        app_env = dict(env, VITE_CLARTE_VOICE="off")
+        log("voice: OFF. No ELEVENLABS_API_KEY in .env, so the app cannot make voices and speaks with the browser's voice.")
+        log("voice: put ELEVENLABS_API_KEY=<key> in .env (copy .env.example), then run clarte ui again")
     home = ensure_node()
     procs.append(Proc("app", [node_exe(home), APP / "node_modules" / "vite" / "bin" / "vite.js", "--port", port, "--strictPort"], APP, app_env, log_dir))
 
