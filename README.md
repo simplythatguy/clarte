@@ -14,7 +14,9 @@ cp .env.example .env      # Windows: copy .env.example .env; fill in ELEVENLABS_
 ```
 
 `clarte <app>` sets up what the app needs, starts it, opens it in the browser and prints its
-URLs; Ctrl+C stops everything it started. The apps are `ui` (Clarté itself, from [`main/`](main/README.md):
+URLs; Ctrl+C stops everything it started, except that on macOS and Linux `clarte ui` keeps the prediction
+engine running so the next start skips its 30 to 80 second load (it is restarted by itself when the engine code
+changes, and `clarte stop` ends it; `CLARTE_KEEP_ENGINE=0` turns this off). The apps are `ui` (Clarté itself, from [`main/`](main/README.md):
 the conversation screen with eye calibration and the prediction engine), `ui-v0` (the UI v0 S0–S6 switcher),
 `predict` (the prediction engine and its test page), `voice` and `eyes`; `clarte` alone lists them,
 and `clarte check` starts and smoke-tests every app without a browser (this is what CI runs).

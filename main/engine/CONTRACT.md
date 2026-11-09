@@ -36,6 +36,10 @@ Server: `python server.py` in this folder, `http://127.0.0.1:8765`. It carries t
 
 `{ "word": "priya", "history": [...], "message": [...] }` → `{ "ok": true }`. Sent when the person accepts a word. The engine may learn from it (personal words, recency). It never changes a response already sent.
 
+## `POST /api/v1/reset`
+
+`{}` → `{ "ok": true }`. Starts a new session: forgets the words learned through `commit` and every cache, as if the engine had just loaded. Only the launcher calls it, when `clarte ui` reuses the engine it kept running (audit L3). A request carrying an `Origin` header (any web page) gets 403.
+
 ## `GET /api/v1/health`
 
 `{ "ok": true, "model": "...", "vocabulary": 123456 }`.

@@ -194,6 +194,16 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None, transcribe
             if self.path == "/api/v1/transcribe":
                 self.transcribe()
                 return
+            if self.path == "/api/v1/reset":
+                # The launcher's call when it reuses a kept engine (audit L3): a new session, as if freshly loaded.
+                # Browsers send Origin on every cross-site POST, so no web page can wipe the person's session.
+                if self.headers.get("Origin") is not None:
+                    self.send(403, b'{"error":"reset is for the launcher only"}')
+                    return
+                with lock.urgent():
+                    engine.start_conversation()
+                self.send(200, b'{"ok":true}')
+                return
             if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit", "/api/v1/punctuate"):
                 self.send(404, b'{"error":"Not found"}')
                 return
