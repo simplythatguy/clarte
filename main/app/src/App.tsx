@@ -283,7 +283,9 @@ export function App() {
   const voices = useVoices();
   /** A voice page's word about a blocked action (the file list needs a click), or null. */
   const [voiceNote, setVoiceNote] = useState<string | null>(null);
-  const words = useWords(state);
+  // A letter card's action is its group id, so a look at one names the group.
+  const lookedGroup = GROUP_IDS.find((g) => g === looked) ?? null;
+  const words = useWords(state, lookedGroup);
   const slots = slotsFor(state, words);
   const shown = shownWord(state.composition, words.prediction)?.word ?? null;
   /** Keyboard and mouse for the rest of the session, with no selection by dwell (`?input=mouse`, Keyboard and mouse on Welcome, or Use the mouse after a camera failure). */

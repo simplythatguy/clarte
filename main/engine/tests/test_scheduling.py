@@ -192,7 +192,8 @@ class LiveEngine(unittest.TestCase):
             calls.append(self.engine.predict(other, ["i", "would", "like"], "3"[: len(calls) % 2]))
 
         interrupted = self.engine.punctuate(history, message, pause)["text"]
-        self.assertGreater(len(calls), 5)
+        # Since audit L4 only the gaps where a mark is plausible are scored, so there are fewer steps to pause at.
+        self.assertGreater(len(calls), 2)
         self.assertEqual(interrupted, alone)
 
 

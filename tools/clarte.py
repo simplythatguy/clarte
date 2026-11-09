@@ -493,11 +493,161 @@ def start_predict(env, log_dir, procs):
     return [port], [f"http://127.0.0.1:{port}/"], lambda: (expect_json(f"http://127.0.0.1:{port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0]), expect_model(procs[0], ENGINE_MODEL))
 
 
+# ---------------------------------------------------------------- resident engine (audit L3)
+#
+# Loading the engine takes 40 to 80 seconds. `clarte ui` leaves it running when the app stops, and the next
+# `clarte ui` reuses it, so only the first launch of the day waits. A kept engine is reused only when it was
+# started from this checkout's engine code, models and settings (its fingerprint); otherwise it is stopped and a
+# fresh one started, so pulling new code never leaves an old engine answering. On reuse it forgets the last
+# session's learned words (POST /api/v1/reset), so a reused engine behaves like a fresh one. `clarte stop` ends it.
+# CLARTE_KEEP_ENGINE=0 keeps the old behaviour (the engine stops with the app). Windows keeps the old behaviour.
+
+RUN = TOOLS / "run"
+ENGINE_PIDFILE = RUN / "engine.json"
+FINGERPRINT_SKIP = {".venv", "bench", "tests", "__pycache__", ".pytest_cache", "node_modules"}
+
+
+def keep_engine(env):
+    return not WINDOWS and env.get("CLARTE_KEEP_ENGINE", "1") not in ("0", "false", "no")
+
+
+def engine_fingerprint(env):
+    """What the engine was started from: its code, native build, data and models (by size and time), and settings."""
+    h = hashlib.sha256()
+    h.update("\n".join([str(ENGINE), ENGINE_MODEL, env.get("PREDICT_RESCORER", ""), env.get("PREDICT_TRANSCRIBER", ""),
+                         env.get("WORDPRED_MODELS", "")]).encode())
+    for top, dirs, files in os.walk(ENGINE, followlinks=True):
+        dirs[:] = sorted(d for d in dirs if d not in FINGERPRINT_SKIP)
+        for name in sorted(files):
+            path = Path(top) / name
+            try:
+                st = path.stat()
+            except OSError:
+                continue
+            h.update(f"{path.relative_to(ENGINE)}\0{st.st_size}\0{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()[:32]
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def read_resident():
+    try:
+        info = json.loads(ENGINE_PIDFILE.read_text())
+        return info if isinstance(info, dict) and isinstance(info.get("pid"), int) and isinstance(info.get("port"), int) else None
+    except (OSError, ValueError):
+        return None
+
+
+def engine_healthy(port):
+    try:
+        status, data = http(f"http://127.0.0.1:{port}/api/v1/health", timeout=3)
+        body = json.loads(data)
+        return status == 200 and body.get("ok") is True and isinstance(body.get("vocabulary"), int)
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+
+
+def stop_resident(reason=None):
+    """Stop the kept engine, if there is one. True when one was running."""
+    info = read_resident()
+    ENGINE_PIDFILE.unlink(missing_ok=True)
+    if not info or not pid_alive(info["pid"]):
+        return False
+    if reason:
+        log(f"engine: {reason}; stopping the kept engine (pid {info['pid']})")
+    try:
+        os.killpg(info["pid"], signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        return False
+    deadline = time.monotonic() + 10
+    while pid_alive(info["pid"]) and time.monotonic() < deadline:
+        time.sleep(0.2)
+    if pid_alive(info["pid"]):
+        try:
+            os.killpg(info["pid"], signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    return True
+
+
+class Resident:
+    """The kept engine, in the launcher's process list: it is watched like the others but not stopped with them."""
+
+    def __init__(self, pid, port, popen=None):
+        self.name, self.log, self.pid, self.port = "engine", TOOLS / "logs" / "engine.log", pid, port
+        self.own = popen is not None
+        # A reused engine is not this launcher's child: its exit status is unknown.
+        self.popen = popen if popen is not None else type("Unknown", (), {"returncode": "unknown"})()
+
+    def alive(self):
+        return self.popen.poll() is None if self.own else pid_alive(self.pid)
+
+    def stop(self):
+        pass
+
+    def tail(self, lines=40):
+        return Proc.tail(self, lines)
+
+
+def reuse_resident(env):
+    """The kept engine's port when it matches this checkout and answers, else None (a stale one is stopped)."""
+    info = read_resident()
+    if not info:
+        return None
+    if not pid_alive(info["pid"]):
+        ENGINE_PIDFILE.unlink(missing_ok=True)
+        return None
+    if info.get("fingerprint") != engine_fingerprint(env):
+        stop_resident("the engine code, models or settings changed")
+        return None
+    if not engine_healthy(info["port"]):
+        stop_resident("the kept engine did not answer")
+        return None
+    try:
+        status, _ = http(f"http://127.0.0.1:{info['port']}/api/v1/reset", {}, timeout=10)
+    except (OSError, urllib.error.URLError):
+        status = 0
+    if status != 200:
+        stop_resident("the kept engine could not start a new session")
+        return None
+    return info["port"]
+
+
+def start_kept_engine(env, procs):
+    """The engine for `clarte ui`: the kept one when it can be reused, else a new one that outlives the app."""
+    port = reuse_resident(env)
+    if port is not None:
+        info = read_resident()
+        log(f"engine: reusing the running engine on port {port} (no load wait); `clarte stop` ends it")
+        procs.append(Resident(info["pid"], port))
+        return port
+    port = pick_port(8765)
+    (TOOLS / "logs").mkdir(parents=True, exist_ok=True)
+    RUN.mkdir(parents=True, exist_ok=True)
+    command = engine_command(env, port)
+    print("+ [engine] " + " ".join(str(c) for c in command), flush=True)
+    with open(TOOLS / "logs" / "engine.log", "wb") as out:
+        popen = subprocess.Popen([str(c) for c in command], cwd=ENGINE, env=env, stdin=subprocess.DEVNULL,
+                                 stdout=out, stderr=subprocess.STDOUT, start_new_session=True)
+    ENGINE_PIDFILE.write_text(json.dumps({"pid": popen.pid, "port": port, "fingerprint": engine_fingerprint(env)}))
+    log(f"engine: loading (about a minute the first time; its log is {(TOOLS / 'logs' / 'engine.log').relative_to(ROOT)})")
+    procs.append(Resident(popen.pid, port, popen))
+    return port
+
+
 def start_app(env, log_dir, procs):
     port = pick_port(5200)
     if port != 5200:
         log("the saved calibration and first-run state belong to http://localhost:5200; on this port the app starts fresh")
-    engine_port = start_engine(env, log_dir, procs)
+    engine_port = start_kept_engine(env, procs) if log_dir is None and keep_engine(env) else start_engine(env, log_dir, procs)
     # The app probes 8765 to 8769 for an engine; any other port has to be named in the URL.
     query = "" if engine_port == 8765 else f"?engine=http://127.0.0.1:{engine_port}"
     ports = [port, engine_port]
@@ -620,6 +770,9 @@ def launch(name, check):
         while all(p.alive() for p in procs):
             time.sleep(1)
         dead = next(p for p in procs if not p.alive())
+        if isinstance(dead, Resident) and read_resident() is None:
+            log("the engine was stopped (`clarte stop`), so the app stops too")
+            return
         raise RuntimeError(f"{dead.name} exited with status {dead.popen.returncode}")
     except Exception:
         for proc in procs:
@@ -629,6 +782,9 @@ def launch(name, check):
     finally:
         for proc in reversed(procs):
             proc.stop()
+        kept = next((p for p in procs if isinstance(p, Resident) and p.alive()), None)
+        if kept:
+            log(f"engine: still running on port {kept.port} so the next start is instant; `clarte stop` ends it")
 
 
 def check():
@@ -652,6 +808,7 @@ def usage():
     for name, (description, _, _) in APPS.items():
         print(f"  {name:13} {description}")
     print("\n  check         provision every app, start it, smoke-test it and stop it (no browser)")
+    print("  stop          stop the prediction engine that `clarte ui` keeps running between launches")
     print("\nThe first run downloads Node, Python, the models and dependencies into .tools/ and the\n"
           "prototypes' own .venv/node_modules folders; later runs start right away.")
 
@@ -669,6 +826,8 @@ def main(argv):
         sys.exit(2)
     if argv[0] == "check":
         check()
+    elif argv[0] == "stop":
+        log("engine: stopped" if stop_resident() else "engine: none running")
     elif argv[0] in APPS:
         try:
             launch(argv[0], check=False)

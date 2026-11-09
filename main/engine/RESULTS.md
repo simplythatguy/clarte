@@ -1020,3 +1020,19 @@ At the defaults (`comma_margin` −4.5, `exclaim_margin` −1.0): the end mark i
 exclamations put "!" between −1.0 and +2.0 nats of "." ("oh no" aside, at −3.3), statements at −1.4 or
 below. At −1.0, 8 of the 10 exclamations end in "!", and 1 of DailyDialog's 83 statements does (2 at −1.2).
 Quotes are not measured: these turns have almost none.
+
+## Cheaper punctuation (audit L4, NAT-56, 2026-11-09)
+
+The same 125 DailyDialog turns as above (smol135-ft, laptop CPU, warm engine), before and after scoring only the
+gaps where a mark is plausible. One first pass scores the three end marks over the unmarked turn; a gap gets all its
+options only when a comma, end mark or opening quote there has log probability at least `gap_floor`.
+
+| | p50 | p95 | mean | same text as before |
+|--|--|--|--|--|
+| every gap scored (before) | 618 ms | 1479 ms | 704 ms | – |
+| **`gap_floor` −7.0** | **246 ms** | **433 ms** | **266 ms** | **124 / 125** |
+| `gap_floor` −8.0 | 286 ms | 576 ms | 321 ms | 124 / 125 |
+
+The one changed turn is the same at both floors: "…took the bill, you didn't pay…" loses its comma (the turn as
+written has a full stop there, so neither answer was right). The MLX rescorer is not used for punctuation yet: no MLX
+model was on the measuring machine, so that half of L4 is not done.
