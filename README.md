@@ -1,6 +1,6 @@
 # Clarté
 
-**Clarté is for people who have two problems at once: they can no longer speak clearly, and they can't easily use their hands. It lets them say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud, in their own voice if they wish. All it needs is an ordinary laptop with a webcam and a microphone.**
+**Clarté is for people who have two problems at once: they can no longer speak clearly, and they can't easily use their hands. It lets them say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud in a ready-made voice or, if they choose, a copy of their own. All it needs is an ordinary laptop with a webcam and a microphone.**
 
 Made at natHacks 2026, in the Healthcare & Accessibility theme.
 
@@ -103,9 +103,9 @@ When the sentence is ready, Clarté says it aloud.
 Two more things help in a real conversation:
 
 - **Listen.** Clarté can turn what the other person says into text on the screen. It uses this to make better word guesses, and it offers a quick reply to greetings and thanks.
-- **Your own voice.** Clarté can make a copy of your voice from old recordings of you, from before your speech changed, or from about a minute of speaking today (Menu, then My voice). Until you choose a voice, it uses a ready-made one.
+- **Your own voice (optional).** Clarté speaks with a ready-made voice from the start, and you can keep it. If you would like, it can also make a copy of your own voice, from old recordings of you from before your speech changed, or from about a minute of speaking today (Menu, then My voice). You can skip this step completely.
 
-<p align="center"><img src="docs/media/readme/illustrations/own-voice.jpg" alt="A sound wave on an old phone becomes the same sound wave coming out of the laptop." width="480"></p>
+<p align="center"><img src="docs/media/readme/illustrations/own-voice.jpg" alt="Optional: a sound wave on an old phone becomes the same sound wave coming out of the laptop." width="480"><br><em>Optional. You can stay with the ready-made voice.</em></p>
 
 ## Why we made it this way
 
@@ -122,12 +122,13 @@ Two more things help in a real conversation:
 
 ## What stays on your computer
 
-<p align="center"><img src="docs/media/readme/diagrams/privacy.png" alt="Camera, eye tracking and word guessing stay on your computer. The partner's speech goes to Google in Chrome, and your voice copy goes to ElevenLabs." width="600"></p>
+<p align="center"><img src="docs/media/readme/diagrams/privacy.png" alt="Camera, eye tracking and word guessing stay on your computer. The partner's speech goes to Google in Chrome. If you add an ElevenLabs key, speaking goes to ElevenLabs; a copy of your own voice is optional." width="600"></p>
 
 - **The camera.** The images are used on your computer to work out where you are looking, and are not sent anywhere.
 - **Word guessing** happens on your computer.
 - **Listening to the other person.** In Google Chrome this uses Google's speech service, so that audio goes to Google, and Clarté shows "Via Google" while it does. If Google's service isn't available, for example without internet, the listening happens on your computer instead.
-- **Your own voice.** To make a copy of your voice, the recordings Clarté picks are sent to ElevenLabs, a voice company. After that, the text of each new phrase it speaks in your voice is sent too.
+- **Speaking.** Without an ElevenLabs key, Clarté speaks with your computer's own voice. If you add a key, it speaks through ElevenLabs, a voice company, so the text of each new phrase goes there, whichever voice you use.
+- **A copy of your own voice (optional).** Only if you choose to make one, the recordings Clarté picks are sent to ElevenLabs to make it.
 
 ## Try it
 
@@ -145,7 +146,7 @@ cd clarte
 
 The first time, this downloads everything Clarté needs (up to about 1.6 GB) and takes a few minutes. Clarté then opens in your browser at http://localhost:5200/. After that it opens in seconds, and word guessing is ready within about a minute. To stop it, press Ctrl+C in the terminal.
 
-- **Your own voice (optional).** Making a copy of your voice needs an [ElevenLabs](https://elevenlabs.io) account. Copy `.env.example` to a new file called `.env` and put your ElevenLabs key in it. Without a key, Clarté speaks with your computer's own voice.
+- **Voices (optional).** Clarté works as it is, speaking with your computer's own voice. If you want, an [ElevenLabs](https://elevenlabs.io) key gives it a ready-made ElevenLabs voice and lets you make a copy of your own voice. To add one, copy `.env.example` to a new file called `.env` and put your key in it.
 
 ## What's next
 
@@ -165,7 +166,7 @@ We will measure how many messages come out as the person meant them, how long ea
 | -- | -- |
 | [`app/`](app/DESIGN.md) | The Clarté app you see on screen |
 | [`engine/`](engine/README.md) | The word guesser |
-| [`voice/`](voice/README.md) | The part that makes and speaks your own voice |
+| [`voice/`](voice/README.md) | The part that speaks with ElevenLabs voices, and makes a copy of your own voice if you want one |
 | [`docs/`](docs/developers.md) | Technical details, design notes and research |
 | `skills/`, `AGENTS.md`, `CLAUDE.md` | Instructions for the AI coding assistants we used while building Clarté |
 
@@ -178,7 +179,7 @@ Clarté builds on other people's work:
 - **Eye tracking:** [WebEyeTrack](https://github.com/RedForestAI/WebEyeTrack) (MIT licence), which uses Google's [MediaPipe](https://ai.google.dev/edge/mediapipe) and [TensorFlow.js](https://www.tensorflow.org/js) (Apache 2.0).
 - **Word guessing:** [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-135M) from Hugging Face (Apache 2.0), trained further by us on everyday conversation, including the [DailyDialog](http://yanran.li/dailydialog) dataset (for non-commercial use). Word lists come from [wordfreq](https://github.com/rspeer/wordfreq), from [Wiktionary](https://en.wiktionary.org) through [kaikki.org](https://kaikki.org) (CC BY-SA 4.0), and from the 2010 US Census surname list.
 - **Hearing the other person:** OpenAI's [Whisper](https://github.com/openai/whisper) (MIT licence) when listening happens on the computer, and Google's speech service in Chrome.
-- **Voice:** [ElevenLabs](https://elevenlabs.io) makes and speaks the voice copy, and [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) checks that recordings are of the right person.
+- **Voice:** [ElevenLabs](https://elevenlabs.io) speaks the ready-made voice and, if you make one, your voice copy, and [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) checks that recordings are of the right person.
 - **Sound tests:** recordings from the [CNVVE dataset](https://doi.org/10.18419/darus-3898) (CC BY 4.0).
 - **Pictures:** the illustrations were made with OpenAI's image generator, and the diagrams were drawn in [Excalidraw](https://excalidraw.com) (their editable files are in [`docs/media/readme/diagrams/`](docs/media/readme/diagrams)). The photos of public figures are credited under [You may know them](#you-may-know-them).
 - **Lettering:** the [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) typeface from the Braille Institute, designed to be easy to read.
