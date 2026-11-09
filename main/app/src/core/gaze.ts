@@ -25,6 +25,8 @@ export type SelectionMode = 'dwell' | 'confirm';
 
 export type GazeSettings = {
   mode: SelectionMode;
+  /** These actions preview in either mode and only sound (or direct input) can select them. */
+  soundActions: readonly string[];
   /** Steady look needed to select (dwell) or preview (confirm). */
   dwellMs: number;
   /**
@@ -65,6 +67,7 @@ export type GazeSettings = {
 
 export const DEFAULT_GAZE_SETTINGS: GazeSettings = {
   mode: 'dwell',
+  soundActions: [],
   dwellMs: 900,
   // Tuned on recorded webcam gaze (Gaze Lab Test-1, 12 posture blocks): against the old 150 ms
   // hold, lines started on the wrong card 13 times instead of 37 and wrong cards were selected 10
@@ -231,11 +234,17 @@ export class GazeEngine {
     this.resolve(at);
   }
 
-  /** Confirm a previewed action (blink, Space, switch). Selects it in either mode. */
-  confirm(at: number = performance.now()): void {
+  /** Confirm a preview; sound-only actions also require a completed preview and fresh tracking. */
+  confirm(at: number = performance.now(), source: 'explicit' | 'sound' = 'explicit'): void {
     this.now = Math.max(this.now, at);
     const s = this.internal;
-    if (s.kind === 'previewed' || s.kind === 'dwelling') this.select(s.action, at);
+    if (s.kind !== 'previewed' && s.kind !== 'dwelling') return;
+    if (this.settings.soundActions.includes(s.action)) {
+      if (source !== 'sound' || s.kind !== 'previewed' || this.lostSince !== null
+        || !this.point || this.now - this.lastSampleAt > this.settings.staleMs
+        || this.actionFor(this.currentQuadrant)?.id !== s.action) return;
+    }
+    this.select(s.action, at);
   }
 
   /** Select an action directly (mouse click, keyboard shortcut). */
@@ -323,7 +332,7 @@ export class GazeEngine {
     } else if (s.kind === 'selected') {
       if (looked === s.action) {
         this.internal = { ...s, offSince: null };
-        if (this.settings.repeat === 'redwell' && at - s.at >= this.settings.dwellMs * 1.5) { this.select(s.action, at); return; }
+        if (!this.settings.soundActions.includes(s.action) && this.settings.repeat === 'redwell' && at - s.at >= this.settings.dwellMs * 1.5) { this.select(s.action, at); return; }
       }
       else if (s.offSince === null) this.internal = { ...s, offSince: at };
       else if (at - s.offSince >= this.settings.rearmMs) this.internal = { kind: 'idle' };
@@ -344,7 +353,7 @@ export class GazeEngine {
       } else if (d.awaySince !== null) {
         this.internal = { ...d, awaySince: null };
       } else if (at - d.since >= this.settings.dwellMs) {
-        if (this.settings.mode === 'dwell') { this.select(d.action, at); return; }
+        if (this.settings.mode === 'dwell' && !this.settings.soundActions.includes(d.action)) { this.select(d.action, at); return; }
         this.internal = { kind: 'previewed', action: d.action, awaySince: null };
         event = { type: 'preview', action: d.action, at };
       }
