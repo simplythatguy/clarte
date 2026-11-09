@@ -156,6 +156,29 @@ check('confirm mode previews instead of selecting', confirmEvents.includes('prev
 confirmEngine.confirm(400);
 check('confirm selects the preview', confirmEvents.includes('select') && confirmEngine.snapshot.state === 'selected');
 
+// NAT-51: in confirm mode a sound, Space or switch selects only once the card's line has closed.
+const earlyEngine = new GazeEngine({ mode: 'confirm', dwellMs: 600, holdMs: 0 });
+earlyEngine.setViewport(viewport);
+earlyEngine.setActionables(style1);
+const earlyEvents: string[] = [];
+earlyEngine.subscribe((_, event) => { if (event) earlyEvents.push(event.type); });
+earlyEngine.sample(100, 100, 0);
+earlyEngine.sample(100, 100, 300);
+earlyEngine.confirm(300);
+check('a confirmation while the line is still drawing does not select', !earlyEvents.includes('select') && earlyEngine.snapshot.state === 'dwelling', earlyEngine.snapshot.state);
+earlyEngine.sample(100, 100, 650);
+earlyEngine.confirm(660);
+check('the same look selects once its line has closed', earlyEvents.includes('select') && earlyEngine.snapshot.state === 'selected', earlyEvents.join(' '));
+const dwellEngine = new GazeEngine({ mode: 'dwell', dwellMs: 600, holdMs: 0 });
+dwellEngine.setViewport(viewport);
+dwellEngine.setActionables(style1);
+const dwellEvents: string[] = [];
+dwellEngine.subscribe((_, event) => { if (event) dwellEvents.push(event.type); });
+dwellEngine.sample(100, 100, 0);
+dwellEngine.sample(100, 100, 300);
+dwellEngine.confirm(300);
+check('dwell mode still lets a confirmation cut a dwell short', dwellEvents.includes('select'), dwellEvents.join(' '));
+
 // Switching cards waits until the eyes have settled (owner, 2026-11-08).
 const settleEngine = new GazeEngine({ dwellMs: 600, holdMs: 1000, holdShare: 0.65, graceMs: 300, smoothing: 1, deadBand: 0 });
 settleEngine.setViewport(viewport);

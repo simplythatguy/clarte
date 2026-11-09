@@ -234,11 +234,15 @@ export class GazeEngine {
     this.resolve(at);
   }
 
-  /** Confirm a preview; sound-only actions also require a completed preview and fresh tracking. */
+  /**
+   * Confirm a preview; sound-only actions also require a completed preview and fresh tracking. In confirm mode
+   * (no dwell, owner 2026-11-08) only a card whose line has closed is selected (NAT-51): a sound, Space or a
+   * switch while the line is still drawing does nothing. Dwell mode keeps confirming a dwell early.
+   */
   confirm(at: number = performance.now(), source: 'explicit' | 'sound' = 'explicit'): void {
     this.now = Math.max(this.now, at);
     const s = this.internal;
-    if (s.kind !== 'previewed' && s.kind !== 'dwelling') return;
+    if (s.kind !== 'previewed' && !(s.kind === 'dwelling' && this.settings.mode === 'dwell')) return;
     if (this.settings.soundActions.includes(s.action)) {
       if (source !== 'sound' || s.kind !== 'previewed' || this.lostSince !== null
         || !this.point || this.now - this.lastSampleAt > this.settings.staleMs
