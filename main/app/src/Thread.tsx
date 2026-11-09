@@ -211,7 +211,7 @@ export function Thread({ state, turns, live, composition, word, wordColours, cen
   }, []);
 
   return (
-    <section className="thread" data-action={centre ? 'accept-centre' : undefined} aria-label="Conversation">
+    <section className="thread" data-compose-centred={nowKey === 'compose' && turns.length === 0 || undefined} data-action={centre ? 'accept-centre' : undefined} aria-label="Conversation">
       {/* No pill (owner, 2026-11-08): the state is announced, not shown. The row keeps its height as
           the docked companion's place, so the history never runs under it. */}
       <div className="state-row" role="status" aria-live="polite">
