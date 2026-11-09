@@ -147,9 +147,10 @@ function Cell({ q, children }: { q: string; children?: ReactNode }) {
 type CardFace = { icon: ReactNode; label?: ReactNode; hint?: string; name?: string };
 
 /** What the primary card (ink, Q4) shows for each function. */
-function primaryFace(fn: PrimaryFn): CardFace {
+function primaryFace(fn: PrimaryFn, listenNote: string | null = null): CardFace {
   switch (fn.kind) {
-    case 'listen': return { icon: <Mic />, label: 'Listen' };
+    // After a listen that could not hear (NAT-49): why, in the card's name, and a short note on it.
+    case 'listen': return listenNote ? { icon: <Mic />, label: 'Listen', hint: "Couldn't hear", name: `Listen. ${listenNote}` } : { icon: <Mic />, label: 'Listen' };
     case 'stop-listening': return { icon: <StopSquare />, label: 'Stop' };
     case 'suggestion': return { icon: <Sparkle />, label: <span className="card-label is-quote" style={longest(fn.text)}>“{fn.text}”</span>, hint: 'Suggested' };
     case 'no-match': return { icon: <Check />, label: 'No word' };
@@ -409,9 +410,18 @@ export function App() {
 
   // Listening: a session per listen-start token. Token 0 is a static debug frame.
   const listenToken = live.kind === 'listening' ? live.token : 0;
+  /** Why the last Listen could not hear the partner, shown on the Listen card until it is selected again. */
+  const [listenNote, setListenNote] = useState<string | null>(null);
   useEffect(() => {
     if (!listenToken) return;
-    const session = listenToPartner(stateRef.current.settings.partner, (text) => dispatch({ type: 'transcript', text }));
+    const session = listenToPartner(stateRef.current.settings.partner, (text) => dispatch({ type: 'transcript', text }), (status) => {
+      if (status.kind !== 'unavailable') return;
+      // Nothing is invented in place of the partner's words: listening ends and the card says why.
+      console.warn(`[listen] ${status.message}`);
+      setListenNote(status.message);
+      dispatch({ type: 'listen-stop' });
+      play('unsure');
+    });
     return () => session.stop();
   }, [listenToken]);
 
@@ -467,7 +477,7 @@ export function App() {
   const runPrimary = useCallback((fn: PrimaryFn) => {
     const s = stateRef.current;
     switch (fn.kind) {
-      case 'listen': token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
+      case 'listen': setListenNote(null); token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
       case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
       case 'options': dispatch({ type: 'open-options', words: fn.words }); play('control'); return;
@@ -882,7 +892,7 @@ export function App() {
       body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
     }));
     const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
-    const pFace = primaryFace(primary.value);
+    const pFace = primaryFace(primary.value, listenNote);
     slotViews = {
       q1: backCard('Home'),
       q4: { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, bodyKey: primary.key, body: <FaceBody face={pFace} /> },
@@ -912,7 +922,7 @@ export function App() {
       </>
     );
   } else {
-    const pFace = primaryFace(primary.value);
+    const pFace = primaryFace(primary.value, listenNote);
     const sFace = secondFace(second.value, state.composition.pending.length);
     const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
     // Menu is white (owner, 2026-11-08); every other light card stays grey glass.

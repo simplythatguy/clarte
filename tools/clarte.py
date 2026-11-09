@@ -599,6 +599,9 @@ def launch(name, check):
     description, provision, start = APPS[name]
     log(f"{name}: {description}")
     env = base_env()
+    if check:
+        # The smoke tests never listen; don't fetch Whisper's 290 MB for them (NAT-49).
+        env.setdefault("PREDICT_TRANSCRIBER", "none")
     started = time.monotonic()
     provision(env)
     log(f"{name}: ready to start ({time.monotonic() - started:.0f}s provisioning)")

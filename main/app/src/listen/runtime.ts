@@ -26,6 +26,8 @@ export type Subscriber = {
   onEvent?: (heard: Heard) => void;
   /** Every frame's level and the noise floor, for a live meter. */
   onLevel?: (db: number, floor: number, at: number) => void;
+  /** Every block of 16 kHz samples as it arrives (hearing the partner, `partner.ts`). */
+  onSamples?: (samples: Float32Array) => void;
 };
 
 const WORKLET = `
@@ -122,6 +124,7 @@ class Microphone {
   private push(samples: Float32Array): void {
     for (let i = 0; i < samples.length; i++) this.history[(this.written + i) % HISTORY] = samples[i];
     this.written += samples.length;
+    for (const s of this.subscribers) s.onSamples?.(samples);
     const frames: Frame[] = this.features.push(samples);
     const events: SoundEvent[] = [];
     for (const f of frames) {

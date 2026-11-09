@@ -7,6 +7,7 @@
  * REPORT.md proposes moving `onWord` into shared.
  */
 import { DEMO_UTTERANCES, canListenLive, canSpeak, listen, type ListenSession } from './core/speech.ts';
+import { listenLocally } from './listen/partner.ts';
 
 export type Speech = { done: Promise<void>; cancel(): void };
 
@@ -96,7 +97,18 @@ export function speakWords(text: string, onWord: (index: number) => void, option
 // Load the voice list early; Chrome fills it asynchronously.
 if (canSpeak()) { window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener?.('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
-export type PartnerSource = 'microphone' | 'script';
+/**
+ * Where the partner's words come from: the microphone (the browser's recognition, else this computer's),
+ * this computer's recognition only (`listen/partner.ts`, nothing leaves the machine), or the demo script
+ * (Dev Tools only; it never stands in for a microphone that failed).
+ */
+export type PartnerSource = 'microphone' | 'local' | 'script';
+
+/** What listening is using, or why it cannot listen. */
+export type ListenStatus =
+  | { kind: 'browser' }
+  | { kind: 'local'; reason: string | null }
+  | { kind: 'unavailable'; message: string };
 
 let scriptIndex = 0;
 /** The scripted partner plays the demo utterances in order, so a demo tells one story. */
@@ -113,11 +125,16 @@ type Recognition = {
   interimResults: boolean;
   lang: string;
   onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+  onstart: (() => void) | null;
   onend: (() => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   start(): void;
   stop(): void;
+  abort(): void;
 };
+
+/** A recognition that has not started by now never will (Chromium builds without Google's service stay silent). */
+const START_MS = 2500;
 
 function recognitionConstructor(): (new () => Recognition) | null {
   const w = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
@@ -125,31 +142,59 @@ function recognitionConstructor(): (new () => Recognition) | null {
 }
 
 /**
+ * Errors after which the browser's recognition will not work this session: Chromium builds and Electron have
+ * no Google speech service ("network"), and a refused service or microphone does not come back by retrying.
+ */
+const BROKEN = new Set(['network', 'service-not-allowed', 'language-not-supported', 'not-allowed', 'audio-capture', 'bad-grammar']);
+/** Set once the browser's recognition has failed, so later sessions go straight to this computer's. */
+let browserFailed: string | null = null;
+
+/**
  * Listen to the partner.
  *
- * With the microphone this drives recognition directly rather than through `shared/speech.ts`,
- * because the shared `listen` reports the end of a session the same way as a final result, so
- * a session that ends after some words (Chrome ends them on silence) could not be restarted.
- * Listening never stops on a timer: every ended session restarts until `stop()`. A session that
- * fails within 1.5 s with nothing heard (no permission, offline, an embedded browser) hands
- * over to the scripted partner. REPORT.md proposes an `onEnd` for the shared `listen`.
+ * With the microphone this drives the browser's recognition directly rather than through `shared/speech.ts`,
+ * because the shared `listen` reports the end of a session the same way as a final result, so a session that
+ * ends after some words (Chrome ends them on silence) could not be restarted. Listening never stops on a timer:
+ * every ended session restarts until `stop()`.
+ *
+ * When the browser has no recognition, or it fails (a session that ends at once with nothing heard, an error
+ * such as "network", or repeated failures), this computer's recognition takes over for the rest of the session
+ * (NAT-49), keeping the words already heard. Only when that cannot listen either does `onStatus` report
+ * `unavailable`; the demo script is never used in place of a microphone.
  */
-export function listenToPartner(source: PartnerSource, onText: (transcript: string) => void): { stop(): void; live: boolean } {
+export function listenToPartner(source: PartnerSource, onText: (transcript: string) => void, onStatus: (status: ListenStatus) => void = () => {}): { stop(): void; live: boolean } {
   let stopped = false;
   let committed = '';
   let script: ListenSession | null = null;
   let recognition: Recognition | null = null;
+  let local: { stop(): void } | null = null;
+  let retry: ReturnType<typeof setTimeout> | null = null;
 
   const startScript = () => {
     script = listen((t) => { if (!stopped) onText(join(committed, t)); }, { script: nextScript(), wordMs: 300 });
   };
 
+  const startLocal = (reason: string | null) => {
+    recognition = null;
+    if (reason) {
+      browserFailed = reason;
+      console.info(`[listen] the browser's speech recognition failed (${reason}); listening on this computer`);
+    }
+    onStatus({ kind: 'local', reason });
+    const fail = (message: string) => { if (!stopped) onStatus({ kind: 'unavailable', message }); };
+    listenLocally((t) => { if (!stopped) onText(t); }, committed, fail).then(
+      (session) => { if (stopped) session.stop(); else local = session; },
+      (error: unknown) => fail(error instanceof Error ? error.message : 'Listening is unavailable.'),
+    );
+  };
+
   let failures = 0;
-  let retry: ReturnType<typeof setTimeout> | null = null;
   const startLive = (Ctor: new () => Recognition) => {
     const startedAt = performance.now();
     let heard = false;
     let failed = false;
+    let broken: string | null = null;
+    let started = false;
     const r = new Ctor();
     recognition = r;
     r.continuous = true;
@@ -165,33 +210,46 @@ export function listenToPartner(source: PartnerSource, onText: (transcript: stri
       heard = true;
       if (!stopped) onText(join(committed, interim.trim()));
     };
-    // Silence and our own stop are normal ends; anything else (network, not-allowed) is a failure.
-    r.onerror = (event) => { if (event.error !== 'no-speech' && event.error !== 'aborted') failed = true; };
+    // Silence and our own stop are normal ends; anything else is a failure, and some mean it will not work.
+    r.onerror = (event) => {
+      if (BROKEN.has(event.error)) broken = event.error;
+      else if (event.error !== 'no-speech' && event.error !== 'aborted') failed = true;
+    };
+    r.onstart = () => { started = true; };
+    // Some browsers accept start() and then never say anything: no start, no error, no end.
+    const silent = setTimeout(() => {
+      if (started || stopped || recognition !== r) return;
+      r.onend = null;
+      try { r.abort(); } catch { /* already gone */ }
+      startLocal('it never started');
+    }, START_MS);
     r.onend = () => {
-      if (stopped) return;
-      if (!heard && !committed && performance.now() - startedAt < 1500 && failures === 0) { recognition = null; startScript(); return; }
+      clearTimeout(silent);
+      if (stopped || recognition !== r) return;
+      if (broken) { startLocal(broken); return; }
+      if (!heard && !committed && performance.now() - startedAt < 1500 && failures === 0) { startLocal('the session ended at once'); return; }
       if (!failed) { failures = 0; startLive(Ctor); return; }
-      // Repeated failures back off (1 s, 2 s, 4 s) and then hand over to the scripted partner,
-      // instead of restarting hundreds of times a second while the pill still says Listening.
+      // Repeated failures back off (1 s, 2 s, 4 s), then this computer listens instead.
       failures += 1;
-      if (failures > 3) { recognition = null; console.warn('[listen] recognition keeps failing; using the scripted partner'); startScript(); return; }
+      if (failures > 3) { startLocal('it kept failing'); return; }
       retry = setTimeout(() => { if (!stopped) startLive(Ctor); }, 1000 * 2 ** (failures - 1));
     };
-    r.start();
+    try { r.start(); } catch { startLocal('it would not start'); }
   };
 
-  // An automated browser (layout checks, headless probes) has no microphone to grant.
-  const automated = typeof navigator !== 'undefined' && navigator.webdriver;
-  const Ctor = source === 'microphone' && canListenLive() && !automated ? recognitionConstructor() : null;
-  if (Ctor) startLive(Ctor);
-  else startScript();
+  const Ctor = canListenLive() ? recognitionConstructor() : null;
+  if (source === 'script') startScript();
+  else if (source === 'local' || browserFailed) startLocal(null);
+  else if (Ctor) { onStatus({ kind: 'browser' }); startLive(Ctor); }
+  else startLocal('this browser has no speech recognition');
 
   return {
-    get live() { return recognition !== null; },
+    get live() { return recognition !== null || local !== null; },
     stop: () => {
       stopped = true;
       if (retry) clearTimeout(retry);
       recognition?.stop();
+      local?.stop();
       (script as ListenSession | null)?.stop();
     },
   };

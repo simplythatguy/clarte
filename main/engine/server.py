@@ -3,6 +3,10 @@
 Run with the v0 environment:  .venv/bin/python server.py [--port 8765] [--rescorer auto|qwen2.5-1.5b|smol135-ft|none]
 `auto` takes the best rescorer whose weights are present (engine/neural.py PREFERENCE): an MLX model from
 models/ (fetch_models.py), else v0's fine-tuned SmolLM2-135M, else none.
+
+`--transcriber` (or PREDICT_TRANSCRIBER) names the Whisper model that hears the partner when the browser's own
+recognition fails (NAT-49, engine/transcribe.py); `none` turns it off. It loads in the background after the port
+opens; the first run downloads its weights (about 290 MB) from the Hugging Face Hub.
 """
 import argparse
 import json
@@ -12,6 +16,7 @@ from pathlib import Path
 
 from engine import Engine
 from engine.http import serve
+from engine.transcribe import DEFAULT_MODEL, Transcriber
 
 HERE = Path(__file__).resolve().parent
 
@@ -52,11 +57,15 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--params", default=None, help="JSON overrides for engine parameters")
+    parser.add_argument("--transcriber", default=os.environ.get("PREDICT_TRANSCRIBER", DEFAULT_MODEL),
+                        help="Whisper model for hearing the partner, or none")
     args = parser.parse_args()
     rescorer = None if args.rescorer in ("none", "", "off") else args.rescorer
     engine = load(args.model, rescorer, args.threads, json.loads(args.params) if args.params else None)
+    transcriber = None if args.transcriber in ("none", "", "off") else Transcriber(args.transcriber)
     try:
-        serve(engine, args.host, args.port, HERE / "index.html")
+        serve(engine, args.host, args.port, HERE / "index.html",
+              ready=(lambda _server: transcriber.start()) if transcriber else None, transcriber=transcriber)
     finally:
         engine.close()
 

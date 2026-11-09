@@ -1,10 +1,16 @@
-"""HTTP boundary: validation (from v0, with PR 15's request ids), one lock around the engine."""
+"""HTTP boundary: validation (from v0, with PR 15's request ids), one lock around the engine.
+
+`/api/v1/transcribe` (NAT-49) takes raw audio, not JSON, and runs outside the engine's lock: hearing the partner
+never holds up a prediction."""
 import json
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from .transcribe import MAX_SECONDS, RATE, pcm16
+
 MAX_BODY = 256 * 1024
+MAX_AUDIO = RATE * MAX_SECONDS * 2      # 30 s of 16 kHz 16-bit mono PCM
 
 
 def clean_request(body, need_groups=True):
@@ -41,7 +47,7 @@ def clean_request(body, need_groups=True):
                 limit=limit, offset=offset, id=rid, complete=complete)
 
 
-def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None):
+def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None, transcriber=None):
     lock = threading.Lock()
     page_bytes = page.read_bytes() if page is not None and page.is_file() else b"<!doctype html><title>Clarte prediction v1</title><p>POST /api/v1/predict"
 
@@ -72,8 +78,9 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None):
             if self.path in ("/", "/index.html"):
                 self.send(200, page_bytes, "text/html; charset=utf-8")
             elif self.path == "/api/v1/health":
+                hearing = transcriber.status() if transcriber is not None else {"model": None, "state": "off"}
                 self.send(200, json.dumps({"ok": True, "model": engine.model, "rescorer": engine.rescorer_name,
-                                           "vocabulary": len(engine.lex)}).encode())
+                                           "vocabulary": len(engine.lex), "transcriber": hearing}).encode())
             else:
                 self.send(404, b'{"error":"Not found"}')
 
@@ -84,7 +91,33 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None):
             raw = self.rfile.read(size) or b"{}"
             return json.loads(raw)
 
+        def transcribe(self):
+            """16 kHz mono 16-bit PCM in the body -> {available, text, ms}."""
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 0 <= size <= MAX_AUDIO:
+                    self.close_connection = True          # the oversized body is never read
+                    raise ValueError(f"audio must be at most {MAX_SECONDS} seconds of 16 kHz 16-bit mono PCM")
+                audio = pcm16(self.rfile.read(size))
+            except ValueError as error:
+                self.send(400, json.dumps({"error": str(error)}).encode())
+                return
+            if transcriber is None:
+                self.send(200, b'{"available":false,"text":""}')
+                return
+            try:
+                start = time.perf_counter()
+                result = transcriber.transcribe(audio)
+                result["ms"] = round(1000 * (time.perf_counter() - start), 1)
+                self.send(200, json.dumps(result).encode())
+            except Exception as error:  # noqa: BLE001
+                print(f"Transcription failed: {type(error).__name__}: {error}", flush=True)
+                self.send(500, b'{"error":"Transcription failed; check the server log"}')
+
         def do_POST(self):
+            if self.path == "/api/v1/transcribe":
+                self.transcribe()
+                return
             if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit", "/api/v1/punctuate"):
                 self.send(404, b'{"error":"Not found"}')
                 return

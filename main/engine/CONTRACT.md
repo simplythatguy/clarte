@@ -153,3 +153,22 @@ a question's intonation and pauses at commas. Request: `id`, `history` and `mess
   the app uses its own rule ("?" after a question word).
 - About 370 ms p50, 930 ms p95 on a laptop CPU, so the app asks while the message is ready to speak and,
   at Speak, waits at most 700 ms for an answer still on its way.
+
+## `POST /api/v1/transcribe` (NAT-49, compatible)
+
+Hears the partner on this computer when the browser's own speech recognition is missing or fails (Chromium
+builds and Electron without Google's service, Brave, no network). The app cuts the partner's speech into
+utterances on its microphone stream and posts each one here. Nothing leaves the machine.
+
+- Request body: raw 16 kHz mono 16-bit little-endian PCM (`Content-Type: application/octet-stream`), at most
+  30 seconds. Not JSON. A bad body is a `400 {"error": ...}`.
+- Response: `{ "available": true, "text": "Do you want to go outside for a bit?", "ms": 210.4 }`. `text` is
+  `""` when the clip held no words (Whisper writes "you" for silence; a lone filler from a quiet or very short
+  clip is dropped). `available` is false, with `"state": "loading"` or `"failed"`, when the model cannot hear yet.
+- It runs outside the engine's lock: transcribing never holds up a prediction.
+- The model (`--transcriber`, or `PREDICT_TRANSCRIBER`; default `openai/whisper-base.en`, `none` turns it off)
+  loads in a background thread after the port opens. The first run downloads its weights (about 290 MB) from
+  the Hugging Face Hub. About 200 ms for a short sentence on a laptop CPU once warm.
+- `GET /api/v1/health` adds `"transcriber": {"model": ..., "state": "loading" | "ready" | "failed" | "off"}`.
+  The light engine (no torch) reports `failed`.
+

@@ -34,7 +34,8 @@ const CYCLES = {
   suggestions: { key: 'suggestions', name: 'Suggested replies', values: [true, false], format: onOff },
   noise: { key: 'noise', name: 'Gaze noise', values: [false, true], format: onOff },
   repeat: { key: 'repeat', name: 'Repeat', values: ['leave', 'redwell'], format: (v: string) => (v === 'leave' ? 'Look away' : 'Hold') },
-  partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'script'], format: (v: string) => (v === 'microphone' ? 'Microphone' : 'Script') },
+  // Microphone: the browser's recognition, else this computer's. This computer: Whisper in the engine only (NAT-49).
+  partner: { key: 'partner', name: 'Partner voice', values: ['microphone', 'local', 'script'], format: (v: string) => ({ microphone: 'Microphone', local: 'This computer', script: 'Script' })[v] ?? v },
   orbMotion: { key: 'orbMotion', name: 'Motion', values: ['moving', 'still'], format: (v: string) => (v === 'moving' ? 'Moving' : 'Still') },
   // The system voice, then every voice made on this computer that can speak (NAT-32).
   voiceId: { key: 'voiceId', name: 'Voice', get values() { return [null, ...readyVoices().map((v) => v.id)]; }, format: voiceName },
