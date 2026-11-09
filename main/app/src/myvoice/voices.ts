@@ -2,7 +2,8 @@
  * The person's voices and speaking with one (NAT-32).
  *
  * The voice service lists every voice made on this computer. Menu › My voice › Voice chooses one
- * (Settings.voiceId), or the system voice (null). Speaking with a voice keeps voice.ts's contract
+ * (Settings.voiceId), or the default voice (null): River, an ElevenLabs built-in voice served as a
+ * team voice (prototypes/Voice/voices/river). Speaking with a voice keeps voice.ts's contract
  * (`onWord(i)` as word i starts, `done`, `cancel`): the service returns audio without word timings,
  * so the words are paced across the clip's real duration by their spoken length. When the voice
  * cannot speak (the service is off, the key is missing, the request fails, or it takes longer than
@@ -45,15 +46,18 @@ void refreshVoices();
 
 export const voicesNow = (): Snapshot => snapshot;
 
+/** The voice that speaks until the person chooses another (Settings.voiceId null). */
+export const DEFAULT_VOICE_ID = 'c1a7e0defa17';
+
 export function useVoices(): Snapshot {
   return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => snapshot);
 }
 
-/** Voices that can speak, for the Voice setting. */
-export const readyVoices = (): Voice[] => snapshot.voices.filter((v) => v.status === 'ready');
+/** Voices that can speak, for the Voice setting; the default voice is its null choice. */
+export const readyVoices = (): Voice[] => snapshot.voices.filter((v) => v.status === 'ready' && v.id !== DEFAULT_VOICE_ID);
 
 export function voiceName(id: string | null): string {
-  if (id === null) return 'System';
+  if (id === null) return snapshot.voices.find((v) => v.id === DEFAULT_VOICE_ID)?.name ?? 'River';
   return snapshot.voices.find((v) => v.id === id)?.name ?? 'My voice';
 }
 
@@ -79,18 +83,18 @@ const clips = clipStore((id, text, pacing) => speak(id, text, pacing));
  * the message is almost always final: preparing it earlier, as each word is accepted, would pay ElevenLabs for
  * every unfinished version of the message.
  */
-export function prepareInVoice(text: string, id: string | null, pacing: Pacing): void {
-  if (id === null || !text.trim() || snapshot.service.kind === 'offline') return;
-  clips.get(id, text, pacing).catch(() => { /* Speak asks again, and falls back if it must */ });
+export function prepareInVoice(text: string, chosen: string | null, pacing: Pacing): void {
+  if (!text.trim() || snapshot.service.kind === 'offline') return;
+  clips.get(chosen ?? DEFAULT_VOICE_ID, text, pacing).catch(() => { /* Speak asks again, and falls back if it must */ });
 }
 
 /**
- * Speak `text` in voice `id`, or the system voice when `id` is null or the voice cannot speak. `onFallback`
- * hears why the system voice took over, so the screen can say so.
+ * Speak `text` in voice `chosen` (null: the default voice), or the system voice when the voice cannot speak.
+ * `onFallback` hears why the system voice took over, so the screen can say so.
  */
-export function speakInVoice(text: string, onWord: (index: number) => void, id: string | null, pacing: Pacing,
+export function speakInVoice(text: string, onWord: (index: number) => void, chosen: string | null, pacing: Pacing,
   onFallback?: (why: string) => void): Speech {
-  if (id === null) return speakWords(text, onWord);
+  const id = chosen ?? DEFAULT_VOICE_ID;
   let cancelled = false;
   let fellBack = false;
   let inner: Speech | null = null;

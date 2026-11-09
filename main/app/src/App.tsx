@@ -447,7 +447,7 @@ export function App() {
     play('speak-start');
     duck(true);
     setSpeakNote(null);
-    // In the person's own voice when one is chosen (Menu › My voice), else the system voice.
+    // In the person's own voice when one is chosen (Menu › My voice), else the default voice (River).
     const { voiceId, pacing } = stateRef.current.settings;
     const s = speakInVoice(speakText, (word) => dispatch({ type: 'speak-word', token: speakToken, word }), voiceId, pacing, setSpeakNote);
     speech.current = s;

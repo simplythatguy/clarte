@@ -1,0 +1,18 @@
+{
+  "id": "c1a7e0defa17",
+  "name": "River",
+  "source": "current",
+  "engine": "elevenlabs",
+  "status": "ready",
+  "remoteVoiceId": "SAz9YHcvj6GT2YYXdXww",
+  "createdAt": 0,
+  "updatedAt": 0,
+  "reference": {
+    "seconds": 0,
+    "segments": []
+  },
+  "segments": [],
+  "files": [],
+  "problems": [],
+  "shared": true
+}
