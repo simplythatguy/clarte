@@ -25,7 +25,7 @@ Real seams are teleporting state that would confuse someone reading slowly:
 
 ## Values
 
-Every suggested value comes from the `MOTION.md` tokens (or `prototypes/Voice/src/styles.css` for the voice prototype), not from the upstream vocabulary. Upstream `--ease-out` is the same curve. Upstream `--ease-in-out` maps to `--ease-move`, which is reserved for the calibration guide dot. Nothing uses `--ease-drawer`.
+Every suggested value comes from the `MOTION.md` tokens (or `app/src/styles.css` for the voice prototype), not from the upstream vocabulary. Upstream `--ease-out` is the same curve. Upstream `--ease-in-out` maps to `--ease-move`, which is reserved for the calibration guide dot. Nothing uses `--ease-drawer`.
 
 ## Rejected candidates to expect
 

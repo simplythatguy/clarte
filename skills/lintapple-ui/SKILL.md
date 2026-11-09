@@ -20,13 +20,13 @@ This is Clarte's integration skill for the Node/browser checker. It requires a r
 
 Derive `ui-policy.json` from the surface's spec, not from Lint Apple's stock defaults. [Skills for Clarte](../../docs/skills-for-clarte.md) lists the specs.
 
-- **Gaze screens (`prototypes/UI/v0`):**
+- **Gaze screens (`app/`):**
   - Viewports: 1440×900 and 1280×720, each also at 200% text. Light theme, plus dark where the style offers it.
   - Text: nothing below 20 px.
   - Contrast: the message at APCA Lc 90 (at least 7:1), labels at Lc 75, and state marks, dwell rings and group marks at 3:1 against what they sit on (`BRIEF.md` § Type and contrast).
-  - Control size: the hit region is the backend quadrant, not the drawn tile. Don't fail a tile on a 44 px default. Check that each `data-action` element stays inside one backend quadrant with `shared/quadrants.ts` (`validateLayout`, `check-layout.mjs`), which Lint Apple cannot measure.
+  - Control size: the hit region is the backend quadrant, not the drawn tile. Don't fail a tile on a 44 px default. Check that each `data-action` element stays inside one backend quadrant with `app/src/core/quadrants.ts` (`validateLayout`, `npm run check`), which Lint Apple cannot measure.
   - States: open each phase with `window.clarteDebug.setPhase(name)` and load with `?onboarding=off` before checking.
-- **Voice screens (`prototypes/Voice`):** 64 px minimum targets, 20 px body text (`src/styles.css`), and every screen state, including recording, offline service and building.
+- **Voice screens (`app/src/VoiceSetup.tsx`, Menu › My voice):** 64 px minimum targets, 20 px body text (`app/src/styles.css`), and every screen state, including recording, offline service and building.
 - **Eye Tracking navigation:** the eight blank named targets must keep their geometry between the preview and confirmed states.
 
 For `design-html` work, derive tokens and layout rules from the approved design and inspect the rendered HTML. Read [upstream details](references/upstream-readme.md) for supported checks, annotation examples, policy configuration, and coverage limits. Consult the current installed API if it differs from this pinned reference.

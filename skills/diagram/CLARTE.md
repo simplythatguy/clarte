@@ -8,7 +8,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 Keep these consistent wherever they appear.
 
-- **Backend quadrants:** 2 rows × 4 columns, Q1–Q8 in reading order (Q1–Q4 on top). Never renumber, and never draw a different count. Mark rest zones as empty cells. Matches `prototypes/UI/v0/README.md` and `reference/01-backend-quadrants.png`.
+- **Backend quadrants:** 2 rows × 4 columns, Q1–Q8 in reading order (Q1–Q4 on top). Never renumber, and never draw a different count. Mark rest zones as empty cells. Matches `docs/design/QUADRANTS.md` and `docs/design/reference/01-backend-quadrants.png`.
 - **Conversation flow:** Listen (partner speaks, transcript as context) → Respond (letter groups, autocomplete, delete) → Speak (with Say again) → Listen. One moment and Menu sit beside the loop, not inside it.
 - **Gaze pipeline:** webcam → WebEyeTrack worker (gaze network) plus the geometric estimator → blend → backend quadrant with hysteresis → dwell or blink engine → the action that owns the quadrant.
 - **Decoding:** G1–G4 group sequence plus partner context → Word Prediction engine (Light, or Deployable with fallback to Light) → candidate → accepted only by a selection.

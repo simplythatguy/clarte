@@ -2,19 +2,19 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: occasional**, invoked explicitly. Scope it to **one prototype per run**, never "this codebase". Clarte's prototypes are deliberately separate apps with their own dependencies.
+**Status: occasional**, invoked explicitly. Scope it to **one folder per run** (`app/`, `engine/` or `voice/`), never "this codebase". They are deliberately separate parts with their own dependencies.
 
 ## Protected: not tangles, don't touch
 
 - **`skills/`** upstream copies. They are hash-locked in `sources.lock.json`; changing them fails `scripts/validate.py`.
-- **`prototypes/Eye Tracking/`** runtime logic and tests, which are exact copies of a pinned source (`docs/IMPORT-SOURCE.json`), with WebEyeTrack verified by `scripts/fingerprint.mjs --verify`. A refactor there is a deliberate adaptation the owner must approve and the provenance docs must record.
+- **`app/src/eyes/core/`** and **`app/public/vendor/webeyetrack/`**, which are byte-identical copies listed with their hashes in `app/src/eyes/SOURCE.json`. A refactor there is a deliberate adaptation the owner must approve and the provenance docs must record.
 - **`vendor/`** directories and the bundled Pretext.
-- **`main/engine/`** numerical paths and the transformer KV caches. The README says they are retained to preserve frozen outputs.
-- **`prototypes/UI/v0/shared/`**, which is owned by the v0 brief. A style proposes a change; it doesn't make it.
+- **`engine/`** numerical paths and the transformer KV caches. The README says they are retained to preserve frozen outputs.
+- **`app/src/core/quadrants.ts`**, which enforces the backend quadrant contract in `docs/design/QUADRANTS.md`.
 
 ## Duplication that is intentional
 
-s1–s5 repeat structure on purpose: they are parallel explorations of one brief, kept separate so they can be compared. Copies across styles are not "hidden links" to merge until the team has chosen a style. Prediction is one engine (`main/engine`): the separate Word Prediction and Autocomplete versions were merged on 2026-11-08, so new prediction work goes there rather than into a new versioned copy.
+s1–s5 repeat structure on purpose: they are parallel explorations of one brief, kept separate so they can be compared. Copies across styles are not "hidden links" to merge until the team has chosen a style. Prediction is one engine (`engine/`): the separate Word Prediction and Autocomplete versions were merged on 2026-11-08, so new prediction work goes there rather than into a new versioned copy.
 
 ## Proving "intended behaviour is the same"
 

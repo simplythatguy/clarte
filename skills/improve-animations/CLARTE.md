@@ -6,7 +6,7 @@ Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that 
 
 ## Where plans go
 
-Write plans beside the surface they change: `prototypes/UI/v0/plans/`, `prototypes/Voice/plans/`, and so on. Don't write them at the repository root. Each prototype is a separate app, and the plan's executor works inside one.
+Write plans beside the surface they change: `app/plans/`, `voice/plans/`, and so on. Don't write them at the repository root. Each folder is a separate part with its own dependencies, and the plan's executor works inside one.
 
 ## Recon facts to hand every subagent
 

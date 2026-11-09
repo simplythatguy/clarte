@@ -10,7 +10,7 @@ The skill writes `MISSION.md`, `RESOURCES.md`, `NOTES.md`, `lessons/`, `referenc
 
 ## Topics that touch Clarte
 
-- Ground lessons in Clarte's own sources first: `AGENTS.md` (Glossary), `prototypes/UI/v0/README.md` (backend quadrants), the gaze contract in [Skills for Clarte](../../docs/skills-for-clarte.md), and each prototype's README. Use Clarte's vocabulary: backend quadrant, rest zone, dwell, G1–G4.
+- Ground lessons in Clarte's own sources first: `AGENTS.md` (Glossary), `docs/design/QUADRANTS.md` (backend quadrants), the gaze contract in [Skills for Clarte](../../docs/skills-for-clarte.md), and each prototype's README. Use Clarte's vocabulary: backend quadrant, rest zone, dwell, G1–G4.
 - Lessons and reference pages are HTML pages people read. Follow the type rules Clarte already uses: nothing under 18 px, no thin weights, sentence case and no all caps.
 
 ## Privacy

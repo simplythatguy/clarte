@@ -7,9 +7,9 @@ description: Apple Human Interface Guidelines distilled for Clarte's gaze-contro
 
 What Apple's Human Interface Guidelines say that makes Clarte's screens cleaner and easier to use, adapted to a laptop webcam gaze app with a fixed 2×4 backend grid. All 173 HIG pages were read on 2026-11-07 (crawled from Apple's documentation data endpoint and converted to Markdown); six readers extracted 249 cited rules with Clarte adaptations, conflicts and "not applicable" lists. Those notes are the evidence behind this page and live in `references/` (`b1-foundations.md`, `b2-inputs.md`, `b3-patterns.md`, `b4-components-controls.md`, `b5-components-layout-platforms.md`, `b6-technologies-and-rest.md`; `hig-page-index.tsv` lists every page). Open a note when you need the exact HIG wording, the page citation or the reasoning behind a rule here.
 
-Two caveats carry through everything below. Apple's point sizes, spacing values and delay tiers describe touch, pointer and headset input; none of them is a webcam-gaze threshold, and the HIG games page even contradicts itself on the touch minimum (44×44 pt in prose, 28×28 pt in its table). Clarte's own numbers come from `prototypes/UI/v0/RESEARCH.md`. And Apple writes for products that can show onboarding copy, tab bars and panels; the owner's `minimal-ui` rules win wherever they disagree about how much is on screen or what colour is for.
+Two caveats carry through everything below. Apple's point sizes, spacing values and delay tiers describe touch, pointer and headset input; none of them is a webcam-gaze threshold, and the HIG games page even contradicts itself on the touch minimum (44×44 pt in prose, 28×28 pt in its table). Clarte's own numbers come from `docs/design/RESEARCH.md`. And Apple writes for products that can show onboarding copy, tab bars and panels; the owner's `minimal-ui` rules win wherever they disagree about how much is on screen or what colour is for.
 
-Precedence when rules collide: the owner's newest explicit decision, then `minimal-ui`, then the backend quadrant contract in `prototypes/UI/v0/README.md`, then this skill, then generic polish advice.
+Precedence when rules collide: the owner's newest explicit decision, then `minimal-ui`, then the backend quadrant contract in `docs/design/QUADRANTS.md`, then this skill, then generic polish advice.
 
 ## How to use
 

@@ -29,4 +29,4 @@ Extend to 5 rounds for Clarte's equivalents of the upstream security and data-lo
 
 ## Out of scope by default
 
-Upstream-copied skill files, `prototypes/Eye Tracking` source copied from its pinned import, and vendored code. A finding in those is a follow-up, not a fix in this loop.
+Upstream-copied skill files, the tracker files copied byte for byte into `app/src/eyes/core/` and `app/public/vendor/webeyetrack/` (`app/src/eyes/SOURCE.json`), and vendored code. A finding in those is a follow-up, not a fix in this loop.

@@ -2,7 +2,7 @@
 
 Overlay for [SKILL.md](SKILL.md), which stays an exact upstream copy. Read that first. Where this page disagrees, this page wins, and [Skills for Clarte](../../docs/skills-for-clarte.md) wins over both.
 
-**Status: core.** better-ui itself says a deliberate, consistent project convention is a preference, not a finding. Clarte's conventions are in `prototypes/UI/v0/BRIEF.md` (Visual direction) and `MOTION.md` (Craft rules), and they take precedence.
+**Status: core.** better-ui itself says a deliberate, consistent project convention is a preference, not a finding. Clarte's conventions are in `docs/design/BRIEF.md` (Visual direction) and `MOTION.md` (Craft rules), and they take precedence.
 
 ## Exact values that Clarte replaces on gaze screens
 

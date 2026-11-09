@@ -25,7 +25,7 @@ Trace each one the plan touches, in the test diagram and the failure modes.
 
 ## Ownership boundaries
 
-`prototypes/UI/v0/shared/` belongs to the v0 brief; styles propose changes in their reports. `prototypes/Eye Tracking/` is imported from a pinned source; record changes against `docs/IMPORT-SOURCE.json`. `skills/` upstream files are hash-locked.
+`app/src/core/` (from UI v0's `shared/`) holds the backend quadrant rules; change them only against `docs/design/QUADRANTS.md`. `app/src/eyes/core/` and `app/public/vendor/webeyetrack/` are byte-identical copies listed with their hashes in `app/src/eyes/SOURCE.json`; record changes there. `skills/` upstream files are hash-locked.
 
 ## Engineering preferences, translated
 

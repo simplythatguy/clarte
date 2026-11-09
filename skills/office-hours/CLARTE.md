@@ -10,7 +10,7 @@ Don't guess between Startup and Builder. Ask the owner once, and keep the answer
 
 ## Phase 1 context to read
 
-`AGENTS.md`; `prototypes/UI/v0/README.md`, `BRIEF.md` and `RESEARCH.md` (especially §11 "Expectations and what to measure" and §12 "Open questions"); and the README of the prototype the idea touches. Prior design docs for Clarte also live in the repository as `DESIGN.md` and `REPORT.md` files. List those beside gstack's own state.
+`AGENTS.md`; `docs/design/QUADRANTS.md`, `BRIEF.md` and `RESEARCH.md` (especially §11 "Expectations and what to measure" and §12 "Open questions"); and the README of the prototype the idea touches. Prior design docs for Clarte also live in the repository as `DESIGN.md` and `REPORT.md` files. List those beside gstack's own state.
 
 ## Premise challenge, Clarte questions
 

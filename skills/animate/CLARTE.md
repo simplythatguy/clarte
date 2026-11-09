@@ -24,7 +24,7 @@ Step 2's "Explanation" and "Delight" purposes belong only to the rare tier (cali
 
 ## Voice prototype
 
-Upstream rules apply, with its own tokens in `prototypes/Voice/src/styles.css`. Press feedback is fine for tremor users if it never shrinks the target below its 64 px floor. Recording state shows with colour, label and icon, never motion alone, and nothing runs on a timer.
+Upstream rules apply, with its own tokens in `app/src/styles.css`. Press feedback is fine for tremor users if it never shrinks the target below its 64 px floor. Recording state shows with colour, label and icon, never motion alone, and nothing runs on a timer.
 
 ## Output
 

@@ -1,4 +1,4 @@
-"""Clarte launcher: provisions each prototype's toolchain into .tools/ and runs it.
+"""Clarte launcher: provisions each app's toolchain into .tools/ and runs it.
 
 Start it through ./clarte (POSIX) or clarte.cmd (Windows); both fetch a pinned uv and
 run this file with Python 3.14. Standard library only. Every provisioning step is
@@ -26,13 +26,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / ".tools"
-PROTOTYPES = ROOT / "prototypes"
-MAIN = ROOT / "main"
-ENGINE = MAIN / "engine"
-APP = MAIN / "app"
-UI = PROTOTYPES / "UI" / "v0"
-VOICE = PROTOTYPES / "Voice"
-EYES = PROTOTYPES / "Eye Tracking"
+ENGINE = ROOT / "engine"
+APP = ROOT / "app"
+VOICE = ROOT / "voice"
 WINDOWS = sys.platform == "win32"
 
 NODE_VERSION = "24.22.2"
@@ -205,7 +201,7 @@ def npm_cli(home):
 
 def ensure_npm_ci(package_dir, env):
     """npm ci when node_modules is missing or package-lock.json changed. Lifecycle scripts are
-    skipped as the prototype READMEs do; the native binaries arrive as optional dependencies."""
+    skipped, as the app READMEs do; the native binaries arrive as optional dependencies."""
     lock = package_dir / "package-lock.json"
     key = sha256_text(NODE_VERSION, sha256_file(lock))
     stamp = package_dir / "node_modules" / ".clarte-stamp"
@@ -321,18 +317,8 @@ def provision_engine(env):
 
 
 def provision_voice(env):
-    extra = ["--overrides", str(VOICE / "server" / "overrides.txt")] + (["--torch-backend", "cpu"] if sys.platform == "linux" else [])
-    ensure_venv(VOICE / "server" / ".venv", "3.11", [VOICE / "server" / "requirements.txt"], extra)
-    ensure_npm_ci(VOICE, env)
-
-
-UI_STYLES = 6  # s1..s6; serve.mjs starts each on the port PORT + n
-
-
-def provision_ui_v0(env):
-    provision_engine(env)
-    for n in range(1, UI_STYLES + 1):
-        ensure_npm_ci(UI / f"s{n}", env)
+    extra = ["--overrides", str(VOICE / "overrides.txt")] + (["--torch-backend", "cpu"] if sys.platform == "linux" else [])
+    ensure_venv(VOICE / ".venv", "3.11", [VOICE / "requirements.txt"], extra)
 
 
 def voice_wanted(env):
@@ -340,7 +326,7 @@ def voice_wanted(env):
     1 GB (CPU PyTorch for the speaker check), so `ui` installs it only once an ElevenLabs key is set,
     and starts it whenever it is installed (voices already made still speak their cached phrases)."""
     keyed = bool(env.get("ELEVENLABS_API_KEY") or env.get("ELEVENLABS_API_KEY_FILE"))
-    return keyed, keyed or (VOICE / "server" / ".venv").exists()
+    return keyed, keyed or (VOICE / ".venv").exists()
 
 
 def provision_app(env):
@@ -348,12 +334,7 @@ def provision_app(env):
     ensure_npm_ci(APP, env)
     keyed, _ = voice_wanted(env)
     if keyed:
-        extra = ["--overrides", str(VOICE / "server" / "overrides.txt")] + (["--torch-backend", "cpu"] if sys.platform == "linux" else [])
-        ensure_venv(VOICE / "server" / ".venv", "3.11", [VOICE / "server" / "requirements.txt"], extra)
-
-
-def provision_eyes(env):
-    ensure_npm_ci(EYES, env)
+        provision_voice(env)
 
 
 # ---------------------------------------------------------------- processes
@@ -471,7 +452,7 @@ def expect_json(url, body, field, value, extract=lambda v: v):
 
 
 def expect_model(proc, model):
-    # main/engine prints its start-up line as JSON ("model": "deployable"); older engines printed "model: deployable".
+    # engine/ prints its start-up line as JSON ("model": "deployable"); older engines printed "model: deployable".
     text = proc.log.read_text(errors="replace") if proc.log else None
     if text is not None and f"model: {model}" not in text and f'"model": "{model}"' not in text:
         raise RuntimeError(f"{proc.name} did not report 'model: {model}':\n{proc.tail(10)}")
@@ -659,7 +640,7 @@ def start_app(env, log_dir, procs):
         # The voice service answers only the pages it names: this app, on either host name.
         service = pick_port(4322)
         origins = ",".join(f"http://{host}:{port}" for host in ("localhost", "127.0.0.1"))
-        procs.append(Proc("voice", [venv_python(VOICE / "server" / ".venv"), "-m", "clarte_voice"], VOICE / "server",
+        procs.append(Proc("voice", [venv_python(VOICE / ".venv"), "-m", "clarte_voice"], VOICE,
                           dict(env, TQDM_DISABLE="1", CLARTE_VOICE_PORT=str(service), CLARTE_VOICE_ORIGINS=origins), log_dir))
         app_env = dict(env, VITE_CLARTE_VOICE_URL=f"http://localhost:{service}")
         ports.append(service)
@@ -684,58 +665,25 @@ def start_app(env, log_dir, procs):
     return ports, [f"http://localhost:{port}/{query}"], smoke
 
 
-def start_ui_v0(env, log_dir, procs):
-    base = pick_port(5100, count=UI_STYLES + 1)  # switcher, then one port per style after it
-    ports = list(range(base, base + UI_STYLES + 1))
-    engine_port = start_engine(env, log_dir, procs)
-    if engine_port != 8765:
-        log("S0 talks to whatever is on 8765; the engine started here is on another port")
-    # serve.mjs starts its own engine on 8765 unless one is already listening, and ours takes a
-    # minute or more to load, so let it bind first.
-    wait_ports(procs, [engine_port], READY_TIMEOUT)
-    procs.append(Proc("ui", [node_exe(ensure_node()), UI / "s_all" / "serve.mjs"], UI / "s_all", dict(env, PORT=str(base)), log_dir))
-
-    def smoke():
-        expect_200(f"http://127.0.0.1:{base}/")
-        for port in ports[1:]:
-            expect_200(f"http://localhost:{port}/")
-        expect_json(f"http://127.0.0.1:{engine_port}/api/predict", EXAMPLE, "likely", "outside", lambda v: v[0])
-    return ports + [engine_port], [f"http://localhost:{base}"], smoke
-
-
 def start_voice(env, log_dir, procs):
-    page, service = pick_port(4321), pick_port(4322)
-    service_env = dict(env, TQDM_DISABLE="1", CLARTE_VOICE_PORT=str(service),
-                       CLARTE_VOICE_ORIGINS=f"http://localhost:{page},http://127.0.0.1:{page}")
-    procs.append(Proc("voice-service", [venv_python(VOICE / "server" / ".venv"), "-m", "clarte_voice"], VOICE / "server", service_env, log_dir))
-    home = ensure_node()
-    page_env = dict(env, VITE_CLARTE_VOICE_URL=f"http://localhost:{service}")
-    procs.append(Proc("voice-page", [node_exe(home), npm_cli(home), "run", "dev", "--", "--port", page], VOICE, page_env, log_dir))
+    service = pick_port(4322)
+    service_env = dict(env, TQDM_DISABLE="1", CLARTE_VOICE_PORT=str(service))
+    procs.append(Proc("voice", [venv_python(VOICE / ".venv"), "-m", "clarte_voice"], VOICE, service_env, log_dir))
 
     def smoke():
-        expect_200(f"http://localhost:{page}/")
         status, data = http(f"http://127.0.0.1:{service}/health")
         health = json.loads(data)
         if status != 200 or health.get("ok") is not True:
             raise RuntimeError(f"voice /health: status {status}, {health}")
         log(f"GET /health -> ok, keyConfigured={health.get('keyConfigured')}")
-    return [page, service], [f"http://localhost:{page}"], smoke
-
-
-def start_eyes(env, log_dir, procs):
-    port = pick_port(4318)
-    home = ensure_node()
-    procs.append(Proc("eyes", [node_exe(home), npm_cli(home), "run", "dev", "--", "--port", port], EYES, env, log_dir))
-    return [port], [f"http://localhost:{port}"], lambda: expect_200(f"http://localhost:{port}/")
+    return [service], [f"http://127.0.0.1:{service}/health"], smoke
 
 
 # name -> (description, provision, start). start returns (ports to wait for, URLs, smoke test).
 APPS = {
-    "ui": ("Clarte (main/): the v1 conversation screen, eye calibration and the prediction engine", provision_app, start_app),
-    "ui-v0": ("UI v0 switcher with S0-S6 and the prediction engine", provision_ui_v0, start_ui_v0),
+    "ui": ("Clarte: the conversation screen, eye calibration, the prediction engine and the voice service", provision_app, start_app),
     "predict": ("Word Prediction engine and its test page", provision_engine, start_predict),
-    "voice": ("Voice cloning page and service (needs ELEVENLABS_API_KEY in .env)", provision_voice, start_voice),
-    "eyes": ("Eye Tracking calibration app", provision_eyes, start_eyes),
+    "voice": ("The voice service alone, as Menu > My voice uses it (makes voices with ELEVENLABS_API_KEY in .env)", provision_voice, start_voice),
 }
 READY_TIMEOUT = 600
 
@@ -815,7 +763,7 @@ def usage():
     print("\n  check         provision every app, start it, smoke-test it and stop it (no browser)")
     print("  stop          stop the prediction engine that `clarte ui` keeps running between launches")
     print("\nThe first run downloads Node, Python, the models and dependencies into .tools/ and the\n"
-          "prototypes' own .venv/node_modules folders; later runs start right away.")
+          "apps' own .venv/node_modules folders; later runs start right away.")
 
 
 def main(argv):

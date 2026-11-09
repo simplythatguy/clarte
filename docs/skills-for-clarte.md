@@ -14,8 +14,8 @@ Precedence when rules collide, highest first:
 
 1. The owner's newest explicit decision.
 2. The owner's `minimal-ui` rules. They live in the owner's skill library, not in this repository. When they are not available, say so and do not reconstruct them. Repository documents cite them as: one major thing per screen, neutral surfaces with colour spent only on function, no text that explains the UI on routine screens, and a "Verify a screen" pass on real screenshots.
-3. The backend quadrant contract: `prototypes/UI/v0/README.md`.
-4. The surface's own brief: `prototypes/UI/v0/BRIEF.md` and `MOTION.md` for the gaze UI; `prototypes/Voice/README.md` and `docs/RESEARCH.md` for voice; `prototypes/Eye Tracking/README.md` and `docs/MINIMAL-FLOW.md` for tracking.
+3. The backend quadrant contract: `docs/design/QUADRANTS.md`.
+4. The surface's own brief: `docs/design/BRIEF.md`, `docs/design/MOTION.md` and `app/DESIGN.md` for the gaze UI; `voice/README.md` and `voice/docs/RESEARCH.md` for voice; the first-run and input sections of the root `README.md` for tracking and calibration.
 5. [apple-hig-ui](../skills/apple-hig-ui/SKILL.md), Apple's guidelines already adapted to Clarte.
 6. The skill's `CLARTE.md` overlay.
 7. The upstream `SKILL.md`.
@@ -24,10 +24,10 @@ Precedence when rules collide, highest first:
 
 | Surface | Where | Input | Who uses it |
 | --- | --- | --- | --- |
-| Conversation UI (listen, compose, speak) | `prototypes/UI/v0/` (`s0` to `s6`, `shared/`) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
-| Eye tracking and calibration | `prototypes/Eye Tracking/` | webcam gaze: a steady look, then blinks to preview and confirm; mouse, touch and keys as alternates | the person; testers recording sessions |
-| Making a voice | `prototypes/Voice/` | pointer, touch and keyboard (Space records) | the person or someone helping them; designed for tremor, fatigue and low vision |
-| Prediction engine | `main/engine/` (word prediction and autocomplete in one) | HTTP API and a plain test page | developers |
+| Conversation UI (listen, compose, speak) | `app/` (`src/core/` holds the gaze engine and quadrant rules) | gaze classified into backend quadrants, dwell to select, optional blink or key confirm; the mouse and keys 1–8 only simulate gaze | the person with dysarthria, with a partner across the table |
+| Eye tracking and calibration | `app/src/eyes/` and `app/src/GuideOrb.tsx` | webcam gaze: a steady look, then blinks to preview and confirm; mouse, touch and keys as alternates | the person; testers recording sessions |
+| Making a voice | `app/src/myvoice/` and Menu › My voice, through the service in `voice/` | pointer, touch and keyboard (Space records) | the person or someone helping them; designed for tremor, fatigue and low vision |
+| Prediction engine | `engine/` (word prediction and autocomplete in one) | HTTP API and a plain test page | developers |
 
 A rule written for one input model does not transfer to another by default. Gaze surfaces have no hover and no press. The voice surface does have both, but it serves hands with tremor.
 
@@ -54,7 +54,7 @@ Emil Kowalski's skills grade motion by how often people see it. In Clarte, map t
 | Occasional | settings sheets, recalibration, voice build progress | fade in place; nothing slides |
 | Rare | calibration complete, a voice ready for the first time | the one bloom, or the calibration sequence in `MOTION.md`; still no luminance change |
 
-Use the tokens in `MOTION.md`. Emil's `--ease-out` (`cubic-bezier(0.23, 1, 0.32, 1)`) is the same curve. His `--ease-in-out` (`cubic-bezier(0.77, 0, 0.175, 1)`) is `MOTION.md`'s `--ease-move`, used only by the calibration guide dot. `--ease-drawer` has no use here because nothing slides. The voice prototype keeps its own tokens in `prototypes/Voice/src/styles.css`.
+Use the tokens in `MOTION.md`. Emil's `--ease-out` (`cubic-bezier(0.23, 1, 0.32, 1)`) is the same curve. His `--ease-in-out` (`cubic-bezier(0.77, 0, 0.175, 1)`) is `MOTION.md`'s `--ease-move`, used only by the calibration guide dot. `--ease-drawer` has no use here because nothing slides. The voice pages use the app's own tokens.
 
 Durations over 300 ms that are deliberate and must not be flagged: dwell progress (600 ms groups, 900 ms controls, linear because it encodes time), the 450 ms commit bloom, phase cross-fades, caption typing, and the calibration guide dot's travel and settle.
 
@@ -74,10 +74,10 @@ Durations over 300 ms that are deliberate and must not be flagged: dwell progres
 | Surface | Run |
 | --- | --- |
 | Skills and provenance | `python3 scripts/validate.py` |
-| UI v0 | `node prototypes/UI/v0/shared/selftest.ts`; `node prototypes/UI/v0/shared/check-layout.mjs http://localhost:PORT out-dir` at 1440×900 and 1280×720, zero violations in every phase; preview all styles with `node prototypes/UI/v0/s_all/serve.mjs` |
-| Eye Tracking | the Verify list in `prototypes/Eye Tracking/README.md` (`npm test`, `typecheck`, `build`, `check:privacy`, `check:import`, `check:model`, `scripts/fingerprint.mjs --verify`), plus session replay for any tracker change |
-| Voice | `npm test && npm run typecheck`; `server/.venv/bin/python -m pytest -q tests`; `scripts/evaluate.py` for similarity, rate and WER |
-| Word Prediction | the run and check steps in its README; Light must work without neural artifacts |
+| App | in `app/`: `npm test`; `npx tsc --noEmit -p tsconfig.json`; `npm run check` (every debug phase through the backend-quadrant layout check, zero violations); the rest of the Check it list in the root `README.md` |
+| Eye tracking | in `app/`: `npm run fixture`, then `node scripts/e2e-first-run.mjs` (the first run and a second launch on a fake camera), plus a live calibration for any tracker change |
+| Voice | in `voice/`: `.venv/bin/python -m pytest -q tests`; `scripts/evaluate.py` for similarity, rate and WER |
+| Word Prediction | the run and check steps in `engine/README.md`; Light must work without neural artifacts |
 
 Screenshots are opened and looked at before they are reported. Gaze screens are checked at 1440×900 and 1280×720 and at 200% text, with `?onboarding=off`.
 
