@@ -54,3 +54,19 @@ def test_voices_without_a_clone_are_skipped(tmp_path, monkeypatch):
     monkeypatch.setenv("CLARTE_SHARED_VOICES", str(tmp_path / "team"))
     team_voice(tmp_path / "team", remote="")
     assert store.seed_shared() == []
+
+
+def test_a_new_clone_in_the_repo_drops_phrases_the_old_one_spoke(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("CLARTE_SHARED_VOICES", str(tmp_path / "team"))
+    team_voice(tmp_path / "team")
+    store.seed_shared()
+    assert client.post("/voices/abcdef123456/speak", json={"text": "Hello."}).status_code == 200
+    cache = store.voice_dir("abcdef123456") / "cache"
+    assert list(cache.glob("*.mp3"))
+    store.seed_shared()  # same clone: the phrases stay
+    assert list(cache.glob("*.mp3"))
+    team_voice(tmp_path / "team", remote="team2")
+    store.seed_shared()
+    assert not cache.exists()
+    client.post("/voices/abcdef123456/speak", json={"text": "Hello."})
+    assert client.fake.spoken[-1][1] == "team2"

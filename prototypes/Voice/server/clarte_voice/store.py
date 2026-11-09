@@ -60,6 +60,9 @@ def seed_shared() -> list[str]:
             local = json.loads(target.read_text())
             if not local.get("shared"):
                 continue
+            if local.get("remoteVoiceId") != team["remoteVoiceId"]:
+                # The team swapped the clone: phrases saved here were spoken by the old one.
+                shutil.rmtree(folder / "cache", ignore_errors=True)
             # Keep what this laptop knows (its recordings, if it made the voice); take the team's
             # name and clone.
             team = {**local, **{k: team[k] for k in ("name", "remoteVoiceId", "status", "shared")}}

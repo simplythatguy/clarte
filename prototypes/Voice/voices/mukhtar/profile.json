@@ -4,15 +4,15 @@
   "source": "current",
   "engine": "elevenlabs",
   "status": "ready",
-  "remoteVoiceId": "9FVFDH6U4htZEzZC9JMW",
-  "createdAt": 1794074530357,
-  "updatedAt": 1794074532964,
+  "remoteVoiceId": "tYbPZl7gems0udsiIFkD",
+  "createdAt": 1794195771600,
+  "updatedAt": 1794195774274,
   "consent": {
     "statement": "These recordings are of my own voice, or I am authorized to make this voice for the person speaking in them. I agree that the selected speech is sent to ElevenLabs to create the voice.",
-    "at": 1794074530357
+    "at": 1794195771600
   },
   "reference": {
-    "seconds": 46.54,
+    "seconds": 32.86,
     "segments": []
   },
   "segments": [],
