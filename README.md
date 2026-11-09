@@ -19,6 +19,8 @@ Clarté is for people who live with two things at the same time:
 
 Either one alone has workarounds. Someone whose speech is unclear can type on a phone and let it talk for them. Someone whose hands don't work can speak. Someone with both loses both ways of being understood. That is who Clarté is for.
 
+<p align="center"><img src="docs/media/readme/illustrations/who.jpg" alt="A woman sits at a kitchen table with her hands in her lap while her laptop speaks for her to the man across the table." width="560"></p>
+
 ### Julie's story
 
 Julie Tomaino was 38, a choreographer, and her whole life was movement. Then a stroke hit both sides of her brain. For more than a week she couldn't move her hands or her face, and she couldn't make a sound. Only her eyes still moved. When her voice came back, it came, in her words, "slowly, one word at a time." She has said she couldn't get her feet off the floor.
@@ -27,20 +29,83 @@ Julie worked hard in rehabilitation and went back to choreographing. Many people
 
 That is why the sentence in our video is "I want to walk". Julie has no connection to Clarté; we tell her story, from [Heart & Stroke's article "Choreographing her own recovery"](https://www.heartandstroke.ca/articles/choreographing-her-own-recovery), because it shows who Clarté is for.
 
-<sub>Sources: [Heart & Stroke, 2024](https://www.heartandstroke.ca/-/media/pdf-files/what-we-do/news/hsf_fast_backgrounder_june_2024.pdf?rev=dadfcd1b3ba1468ba6448168d31bbaea) (almost a million Canadians living with stroke); [Flowers et al., 2013](https://pesquisa.bvsalud.org/bvsms/resource/pt/mdl-23642855) (42% had dysarthria after a first ischemic stroke; another study found 26%, so we say "up to 4 in 10").</sub>
+<details>
+<summary>Sources</summary>
+
+[Heart & Stroke, 2024](https://www.heartandstroke.ca/-/media/pdf-files/what-we-do/news/hsf_fast_backgrounder_june_2024.pdf?rev=dadfcd1b3ba1468ba6448168d31bbaea) (almost a million Canadians living with stroke); [Flowers et al., 2013](https://pesquisa.bvsalud.org/bvsms/resource/pt/mdl-23642855) (42% had dysarthria after a first ischemic stroke; another study found 26%, so we say "up to 4 in 10").
+
+</details>
+
+## You may know them
+
+These well-known people lived with the same pairing of unclear or lost speech and hands that wouldn't do what they wanted. None of them used or endorsed Clarté; their stories show who it is for.
+
+<table>
+<tr>
+<td align="center" width="25%"><img src="docs/media/readme/people/stephen-hawking.jpg" alt="Stephen Hawking in his wheelchair with his communication computer" width="160"><br><b>Stephen Hawking</b><br>ALS</td>
+<td align="center" width="25%"><img src="docs/media/readme/people/muhammad-ali.jpg" alt="Muhammad Ali in 1997" width="160"><br><b>Muhammad Ali</b><br>Parkinson's</td>
+<td align="center" width="25%"><img src="docs/media/readme/people/steve-gleason.jpg" alt="Steve Gleason in his wheelchair with his eye-tracking tablet" width="160"><br><b>Steve Gleason</b><br>ALS</td>
+<td align="center" width="25%"><img src="docs/media/readme/people/rob-burrow.jpg" alt="Rob Burrow playing rugby league for England in 2008" width="160"><br><b>Rob Burrow</b><br>MND</td>
+</tr>
+</table>
+
+- **Stephen Hawking** (1942 to 2018), physicist. ALS slowly took the use of his hands, and his speech became so unclear that only people who knew him well could understand him. He wrote by choosing letters and predicted words on a computer, first with a switch in his hand, later with a sensor on his glasses that caught a twitch of his cheek. Clarté's word guessing follows the same idea.
+- **Muhammad Ali** (1942 to 2016), boxer. Parkinson's, diagnosed in 1984, made his speech soft and slurred and gave him a strong tremor in his left hand. His hand was shaking as he lit the Olympic flame in 1996.
+- **Steve Gleason** (born 1977), American football player. ALS, diagnosed in 2011, took his ability to talk and left him unable to move anything but his eyes. He types by looking at letters on a tablet: a camera follows his eyes, and the tablet speaks for him.
+- **Rob Burrow** (1982 to 2024), rugby league player. Motor neurone disease, diagnosed in 2019, took his natural speech and even his ability to use a touchscreen. He spoke by looking at words and letters on an eye-tracking computer, in a recording of his own voice saved before he lost it.
+- **Jean-Dominique Bauby** (1952 to 1997), magazine editor. A stroke in 1995 left him fully aware but unable to move or speak; the only thing he could still move was his left eyelid. Someone read the alphabet aloud and he blinked at each letter he wanted. He wrote a whole book this way, *The Diving Bell and the Butterfly*.
+- **Jason Becker** (born 1969), rock guitarist. ALS took the use of his hands, then his speech. He spells with his eyes on a board his father designed: one look picks a group of letters, a second look picks the letter. Clarté starts from the same idea of choosing a group of letters with a look.
+
+<details>
+<summary>Photo credits and sources</summary>
+
+Photos, cropped and resized, from Wikimedia Commons:
+
+- [Stephen Hawking, 2008](https://commons.wikimedia.org/wiki/File:Stephen_Hawking_in_Cambridge.jpg) by Doug Wheller, [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/).
+- [Muhammad Ali, 1997](https://commons.wikimedia.org/wiki/File:Muhammad_Ali_1997.jpg) by John Mathew Smith and celebrity-photos.com, [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/).
+- [Steve Gleason, 2016](https://commons.wikimedia.org/wiki/File:Steve_Gleason_(cropped).jpg) by Collision Conf, [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/).
+- [Rob Burrow, 2008](https://commons.wikimedia.org/wiki/File:Rob_Burrow.jpg) by Gerard Barrau, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+
+Sources: [Hawking's own words](https://www.hawking.org.uk/in-words/speeches/speech-1) and the [Science Museum](https://collection.sciencemuseumgroup.org.uk/objects/co8919691); [JAMA Neurology on Ali](https://jamanetwork.com/journals/jamainternalmedicine/fullarticle/2797272) and [CBS News](https://www.cbsnews.com/news/muhammad-ali-parkinsons-disease); [Tulane News on Gleason](https://news.tulane.edu/news/tech-savvy-hero) and the [New York Times via Taipei Times](https://www.taipeitimes.com/News/sport/archives/2016/01/03/2003636313); [Smartbox on Burrow](https://smartboxaac.com/ukie/news/find-out-more-about-rob-burrows-voice/); [TIME on Bauby](https://time.com/archive/6730546/jean-dominique-bauby-a-triumph-of-the-spirit); [New Mobility on Becker](https://newmobility.com/jason-becker/) and [his father's description of the board](https://jasonbecker.com/archive/eye_communication.html).
+
+</details>
 
 ## How it works
 
-1. **Clarté learns your eyes.** A dot moves to eight spots on the screen and you follow it with your eyes. This takes about 20 seconds and is saved for next time.
-2. **Look to point.** The screen is split into eight large areas, two rows of four. Looking at one draws an outline around it. Looking alone never chooses anything, so you can read the screen freely.
-3. **Make a sound to choose.** A short "yeah" or "ah" chooses what you are looking at. Clarté can learn your own sound in about 30 seconds (Menu, then Settings, then My sound), so other people talking, coughs and background noise don't count. Someone who can't make a sound can press an accessibility switch instead.
-4. **Spell with four groups of letters.** The letters are split into four groups: ABCDEF, GHIJKLMN, OPQRS and TUVWXYZ. For each letter of a word, you choose the group it belongs to. Clarté guesses the word from that pattern, the way a phone's predictive text does. If the guess is wrong, Options shows the other likely words.
-5. **Speak.** When the sentence is ready, Clarté says it aloud.
+### 1. Clarté learns your eyes
+
+A dot moves to eight spots on the screen and you follow it with your eyes. This takes about 20 seconds and is saved for next time.
+
+<p align="center"><img src="docs/media/readme/diagrams/calibration.png" alt="Eight numbered dots on a screen, visited along the top row left to right, then the bottom row right to left." width="560"></p>
+
+### 2. Look to point
+
+The screen is split into eight large areas, two rows of four. Looking at one draws an outline around it. Looking alone never chooses anything, so you can read the screen freely.
+
+<p align="center"><img src="docs/media/readme/diagrams/screen.png" alt="The Clarté screen: Menu, Clarté and Listen on the top row, and the four letter groups on the bottom row." width="560"></p>
+
+### 3. Make a sound to choose
+
+A short "yeah" or "ah" chooses what you are looking at. Clarté can learn your own sound in about 30 seconds (Menu, then Settings, then My sound), so other people talking, coughs and background noise don't count. Someone who can't make a sound can press an accessibility switch instead.
+
+<p align="center"><img src="docs/media/readme/diagrams/look-then-sound.png" alt="Look: the letter group gets an outline. Sound: a short yeah. Chosen: the group is picked." width="600"></p>
+
+### 4. Spell with four groups of letters
+
+The letters are split into four groups: ABCDEF, GHIJKLMN, OPQRS and TUVWXYZ. For each letter of a word, you choose the group it belongs to. Clarté guesses the word from that pattern, the way a phone's predictive text does. If the guess is wrong, Options shows the other likely words.
+
+<p align="center"><img src="docs/media/readme/diagrams/spell-walk.png" alt="Spelling walk: w, a, l and k fall into their four groups, which fit tell, talk and walk; walk is chosen." width="560"></p>
+
+### 5. Speak
+
+When the sentence is ready, Clarté says it aloud.
 
 Two more things help in a real conversation:
 
 - **Listen.** Clarté can turn what the other person says into text on the screen. It uses this to make better word guesses, and it offers a quick reply to greetings and thanks.
 - **Your own voice.** Clarté can make a copy of your voice from old recordings of you, from before your speech changed, or from about a minute of speaking today (Menu, then My voice). Until you choose a voice, it uses a ready-made one.
+
+<p align="center"><img src="docs/media/readme/illustrations/own-voice.jpg" alt="A sound wave on an old phone becomes the same sound wave coming out of the laptop." width="480"></p>
 
 ## Why we made it this way
 
@@ -57,12 +122,16 @@ Two more things help in a real conversation:
 
 ## What stays on your computer
 
+<p align="center"><img src="docs/media/readme/diagrams/privacy.png" alt="Camera, eye tracking and word guessing stay on your computer. The partner's speech goes to Google in Chrome, and your voice copy goes to ElevenLabs." width="600"></p>
+
 - **The camera.** The images are used on your computer to work out where you are looking, and are not sent anywhere.
 - **Word guessing** happens on your computer.
 - **Listening to the other person.** In Google Chrome this uses Google's speech service, so that audio goes to Google, and Clarté shows "Via Google" while it does. If Google's service isn't available, for example without internet, the listening happens on your computer instead.
 - **Your own voice.** To make a copy of your voice, the recordings Clarté picks are sent to ElevenLabs, a voice company. After that, the text of each new phrase it speaks in your voice is sent too.
 
 ## Try it
+
+<p align="center"><img src="docs/media/readme/illustrations/try-it.jpg" alt="A laptop with its webcam and microphone highlighted." width="380"></p>
 
 You need a Mac, Windows or Linux computer with a webcam and a microphone, an internet connection, and [Git](https://git-scm.com/downloads). Google Chrome works best.
 
@@ -79,6 +148,8 @@ The first time, this downloads everything Clarté needs (up to about 1.6 GB) and
 - **Your own voice (optional).** Making a copy of your voice needs an [ElevenLabs](https://elevenlabs.io) account. Copy `.env.example` to a new file called `.env` and put your ElevenLabs key in it. Without a key, Clarté speaks with your computer's own voice.
 
 ## What's next
+
+<p align="center"><img src="docs/media/readme/illustrations/next.jpg" alt="A speech therapist takes notes beside an older man as they try Clarté together." width="480"></p>
 
 Our plan for the nine months after natHacks:
 
@@ -109,6 +180,7 @@ Clarté builds on other people's work:
 - **Hearing the other person:** OpenAI's [Whisper](https://github.com/openai/whisper) (MIT licence) when listening happens on the computer, and Google's speech service in Chrome.
 - **Voice:** [ElevenLabs](https://elevenlabs.io) makes and speaks the voice copy, and [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) checks that recordings are of the right person.
 - **Sound tests:** recordings from the [CNVVE dataset](https://doi.org/10.18419/darus-3898) (CC BY 4.0).
+- **Pictures:** the illustrations were made with OpenAI's image generator, and the diagrams were drawn in [Excalidraw](https://excalidraw.com) (their editable files are in [`docs/media/readme/diagrams/`](docs/media/readme/diagrams)). The photos of public figures are credited under [You may know them](#you-may-know-them).
 - **Lettering:** the [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) typeface from the Braille Institute, designed to be easy to read.
 
 The detailed licence notes are kept next to each part, for example [`engine/README.md`](engine/README.md) and [`app/fixtures/listen/SOURCE.md`](app/fixtures/listen/SOURCE.md).
