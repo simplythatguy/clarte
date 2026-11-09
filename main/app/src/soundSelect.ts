@@ -10,6 +10,7 @@
  * the word; it learns the person's own way of saying it. Before they have taught it, a generic
  * rule stands in: a voiced sound that rises clearly out of the room and is not an impact.
  */
+import { onsetAt } from './listen/events.ts';
 import { microphone } from './listen/runtime.ts';
 import { judge, judgeGeneric, type Profile } from './listen/matcher.ts';
 import { loadBank, loadProfile, onProfileChange } from './listen/store.ts';
@@ -40,7 +41,7 @@ export async function startSoundSelect(onSound: () => void, enabled: () => boole
     onEvent: ({ event }) => {
       const verdict = profile ? judge(profile, event) : judgeGeneric(event);
       const on = enabled();
-      const fires = on && (!requireReadyOnset || event.start >= readySince) && verdict.accept && event.at - last >= REFRACTORY_S;
+      const fires = on && (!requireReadyOnset || onsetAt(event) >= readySince) && verdict.accept && event.at - last >= REFRACTORY_S;
       if (fires) { last = event.at; onSound(); }
       import.meta.hot?.send('clarte:sound', { at: +event.at.toFixed(2), taught: Boolean(profile), accept: verdict.accept, reason: verdict.reason, distance: verdict.distance, enabled: on, fired: fires, peak: Math.round(event.stats.peakDb), settings: microphone.settings });
     },

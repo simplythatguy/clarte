@@ -36,6 +36,11 @@ export type SoundEvent = {
   stats: EventStats;
 };
 
+/** The audible rise, excluding the quiet lead-in retained for matching and enrolment. */
+export function onsetAt(event: SoundEvent): number {
+  return event.frames.find(frame => frame.db > Math.max(event.floor, event.before) + RISE_DB)?.t ?? event.start;
+}
+
 export type EventStats = {
   durationMs: number;
   peakDb: number;
