@@ -40,6 +40,8 @@ type Props = {
   halo?: boolean;
   /** Wait this long before the pen starts on the first face. */
   enterDelay?: number;
+  /** A slow smile on the resting face (calibration's return to the centre). */
+  smile?: boolean;
 };
 
 /** The reaction to show now: a new turn's reaction for REACTION_HOLD_MS, then none. */
@@ -54,12 +56,12 @@ function useHeldReaction(reaction: ShownReaction | null): ReactionKind | null {
   return reaction && !expired.has(reaction.key) ? reaction.kind : null;
 }
 
-export function Cloud({ mood, pulse = 0, still, listening = false, reaction = null, look = null, lean = true, halo = true, enterDelay = 260 }: Props) {
+export function Cloud({ mood, pulse = 0, still, listening = false, reaction = null, look = null, lean = true, halo = true, enterDelay = 260, smile = false }: Props) {
   const held = useHeldReaction(reaction);
   const kind: ExpressionKind = held ?? (listening ? 'listening' : 'neutral');
   return (
     <Orb mood={mood} pulse={pulse} still={still} palette={PALETTE} lean={lean} halo={halo} look={look}>
-      <SketchFace kind={kind} visible enterDelay={enterDelay} alive={!still} />
+      <SketchFace kind={kind} visible enterDelay={enterDelay} alive={!still} smile={smile} />
     </Orb>
   );
 }

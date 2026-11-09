@@ -7,6 +7,10 @@
  * The worker starts with Gaze Lab's quick-calibration settings (DEC-095, DEC-097): the pose input
  * rows frozen during calibration, collect and train limits for eight dots, and the geometric share
  * of the blend capped at 0.2.
+ *
+ * `debug` (NAT-47) makes the worker attach each frame's face landmarks to its result, beside the
+ * unchanged gaze outputs; the Cloud reads the person's blinks, smile and position from them
+ * (expression.ts).
  */
 import { CAMERA, DecodedFrameGate } from './core/webeyetrack';
 import { normalizeGaze, readWorkerGaze, type GazeFrame, type Viewport } from './core/tracking';
@@ -14,9 +18,11 @@ import { WorkerClient } from './core/worker-client';
 import { OneEuroPoint } from './core/one-euro';
 import { readLearnedCalibration, type CameraGeometry, type LearnedCalibration } from './core/saved-calibration';
 import type { TrainingReport } from './core/training';
+import { observeFace, resetFace } from './expression';
 
 export const WORKER_INIT = {
   development: false,
+  debug: true,
   normalizeCrop: false,
   fixes: { freezePose: true },
   limits: { maxSamples: 200, minSamples: 24, minTargets: 8 },
@@ -131,6 +137,8 @@ export class EyeTracker {
       this.latestAt = at;
       const v = viewport();
       this.onFrame({ at, face: gaze.face, frame: this.smooth(normalizeGaze(gaze, v), v), viewport: v });
+      const landmarks = (value as { debug?: { landmarks?: unknown } }).debug?.landmarks;
+      if (Array.isArray(landmarks) && landmarks.length >= 478 * 3) observeFace(landmarks, at, { width, height });
     } catch (error) {
       if (generation === this.generation) this.fail(error);
     } finally {
@@ -204,5 +212,6 @@ export class EyeTracker {
     this.busy = false;
     this.training = false;
     this.latestAt = -Infinity;
+    resetFace();
   }
 }

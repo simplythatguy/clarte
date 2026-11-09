@@ -19,6 +19,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EXPRESSIONS, strokeOf, type ExpressionKind } from './expressions.ts';
+import { faceMirror, subscribeFace, useMirrorSmile } from '../eyes/expression.ts';
 
 const ERASE_MS = 140;
 const ERASE_GAP = 40;
@@ -32,6 +33,31 @@ const seedOf = (kind: string) => [...kind].reduce((s, c) => s + c.charCodeAt(0),
 const jitterOf = (seed: number, i: number) => (((seed * 31 + i * 17) % 25) - 12);
 
 const BLINK_MS = 190;
+
+/**
+ * The slow smile (NAT-44, owner 2026-11-08: "when the cloud returns to the center it smiles slowly"):
+ * the resting mouth widens and its corners lift, eased over SMILE_MS once the Cloud has landed
+ * (SMILE_DELAY), and the eyes narrow a little, as a real smile reaches the eyes (styles.css, from
+ * --smile). It relaxes faster than it comes. Only the resting face smiles this way.
+ */
+const SMILES: Partial<Record<ExpressionKind, { index: number; to: string }[]>> = {
+  neutral: [{ index: 2, to: 'M43 68 Q60 87 77 68' }],
+};
+const SMILE_DELAY = 450;
+const SMILE_MS = 1900;
+const UNSMILE_MS = 450;
+/** Mirroring the person's smile (NAT-47) follows them closely: no wait, and quicker. */
+const MIRROR_SMILE_MS = 600;
+/** Which side of the face an eye is on, from where its stroke starts: the Cloud's screen left or right. */
+const sideOf = (d: string) => (Number(d.match(/-?\d+(\.\d+)?/)?.[0] ?? 60) < 60 ? 'l' : 'r');
+const numbers = (d: string) => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+/** The path between `from` (0) and `to` (1); both have the same commands, so only the numbers move. */
+function between(from: string, to: string, t: number): string {
+  const a = numbers(from), b = numbers(to);
+  let i = 0;
+  return from.replace(/-?\d+(\.\d+)?/g, () => { const v = a[i] + (b[i] - a[i]) * t; i++; return v.toFixed(2); });
+}
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 type Mode = 'draw' | 'erase' | 'still';
@@ -40,17 +66,78 @@ type Mode = 'draw' | 'erase' | 'still';
  * One face, drawn or erased. `mode: still` shows it finished, without motion (galleries).
  * `alive` lets a drawn face blink and play its reaction's motion.
  */
-export function Strokes({ kind, mode, delayMs = 0, className = '', alive = false }: { kind: ExpressionKind; mode: Mode; delayMs?: number; className?: string; alive?: boolean }) {
+export function Strokes({ kind, mode, delayMs = 0, className = '', alive = false, smile = false }: { kind: ExpressionKind; mode: Mode; delayMs?: number; className?: string; alive?: boolean; smile?: boolean }) {
   const svg = useRef<SVGSVGElement>(null);
   const drawnAt = useRef(0);
   const def = EXPRESSIONS[kind];
   const strokes = def.strokes.map(strokeOf);
   const hasEyes = strokes.some((s) => s.eye);
+  // Mirroring (NAT-47): the person's smile; the slow smile (calibration) still wins when asked for.
+  const mirrorSmile = useMirrorSmile();
+  const smiling = smile || (alive && mode === 'draw' && mirrorSmile);
+  const slowSmile = smile;
+
+  // The slow smile: the mouth's path eases between its rest and its smile, from wherever it is now.
+  const smileAt = useRef(0);
+  useEffect(() => {
+    const spec = SMILES[kind];
+    const paths = svg.current?.querySelectorAll<SVGPathElement>('.sketch-blink > path');
+    if (!spec || !paths || mode === 'erase') return;
+    const goal = smiling ? 1 : 0;
+    const set = (t: number) => {
+      smileAt.current = t;
+      const e = easeInOut(t);
+      for (const m of spec) paths[m.index]?.setAttribute('d', between(strokes[m.index].d, m.to, e));
+      svg.current?.style.setProperty('--smile', e.toFixed(3));
+    };
+    if (reducedMotion() || mode === 'still') { set(goal); return; }
+    const from = smileAt.current;
+    if (from === goal) return;
+    const ms = (smiling ? (slowSmile ? SMILE_MS : MIRROR_SMILE_MS) : UNSMILE_MS) * Math.abs(goal - from);
+    const delay = smiling && slowSmile ? SMILE_DELAY : 0;
+    let frame = 0;
+    const began = performance.now() + delay;
+    const step = (now: number) => {
+      const u = Math.min(1, Math.max(0, (now - began) / ms));
+      set(from + (goal - from) * u);
+      if (u < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [smiling, kind, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mirroring (NAT-47): each eye closes while the person's eye on that side is shut (a blink or a
+  // wink), written straight to the element so it keeps up with the camera without re-rendering.
+  useEffect(() => {
+    const root = svg.current;
+    if (!root || !alive || mode !== 'draw' || !hasEyes) return;
+    // A shut eye is drawn as a closed lid, a small curve across where the eye is now (its shape
+    // may have changed with a smile).
+    const lids = () => {
+      for (const part of root.querySelectorAll<SVGGElement>('.sketch-part[data-eye]')) {
+        const eye = part.querySelector<SVGPathElement>('.sketch-blink > path');
+        const lid = part.querySelector<SVGPathElement>('.sketch-lid');
+        if (!eye || !lid) continue;
+        const b = eye.getBBox();
+        const cx = b.x + b.width / 2, cy = b.y + b.height / 2, w = Math.max(10, b.width * 1.5);
+        lid.setAttribute('d', `M${(cx - w / 2).toFixed(2)} ${(cy - 0.6).toFixed(2)} Q${cx.toFixed(2)} ${(cy + 3.4).toFixed(2)} ${(cx + w / 2).toFixed(2)} ${(cy - 0.6).toFixed(2)}`);
+      }
+    };
+    const apply = () => {
+      const f = faceMirror();
+      if ((f.shutLeft && !root.hasAttribute('data-shut-l')) || (f.shutRight && !root.hasAttribute('data-shut-r'))) lids();
+      root.toggleAttribute('data-shut-l', f.shutLeft);
+      root.toggleAttribute('data-shut-r', f.shutRight);
+    };
+    apply();
+    const off = subscribeFace(apply);
+    return () => { off(); root.removeAttribute('data-shut-l'); root.removeAttribute('data-shut-r'); };
+  }, [alive, mode, hasEyes, kind]);
 
   useLayoutEffect(() => {
     const root = svg.current;
     if (!root) return;
-    const paths = [...root.querySelectorAll<SVGPathElement>('path')];
+    const paths = [...root.querySelectorAll<SVGPathElement>('.sketch-blink > path')];
     if (mode === 'draw') {
       const seed = seedOf(kind);
       let at = delayMs;
@@ -91,6 +178,8 @@ export function Strokes({ kind, mode, delayMs = 0, className = '', alive = false
     };
     const next = (wait: number) => {
       timer = window.setTimeout(() => {
+        // While it mirrors a face, the person's own blinks are its blinks (above).
+        if (faceMirror().present) { next(1200); return; }
         const again = Math.random() < 0.18;
         blink(() => (again ? (timer = window.setTimeout(() => blink(() => next(2800 + Math.random() * 3700)), 110)) : next(2800 + Math.random() * 3700)));
       }, wait);
@@ -100,13 +189,14 @@ export function Strokes({ kind, mode, delayMs = 0, className = '', alive = false
   }, [alive, mode, hasEyes, kind]);
 
   return (
-    <svg ref={svg} className={`sketch ${className}`} data-mode={mode} data-kind={kind} data-alive={alive && mode !== 'still' ? '' : undefined} viewBox="16 16 88 88" aria-hidden="true">
+    <svg ref={svg} className={`sketch ${className}`} data-mode={mode} data-kind={kind} data-alive={alive && mode !== 'still' ? '' : undefined} data-smile={smiling && SMILES[kind] ? '' : undefined} viewBox="16 16 88 88" aria-hidden="true">
       <g className="sketch-face" data-life={def.face}>
         {strokes.map((s, i) => (
-          <g key={i} className="sketch-part" data-eye={s.eye ? '' : undefined} data-life={s.life} style={s.offset ? { ['--offset' as string]: `${s.offset}ms` } : undefined}>
+          <g key={i} className="sketch-part" data-eye={s.eye ? '' : undefined} data-side={s.eye ? sideOf(s.d) : undefined} data-life={s.life} style={s.offset ? { ['--offset' as string]: `${s.offset}ms` } : undefined}>
             <g className="sketch-blink">
               <path d={s.d} pathLength={1} />
             </g>
+            {s.eye && <path className="sketch-lid" />}
           </g>
         ))}
       </g>
@@ -119,7 +209,7 @@ export function Strokes({ kind, mode, delayMs = 0, className = '', alive = false
  * the new one. `enterDelay` lets the orb arrive before the pen starts. `alive` (default on) lets
  * it blink and move once drawn; pass false when the Cloud is Still.
  */
-export function SketchFace({ kind, visible, enterDelay = 0, alive = true }: { kind: ExpressionKind; visible: boolean; enterDelay?: number; alive?: boolean }) {
+export function SketchFace({ kind, visible, enterDelay = 0, alive = true, smile = false }: { kind: ExpressionKind; visible: boolean; enterDelay?: number; alive?: boolean; smile?: boolean }) {
   const [shown, setShown] = useState<{ kind: ExpressionKind; mode: Mode; n: number; delay: number } | null>(visible ? { kind, mode: 'draw', n: 0, delay: enterDelay } : null);
   const want = visible ? kind : null;
   useEffect(() => {
@@ -142,5 +232,5 @@ export function SketchFace({ kind, visible, enterDelay = 0, alive = true }: { ki
     return () => clearTimeout(t);
   }, [shown]);
   if (!shown) return null;
-  return <Strokes key={`${shown.kind}-${shown.n}`} kind={shown.kind} mode={shown.mode} delayMs={shown.delay} alive={alive} />;
+  return <Strokes key={`${shown.kind}-${shown.n}`} kind={shown.kind} mode={shown.mode} delayMs={shown.delay} alive={alive} smile={smile} />;
 }

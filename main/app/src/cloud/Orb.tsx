@@ -40,6 +40,7 @@ import { useEffect, useRef } from 'react';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import type { ReactNode } from 'react';
 import { engine } from '../gaze.ts';
+import { faceMirror, subscribeFace } from '../eyes/expression.ts';
 import type { PaletteKind } from '../variant.ts';
 
 export type OrbMood = 'idle' | 'listening' | 'composing' | 'speaking';
@@ -192,11 +193,14 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
   haloRef.current = halo;
   // The face's look, eased towards its target in the frame loop.
   const lookRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  /** A look from the caller (the companion's flight) wins over following the person (NAT-47). */
+  const lookSetRef = useRef(false);
   const api = useRef<{ wake(): void; setMood(p: Palette, instant: boolean): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const gl = canvas?.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
+    const gl = canvas?.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, preserveDrawingBuffer: true });
+    // preserveDrawingBuffer: calibration's ghost trail (GuideOrb.tsx) copies the last frame with drawImage.
     if (!canvas || !gl) return;
 
     const compile = (type: number, src: string) => {
@@ -244,13 +248,17 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
       const scale = Math.min(window.devicePixelRatio || 1, 2) * 0.6;
       const w = Math.max(1, Math.round(canvas.clientWidth * scale));
       const h = Math.max(1, Math.round(canvas.clientHeight * scale));
-      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      // Resizing clears the canvas. Redraw at once (below), in the same frame, or a growing or
+      // shrinking Cloud flickers out between frames and its face floats alone (NAT-44).
+      const resized = canvas.width !== w || canvas.height !== h;
+      if (resized) { canvas.width = w; canvas.height = h; }
       gl.viewport(0, 0, w, h);
       half = Math.min(canvas.clientWidth, canvas.clientHeight) / 2;
       const face = half * ORB_RADIUS * FACE_SIZE;
       faceRef.current?.style.setProperty('--face-size', `${face.toFixed(1)}px`);
       // About 2.6 px of ink on screen at any size: a 168 px Cloud keeps the pen's 3.2, a small one thickens.
       faceRef.current?.style.setProperty('--sketch-w', `${Math.min(8, Math.max(3.2, (2.6 * 88) / Math.max(face, 1))).toFixed(2)}px`);
+      if (resized) draw();
       wake();
     };
 
@@ -295,7 +303,8 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
       lean = [lean[0] + (leanTarget[0] - lean[0]) * k, lean[1] + (leanTarget[1] - lean[1]) * k];
       // The look is quicker than the lean: eyes move before bodies.
       const kl = 1 - Math.exp(-dt / LOOK_TAU);
-      const lt = frozen() ? { x: 0, y: 0 } : lookRef.current;
+      // Otherwise the face follows the person in front of the camera (NAT-47, eyes/expression.ts).
+      const lt = frozen() ? { x: 0, y: 0 } : lookSetRef.current ? lookRef.current : faceMirror().look ?? { x: 0, y: 0 };
       lookAt = [lookAt[0] + (lt.x - lookAt[0]) * kl, lookAt[1] + (lt.y - lookAt[1]) * kl];
       haloOn = haloRef.current;
       const settling = Math.hypot(leanTarget[0] - lean[0], leanTarget[1] - lean[1]) > 0.002
@@ -330,6 +339,7 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
       leanTarget = [dx / len, dy / len];
       wake();
     };
+    const unfollow = subscribeFace(() => wake());
     const unsubscribe = engine.subscribe((s) => {
       if (s.looked === lookedAt) return;
       lookedAt = s.looked;
@@ -373,6 +383,7 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     return () => {
       ro.disconnect();
       unsubscribe();
+      unfollow();
       reducedMotion?.removeEventListener('change', onMotionPref);
       running.forEach((c) => c.stop());
       cancelAnimationFrame(frame);
@@ -394,7 +405,7 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
   useEffect(() => { api.current?.setStill(still); }, [leans]); // re-aim (or centre) the lean
   const lx = look ? Math.max(-2.6, Math.min(2.6, look.x)) : 0;
   const ly = look ? Math.max(-2.6, Math.min(2.6, look.y)) : 0;
-  useEffect(() => { lookRef.current = { x: lx, y: ly }; api.current?.wake(); }, [lx, ly]);
+  useEffect(() => { lookRef.current = { x: lx, y: ly }; lookSetRef.current = look !== null; api.current?.wake(); }, [lx, ly, look === null]); // eslint-disable-line react-hooks/exhaustive-deps
   const lastPulse = useRef(pulse);
   useEffect(() => {
     if (pulse > lastPulse.current) api.current?.kick();

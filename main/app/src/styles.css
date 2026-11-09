@@ -775,15 +775,37 @@ body {
   top: 0;
   width: var(--size, 132px);
   height: var(--size, 132px);
-  translate: calc(var(--x, 50vw) - var(--size, 132px) / 2) calc(var(--y, 50vh) - var(--size, 132px) / 2);
-  transition: translate var(--move) cubic-bezier(0.23, 1, 0.32, 1), width 400ms var(--ease-out), height 400ms var(--ease-out);
+  /* Centred by its own size, live (NAT-44): the centre follows --x/--y alone, so a size change
+     mid-glide never pulls it off its path. */
+  translate: var(--x, 50vw) var(--y, 50vh);
+  transform: translate(-50%, -50%);
+  transition: translate var(--move) cubic-bezier(0.23, 1, 0.32, 1), width var(--move) cubic-bezier(0.23, 1, 0.32, 1), height var(--move) cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
   @starting-style { opacity: 0; }
 }
-/* The ring sits --gap outside the orb, so white shows between them; it fills clockwise. */
-.guide-ring { position: absolute; inset: calc(-1 * (var(--gap) + var(--line))); width: calc(100% + 2 * (var(--gap) + var(--line))); height: calc(100% + 2 * (var(--gap) + var(--line))); overflow: visible; }
-.guide-ring circle { fill: none; stroke: #2F6FEB; stroke-width: var(--line); stroke-linecap: round; vector-effect: non-scaling-stroke; }
+/* The ring sits --gap outside the orb, so white shows between them. It is sketched in ink
+   (NAT-44, ring.ts): one pen line. It fades out as the Cloud leaves for the next point. */
+.guide-ring { position: absolute; inset: calc(-1 * (var(--gap) + var(--line))); width: calc(100% + 2 * (var(--gap) + var(--line))); height: calc(100% + 2 * (var(--gap) + var(--line))); overflow: visible; opacity: 0; transition: opacity 220ms var(--ease-out); }
+.guide-ring[data-on] { opacity: 1; transition: none; }
+.guide-ring path { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.guide-ring-pen { stroke-width: calc(var(--line) * 0.8); }
 @media (prefers-reduced-motion: reduce) { .guide-orb { transition: none; } }
+/* The smile's eyes (NAT-44, SketchFace.tsx): they narrow and lift a touch with the mouth (--smile, 0…1). */
+.sketch .sketch-part[data-eye] { transform: translateY(calc(var(--smile, 0) * -0.6px)) scaleY(calc(1 - var(--smile, 0) * 0.28)); }
+/* Mirroring (NAT-47, eyes/expression.ts): an eye closes while the person's eye on that side is shut,
+   fast as a lid, and opens a touch slower. */
+.sketch .sketch-part[data-eye] .sketch-blink { transition: transform 110ms cubic-bezier(0.3, 0, 0.3, 1); }
+.sketch[data-shut-l] .sketch-part[data-side='l'] .sketch-blink,
+.sketch[data-shut-r] .sketch-part[data-side='r'] .sketch-blink { transform: scaleY(0.1); opacity: 0; transition: transform 70ms, opacity 50ms; }
+/* The shut eye: a closed lid in its place, as quick as the lid. */
+.sketch .sketch-lid { animation: none !important; stroke-dasharray: none; opacity: 0; transition: opacity 90ms; }
+.sketch[data-shut-l] .sketch-part[data-side='l'] .sketch-lid,
+.sketch[data-shut-r] .sketch-part[data-side='r'] .sketch-lid { opacity: 1; transition-duration: 50ms; }
+@media (prefers-reduced-motion: reduce) { .sketch .sketch-part[data-eye] .sketch-blink { transition: none; } }
+/* Ghosting (NAT-44, ghosts.ts): after-images trailing the Cloud between calibration points, under it.
+   ghosts.ts sets each one's transform, opacity and blur every frame. */
+.guide-ghosts { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.guide-ghost { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 50% 50%; will-change: transform, opacity; }
 /* The camera feeds the tracker only; it is never shown. */
 .camera-feed { display: none !important; }
 .cal-message { text-wrap: balance; }
