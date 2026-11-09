@@ -1,6 +1,10 @@
 // Hearing the partner end to end (NAT-49), in headless Chromium on a fake microphone that plays a spoken
 // sentence. Playwright's Chromium has no Google speech service, the case that used to put the demo partner's
-// lines in the conversation: Listen must hand over to the engine's Whisper and show what was really said.
+// lines in the conversation: Listen must hear through the engine's Whisper and show what was really said.
+//
+// Privacy (NAT-55, audit C1): a stand-in browser recognition is installed, as Chrome's would send the audio to
+// Google. While the engine can hear, Listen must never start it; with no engine, it may stand in, and the Stop
+// card must say "Via Google".
 //
 //   node scripts/e2e-partner-listen.mjs [app origin] [engine origin]
 //   node scripts/e2e-partner-listen.mjs http://localhost:5200 http://127.0.0.1:8765
@@ -52,8 +56,27 @@ for (let i = 0; ; i++) {
   await new Promise((r) => setTimeout(r, 1000));
 }
 
+// A stand-in for Chrome's recognition (Google's service): counts starts and "hears" a fixed line.
+const FAKE_GOOGLE = () => {
+  window.__googleStarts = 0;
+  class FakeGoogle {
+    constructor() { this.continuous = false; this.interimResults = false; this.lang = ''; this.onresult = this.onstart = this.onend = this.onerror = null; }
+    start() {
+      window.__googleStarts += 1;
+      setTimeout(() => this.onstart?.(), 10);
+      setTimeout(() => this.onresult?.({ resultIndex: 0, results: [Object.assign([{ transcript: 'words sent to google' }], { isFinal: true })] }), 300);
+    }
+    stop() { setTimeout(() => this.onend?.(), 10); }
+    abort() { this.stop(); }
+  }
+  window.SpeechRecognition = FakeGoogle;
+  window.webkitSpeechRecognition = FakeGoogle;
+};
+
 const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined, args: ['--mute-audio', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-audio-capture=${mic}`, '--autoplay-policy=no-user-gesture-required'] });
-const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['microphone'] })).newPage();
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['microphone'] });
+await context.addInitScript(FAKE_GOOGLE);
+const page = await context.newPage();
 const logs = [];
 page.on('console', (m) => logs.push(m.text()));
 page.on('pageerror', (e) => logs.push(`pageerror ${e.message}`));
@@ -70,14 +93,26 @@ await page.waitForTimeout(4000); // the utterance's final transcription
 const shown = await page.evaluate(() => document.querySelector('.thread')?.textContent ?? '');
 check('the partner\'s real words appear while listening', heard, shown.slice(0, 160));
 check('no demo line was shown', !/how are you feeling|nurse said|are you hungry/i.test(shown));
-const handover = logs.find((l) => l.startsWith('[listen]'));
-console.log(`     recognition: ${handover ?? 'the browser\'s own'}`);
+check('Google\'s recognition is never started while the engine can hear', await page.evaluate(() => window.__googleStarts) === 0, `${await page.evaluate(() => window.__googleStarts)} start(s)`);
+check('the Stop card does not say Google', !/via google/i.test(await page.evaluate(() => document.body.textContent ?? '')));
 
 await page.keyboard.press('4'); // Stop
 await page.waitForFunction(() => window.clarteDebug.phase() !== 'listening', null, { timeout: 5000 });
 const thread = await page.evaluate(() => document.querySelector('.thread')?.textContent ?? '');
 check('Stop keeps what the partner said in the conversation', /outside/i.test(thread));
 check('no page errors', !logs.some((l) => l.startsWith('pageerror')), logs.filter((l) => l.startsWith('pageerror')).join('; '));
+
+// No engine: the browser's recognition may stand in, and the card must say where the speech goes.
+const page2 = await context.newPage();
+await page2.goto(`${ORIGIN}/?onboarding=off&input=mouse&engine=${encodeURIComponent('http://127.0.0.1:9')}`);
+await page2.waitForFunction(() => window.clarteDebug?.phase() === 'idle', null, { timeout: 30000 });
+await page2.waitForTimeout(1500);
+await page2.keyboard.press('4'); // Listen
+await page2.waitForFunction(() => window.clarteDebug.phase() === 'listening', null, { timeout: 5000 });
+const google = await page2.waitForFunction(() => /words sent to google/i.test(document.querySelector('.thread')?.textContent ?? ''), null, { timeout: 15000 }).then(() => true, () => false);
+check('with no engine, the browser\'s recognition stands in', google);
+check('the Stop card says "Via Google" while it does', /via google/i.test(await page2.evaluate(() => document.body.textContent ?? '')));
+await page2.keyboard.press('4'); // Stop
 
 await browser.close();
 console.log(failures.length ? `\n${failures.length} check(s) failed` : '\nPartner listening passed end to end.');

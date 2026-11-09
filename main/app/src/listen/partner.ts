@@ -1,6 +1,7 @@
 /**
- * Hearing the partner on this computer (NAT-49), for when the browser's own recognition is missing or fails
- * (Chromium builds and Electron without Google's speech service, Brave, no network). The microphone stream the
+ * Hearing the partner on this computer (NAT-49), first, so the partner's speech stays on the machine (NAT-55,
+ * audit C1); the browser's recognition (Chrome sends audio to Google) is used only when the engine cannot hear.
+ * The microphone stream the
  * sound listener already opens (`runtime.ts`, 16 kHz, raw) is cut into utterances here, and each one is sent
  * to the prediction engine's Whisper (`POST /api/v1/transcribe`, `main/engine/engine/transcribe.py`). Nothing
  * leaves the machine.
@@ -139,7 +140,12 @@ export function toPcm16(audio: Float32Array): ArrayBuffer {
 /** Utterances shorter than this in speech are a cough or a knock, not words. */
 const MIN_SPEECH_MS = 250;
 
-export class ListenUnavailable extends Error {}
+/** Why this computer cannot listen. `engine` is true when the engine cannot hear (not running, no transcriber),
+ * so the browser's recognition may still work; false when the microphone itself is blocked. */
+export class ListenUnavailable extends Error {
+  readonly engine: boolean;
+  constructor(message: string, engine = true) { super(message); this.engine = engine; }
+}
 
 /** Whether the engine can hear the partner now: its origin, or why not. */
 async function transcriberOrigin(): Promise<string> {
@@ -212,7 +218,7 @@ export async function listenLocally(onText: (transcript: string) => void, prefix
   try {
     unsubscribe = await microphone.subscribe({ onSamples: (samples) => { for (const cut of cutter.push(samples)) handle(cut); } });
   } catch {
-    throw new ListenUnavailable('The microphone is blocked. Allow it for this page, then try again.');
+    throw new ListenUnavailable('The microphone is blocked. Allow it for this page, then try again.', false);
   }
   if (prefix) show();
   return {

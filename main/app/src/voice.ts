@@ -7,7 +7,7 @@
  * REPORT.md proposes moving `onWord` into shared.
  */
 import { DEMO_UTTERANCES, canListenLive, canSpeak, listen, type ListenSession } from './core/speech.ts';
-import { listenLocally } from './listen/partner.ts';
+import { ListenUnavailable, listenLocally } from './listen/partner.ts';
 
 export type Speech = { done: Promise<void>; cancel(): void };
 
@@ -98,13 +98,13 @@ export function speakWords(text: string, onWord: (index: number) => void, option
 if (canSpeak()) { window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener?.('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
 /**
- * Where the partner's words come from: the microphone (the browser's recognition, else this computer's),
- * this computer's recognition only (`listen/partner.ts`, nothing leaves the machine), or the demo script
- * (Dev Tools only; it never stands in for a microphone that failed).
+ * Where the partner's words come from: the microphone (this computer's recognition, else the browser's, which
+ * in Chrome sends the audio to Google; NAT-55), this computer's recognition only (`listen/partner.ts`, nothing
+ * leaves the machine), or the demo script (Dev Tools only; it never stands in for a microphone that failed).
  */
 export type PartnerSource = 'microphone' | 'local' | 'script';
 
-/** What listening is using, or why it cannot listen. */
+/** What listening is using, or why it cannot listen. `browser` means the audio may leave the machine. */
 export type ListenStatus =
   | { kind: 'browser' }
   | { kind: 'local'; reason: string | null }
@@ -146,7 +146,7 @@ function recognitionConstructor(): (new () => Recognition) | null {
  * no Google speech service ("network"), and a refused service or microphone does not come back by retrying.
  */
 const BROKEN = new Set(['network', 'service-not-allowed', 'language-not-supported', 'not-allowed', 'audio-capture', 'bad-grammar']);
-/** Set once the browser's recognition has failed, so later sessions go straight to this computer's. */
+/** Set once the browser's recognition has failed, so later sessions do not fall back to it again. */
 let browserFailed: string | null = null;
 
 /**
@@ -157,10 +157,12 @@ let browserFailed: string | null = null;
  * ends after some words (Chrome ends them on silence) could not be restarted. Listening never stops on a timer:
  * every ended session restarts until `stop()`.
  *
- * When the browser has no recognition, or it fails (a session that ends at once with nothing heard, an error
- * such as "network", or repeated failures), this computer's recognition takes over for the rest of the session
- * (NAT-49), keeping the words already heard. Only when that cannot listen either does `onStatus` report
- * `unavailable`; the demo script is never used in place of a microphone.
+ * This computer's recognition (the engine's Whisper) listens first, so the partner's speech stays on the machine
+ * (NAT-55). Only when the engine cannot hear (not running, no transcriber) does the browser's recognition take
+ * over, and `onStatus` reports `browser` so the Listen card can say the audio goes to Google. If the browser's
+ * recognition then fails (a session that ends at once with nothing heard, an error such as "network", or
+ * repeated failures), this computer is tried once more (NAT-49), keeping the words already heard. Only when
+ * neither can listen does `onStatus` report `unavailable`; the demo script is never used in place of a microphone.
  */
 export function listenToPartner(source: PartnerSource, onText: (transcript: string) => void, onStatus: (status: ListenStatus) => void = () => {}): { stop(): void; live: boolean } {
   let stopped = false;
@@ -174,7 +176,8 @@ export function listenToPartner(source: PartnerSource, onText: (transcript: stri
     script = listen((t) => { if (!stopped) onText(join(committed, t)); }, { script: nextScript(), wordMs: 300 });
   };
 
-  const startLocal = (reason: string | null) => {
+  // `thenBrowser`: the browser's recognition to fall back to when the engine cannot hear (microphone source only).
+  const startLocal = (reason: string | null, thenBrowser: (new () => Recognition) | null = null) => {
     recognition = null;
     if (reason) {
       browserFailed = reason;
@@ -184,7 +187,16 @@ export function listenToPartner(source: PartnerSource, onText: (transcript: stri
     const fail = (message: string) => { if (!stopped) onStatus({ kind: 'unavailable', message }); };
     listenLocally((t) => { if (!stopped) onText(t); }, committed, fail).then(
       (session) => { if (stopped) session.stop(); else local = session; },
-      (error: unknown) => fail(error instanceof Error ? error.message : 'Listening is unavailable.'),
+      (error: unknown) => {
+        if (stopped) return;
+        if (thenBrowser && error instanceof ListenUnavailable && error.engine) {
+          console.info(`[listen] this computer cannot hear (${error.message}); using the browser's speech recognition`);
+          onStatus({ kind: 'browser' });
+          startLive(thenBrowser);
+          return;
+        }
+        fail(error instanceof Error ? error.message : 'Listening is unavailable.');
+      },
     );
   };
 
@@ -239,9 +251,7 @@ export function listenToPartner(source: PartnerSource, onText: (transcript: stri
 
   const Ctor = canListenLive() ? recognitionConstructor() : null;
   if (source === 'script') startScript();
-  else if (source === 'local' || browserFailed) startLocal(null);
-  else if (Ctor) { onStatus({ kind: 'browser' }); startLive(Ctor); }
-  else startLocal('this browser has no speech recognition');
+  else startLocal(null, source === 'microphone' && !browserFailed ? Ctor : null);
 
   return {
     get live() { return recognition !== null || local !== null; },

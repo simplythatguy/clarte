@@ -147,11 +147,12 @@ function Cell({ q, children }: { q: string; children?: ReactNode }) {
 type CardFace = { icon: ReactNode; label?: ReactNode; hint?: string; name?: string };
 
 /** What the primary card (ink, Q4) shows for each function. */
-function primaryFace(fn: PrimaryFn, listenNote: string | null = null): CardFace {
+function primaryFace(fn: PrimaryFn, listenNote: string | null = null, viaGoogle = false): CardFace {
   switch (fn.kind) {
     // After a listen that could not hear (NAT-49): why, in the card's name, and a short note on it.
     case 'listen': return listenNote ? { icon: <Mic />, label: 'Listen', hint: "Couldn't hear", name: `Listen. ${listenNote}` } : { icon: <Mic />, label: 'Listen' };
-    case 'stop-listening': return { icon: <StopSquare />, label: 'Stop' };
+    // Listening normally stays on this computer; when the browser's recognition stands in, the card says where the partner's speech goes (NAT-55).
+    case 'stop-listening': return viaGoogle ? { icon: <StopSquare />, label: 'Stop', hint: 'Via Google', name: 'Stop. Listening uses Google speech recognition.' } : { icon: <StopSquare />, label: 'Stop' };
     case 'suggestion': return { icon: <Sparkle />, label: <span className="card-label is-quote" style={longest(fn.text)}>“{fn.text}”</span>, hint: 'Suggested' };
     case 'no-match': return { icon: <Check />, label: 'No word' };
     case 'speak': return { icon: <Speaker />, label: 'Speak' };
@@ -412,9 +413,13 @@ export function App() {
   const listenToken = live.kind === 'listening' ? live.token : 0;
   /** Why the last Listen could not hear the partner, shown on the Listen card until it is selected again. */
   const [listenNote, setListenNote] = useState<string | null>(null);
+  /** Whether this listen uses the browser's recognition, which sends the partner's speech to Google (NAT-55). */
+  const [viaGoogle, setViaGoogle] = useState(false);
   useEffect(() => {
     if (!listenToken) return;
+    setViaGoogle(false);
     const session = listenToPartner(stateRef.current.settings.partner, (text) => dispatch({ type: 'transcript', text }), (status) => {
+      setViaGoogle(status.kind === 'browser');
       if (status.kind !== 'unavailable') return;
       // Nothing is invented in place of the partner's words: listening ends and the card says why.
       console.warn(`[listen] ${status.message}`);
@@ -895,7 +900,7 @@ export function App() {
       body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
     }));
     const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
-    const pFace = primaryFace(primary.value, listenNote);
+    const pFace = primaryFace(primary.value, listenNote, viaGoogle);
     slotViews = {
       q1: backCard('Home'),
       q4: { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, bodyKey: primary.key, body: <FaceBody face={pFace} /> },
@@ -925,7 +930,7 @@ export function App() {
       </>
     );
   } else {
-    const pFace = primaryFace(primary.value, listenNote);
+    const pFace = primaryFace(primary.value, listenNote, viaGoogle);
     const sFace = secondFace(second.value, state.composition.pending.length);
     const primaryView: SlotView = { action: 'primary', tone: 'ink', icon: pFace.icon, label: pFace.name, disabled: primary.value.kind === 'no-match', bodyKey: primary.key, body: <FaceBody face={pFace} /> };
     // Menu is white (owner, 2026-11-08); every other light card stays grey glass.
