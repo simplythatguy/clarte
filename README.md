@@ -1,4 +1,9 @@
-# Clarté
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/readme/brand/logo-dark.png">
+    <img src="docs/media/readme/brand/logo-light.png" alt="Clarté" width="480">
+  </picture>
+</h1>
 
 **Clarté is for people who have two problems at once: they can no longer speak clearly, and they can't easily use their hands. It lets them say what they want to say. They spell with their eyes, confirm each choice with a small sound, and Clarté speaks the sentence aloud in a ready-made voice or, if they choose, a copy of their own. All it needs is an ordinary laptop with a webcam and a microphone.**
 
@@ -186,3 +191,5 @@ Clarté builds on other people's work:
 The detailed licence notes are kept next to each part, for example [`engine/README.md`](engine/README.md) and [`app/fixtures/listen/SOURCE.md`](app/fixtures/listen/SOURCE.md).
 
 Clarté's own code is under the [MIT licence](LICENSE).
+
+<p align="center"><img src="docs/media/readme/brand/app-icon.png" alt="The Clarté app icon: a soft pink and blue cloud" width="96"></p>
