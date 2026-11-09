@@ -6,7 +6,9 @@ Giving back clarity of speech to people with dysarthria and motor disabilities.
 
 [![Clarté demo: calibration by eye, then "I want to walk" typed by looking and confirmed by sound, and spoken aloud](docs/media/demo-poster.jpg)](docs/media/demo.mp4)
 
-[Watch the demo](docs/media/demo.mp4) (78 seconds). Eye calibration, then "I want to walk", typed by looking at
+https://github.com/user-attachments/assets/e22974f3-46f4-4d25-9882-0f3b3130ddf4
+
+78 seconds. Eye calibration, then "I want to walk", typed by looking at
 letter groups and confirming each with a sound, the word picked from Options, and the sentence spoken aloud.
 
 ## Quickstart
