@@ -2,6 +2,13 @@
 
 Giving back clarity of speech to people with dysarthria and motor disabilities.
 
+## Video demo
+
+[![Clarté demo: calibration by eye, then "I want to walk" typed by looking and confirmed by sound, and spoken aloud](docs/media/demo-poster.jpg)](docs/media/demo.mp4)
+
+[Watch the demo](docs/media/demo.mp4) (78 seconds). Eye calibration, then "I want to walk", typed by looking at
+letter groups and confirming each with a sound, the word picked from Options, and the sentence spoken aloud.
+
 ## Quickstart
 
 Needs only `git`, a browser and internet; no Python, Node, compiler, ffmpeg or Git LFS.

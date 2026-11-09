@@ -471,7 +471,9 @@ def expect_json(url, body, field, value, extract=lambda v: v):
 
 
 def expect_model(proc, model):
-    if proc.log and f"model: {model}" not in proc.log.read_text(errors="replace"):
+    # main/engine prints its start-up line as JSON ("model": "deployable"); older engines printed "model: deployable".
+    text = proc.log.read_text(errors="replace") if proc.log else None
+    if text is not None and f"model: {model}" not in text and f'"model": "{model}"' not in text:
         raise RuntimeError(f"{proc.name} did not report 'model: {model}':\n{proc.tail(10)}")
 
 
