@@ -63,10 +63,20 @@ try{
  const frozen=await g.locator('.centre-activate').getAttribute('aria-label');
  await g.evaluate(async()=>{const {seed,setEngine}=await import('/src/prediction/prediction.ts');const prediction={source:'engine',offset:0,total:2,longer:0,words:[{word:'wait',p:.99,complete:true},{word:'want',p:.01,complete:true}]};seed({history:[],message:[],groups:'4124',offset:0},prediction);seed({history:[],message:[],groups:'4124',offset:0,complete:true,limit:20},prediction);setEngine('http://127.0.0.1:1');setEngine(null)});
  await g.waitForTimeout(100);assert.equal(await g.locator('.centre-activate').getAttribute('aria-label'),frozen,'late predictions cannot replace the armed word');
+ for (const [x,y] of [[361,1],[719,449],[721,1],[1079,449]]) {
+  await gazeAt(g,x,y);
+  await g.waitForFunction(()=>document.querySelector('.centre-word')?.hasAttribute('data-centre-looked'));
+  assert.equal(await g.locator('.centre-word').evaluate(el=>getComputedStyle(el).borderLeftColor), 'rgb(0, 113, 227)');
+ }
+ await gazeAt(g,100,100);
+ await g.waitForFunction(()=>!document.querySelector('.centre-word')?.hasAttribute('data-centre-looked'));
+ await gazeAt(g,900,200);
+ await g.waitForFunction(()=>document.querySelector('.centre-word')?.hasAttribute('data-centre-ready'));
+ const acceptedWord=(await g.locator('.centre-activate').getAttribute('aria-label')).slice('Accept '.length);
  await g.screenshot({path:path.join(out,'ready.png')});
  await g.evaluate(()=>window.__level(.06));
  await g.getByRole('button',{name:'Speak',exact:true}).waitFor();
- assert.equal(await g.locator('.rest-entering .word:not(.in-progress)').first().innerText(),'Want');
+ assert.equal(await g.locator('.rest-entering .word:not(.in-progress)').first().innerText(),acceptedWord[0].toUpperCase()+acceptedWord.slice(1));
  assert.equal(await g.evaluate(()=>window.__spoken),0);
  assert.equal(await g.evaluate(()=>window.__captures),1,'centre and card controls share one microphone');await g.waitForTimeout(1100);
  assert.equal(await g.evaluate(()=>window.clarteDebug.phase()),'composing-ready');
@@ -85,6 +95,9 @@ try{
   await page.evaluate(async scale=>{document.documentElement.style.setProperty('--scale',String(scale));document.documentElement.toggleAttribute('data-large',scale>1);const{fitCards}=await import('/src/fit.ts');fitCards()},scale);
   await page.waitForTimeout(500);assert.deepEqual(await page.evaluate(()=>window.clarteDebug.validate()),[]);
   const rect=await page.locator('.centre-word').boundingBox();assert.ok(rect&&rect.x>=viewport.width/4&&rect.x+rect.width<=viewport.width*3/4&&rect.y+rect.height<=viewport.height/2);
+  const text=await page.locator('.now-text').boundingBox();
+  assert.ok(Math.abs(text.y+text.height/2-viewport.height/4)<8,'draft is vertically centred in the top row');
+  assert.ok(text.y>96,'draft leaves space for the docked buddy');
   await page.mouse.move(viewport.width*.1,viewport.height*.49);
   await page.screenshot({path:path.join(out,`${viewport.width}-centre-${scale}x.png`)});await page.close();
  }
