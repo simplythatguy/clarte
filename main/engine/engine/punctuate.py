@@ -1,0 +1,168 @@
+"""Punctuation for the spoken sentence (NAT-38).
+
+The person types words; the voice (ElevenLabs, or the system voice) changes its intonation and pauses
+with punctuation, so "are you okay" said without a "?" sounds like a statement. This module asks the
+rescorer's language model where the marks go.
+
+The model reads the conversation the way it was fine-tuned on it ("Partner: …\\nMe: …"), so it has seen
+punctuated turns. For each gap between words, left to right, every option is scored as a whole turn
+(the words so far with their chosen marks, this gap's option, the rest of the words, then the end of the
+turn), and an option replaces "no mark" only when it makes the turn more likely by its margin:
+
+- a comma, or an end mark inside the message ("yes. are you") after which the next word is capitalised;
+- an opening quote before the next word, with or without a comma before it ('he said, "no"'), and once a
+  quote is open, a closing quote after a word.
+
+The end of the message always takes an end mark: "?" or "!" when the model prefers it to "." by its
+margin, else ".". An open quote is closed at the end. Words are written in their display forms
+("I", "Priya"), the first word of each sentence capitalised.
+
+Only the torch rescorer (smol135-ft) can do this; without it the request answers `available: false` and
+the app falls back to its own rule for the end mark.
+"""
+import time
+
+PUNCT_DEFAULTS = dict(
+    comma_margin=-4.5,     # log-probability gain a comma needs over no mark (negative: the model under-writes commas; RESULTS.md)
+    split_margin=2.0,      # ... an end mark inside the message (it starts a new sentence)
+    quote_margin=1.5,      # ... an opening or closing quote
+    question_margin=0.0,   # ... "?" over "." at the end
+    exclaim_margin=-1.0,   # ... "!" over "." at the end (negative: the model under-writes "!"; RESULTS.md)
+    max_words=40,          # longer messages get only an end mark
+)
+
+ENDS = (".", "?", "!")
+
+
+def cap(word):
+    return word[:1].upper() + word[1:]
+
+
+class Punctuator:
+    def __init__(self, engine, params=None):
+        self.engine = engine
+        self.params = {**PUNCT_DEFAULTS, **(params or {})}
+        r = engine.rescorer
+        self.lm = r if r is not None and hasattr(r, "net") and hasattr(r, "torch") else None
+        self.last_ms = {}
+
+    def available(self):
+        return self.lm is not None
+
+    # ---- model -----------------------------------------------------------------
+    def _prompt(self, history):
+        """The conversation so far, run once through the model: its cache, length and next-token log probabilities."""
+        return self.lm._prefix(self.lm.prompt(history, []))
+
+    def _forward(self, kv, n, seqs):
+        """Log probabilities after every position of each token sequence, against the cached prompt.
+        Sequences are right-padded; a causal model never lets a position see the padding after it."""
+        torch = self.lm.torch
+        from transformers.cache_utils import DynamicCache
+        B, T = len(seqs), max(len(s) for s in seqs)
+        ids = torch.full((B, T), self.lm.pad, dtype=torch.long, device=self.lm.device)
+        for i, s in enumerate(seqs):
+            ids[i, :len(s)] = torch.tensor(s, device=self.lm.device)
+        cache = DynamicCache(ddp_cache_data=[(k.expand(B, -1, -1, -1), v.expand(B, -1, -1, -1)) for k, v in kv.to_legacy_cache()])
+        pos = torch.arange(n, n + T, device=self.lm.device).unsqueeze(0).expand(B, -1)
+        out = self.lm.net(input_ids=ids, position_ids=pos, past_key_values=cache, use_cache=False)
+        return torch.log_softmax(out.logits.float(), -1)       # [B, T, V]
+
+    # ---- rendering -------------------------------------------------------------
+    @staticmethod
+    def render(words, marks, opens, closes):
+        """The turn as written: marks[i] follows word i, opens[i] puts a quote before it, closes[i] after its mark."""
+        out, new_sentence = [], True
+        for i, w in enumerate(words):
+            w = cap(w) if new_sentence else w
+            piece = ('"' if opens[i] else "") + w + marks[i] + ('"' if closes[i] else "")
+            out.append(piece)
+            new_sentence = marks[i] in ENDS
+        return " ".join(out)
+
+    # ---- scoring ---------------------------------------------------------------
+    def _score(self, kv, n, last, texts):
+        """Log probability of each text (with its end of turn) after the cached prompt."""
+        tok = self.lm.tokenizer
+        newline = tok.encode("\n", add_special_tokens=False)
+        seqs = [tok.encode(" " + t, add_special_tokens=False) + newline for t in texts]
+        full = self._forward(kv, n, seqs)
+        out = []
+        for i, ids in enumerate(seqs):
+            lp = float(last[ids[0]])
+            for t in range(1, len(ids)):
+                lp += float(full[i, t - 1, ids[t]])
+            out.append(lp)
+        return out
+
+    def punctuate(self, history, message):
+        t0 = time.perf_counter()
+        p = self.params
+        engine = self.engine
+        ctx = engine.context(history, message)
+        msg = list(ctx.message)
+        if not msg:
+            return {"available": self.available(), "text": "", "end": ""}
+        forms = engine.prior(ctx)[3]
+        words = [engine.display(w, forms) for w in msg]
+        words = ["I" + w[1:] if w == "i" or w.startswith("i'") else w for w in words]
+        n_words = len(words)
+        marks, opens, closes = [""] * n_words, [False] * n_words, [False] * n_words
+        if not self.available():
+            return {"available": False, "text": self.render(words, marks[:-1] + ["."], opens, closes), "end": "."}
+        torch = self.lm.torch
+        with torch.inference_mode():
+            kv, n, last = self._prompt(history)
+            quote_open = False
+            inner = n_words <= p["max_words"]
+            for g in range(n_words - 1 if inner else 0):
+                # Options for the gap after word g: (mark, open a quote before word g+1, close after word g).
+                options = [("", False, False)]
+                for m in (",",) + ENDS:
+                    options.append((m, False, False))
+                if quote_open:
+                    for m in ("", ",") + ENDS:
+                        options.append((m, False, True))
+                else:
+                    for m in ("", ","):
+                        options.append((m, True, False))
+                texts = []
+                for m, o, c in options:
+                    mk, op, cl = marks[:], opens[:], closes[:]
+                    mk[g], cl[g] = m, c
+                    if o:
+                        op[g + 1] = True
+                    texts.append(self.render(words, mk, op, cl))
+                scores = self._score(kv, n, last, texts)
+                base = scores[0]
+                best, best_gain = 0, 0.0
+                for k, ((m, o, c), s) in enumerate(zip(options, scores)):
+                    if k == 0:
+                        continue
+                    need = p["quote_margin"] if (o or c) else p["split_margin"] if m in ENDS else p["comma_margin"]
+                    gain = s - base - need
+                    if gain > best_gain:
+                        best, best_gain = k, gain
+                m, o, c = options[best]
+                marks[g], closes[g] = m, c
+                if o:
+                    opens[g + 1] = True
+                    quote_open = True
+                if c:
+                    quote_open = False
+            # The end mark: ".", "?" or "!", closing a quote left open.
+            closes[-1] = quote_open
+            texts = []
+            for m in ENDS:
+                mk = marks[:]
+                mk[-1] = m
+                texts.append(self.render(words, mk, opens, closes))
+            s_dot, s_q, s_ex = self._score(kv, n, last, texts)
+            end = "."
+            if s_q - s_dot > p["question_margin"] and s_q - p["question_margin"] >= s_ex - p["exclaim_margin"]:
+                end = "?"
+            elif s_ex - s_dot > p["exclaim_margin"]:
+                end = "!"
+            marks[-1] = end
+        self.last_ms = {"total": 1000 * (time.perf_counter() - t0)}
+        return {"available": True, "text": self.render(words, marks, opens, closes), "end": end}

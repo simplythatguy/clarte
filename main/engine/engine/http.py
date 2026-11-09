@@ -85,7 +85,7 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None):
             return json.loads(raw)
 
         def do_POST(self):
-            if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit"):
+            if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit", "/api/v1/punctuate"):
                 self.send(404, b'{"error":"Not found"}')
                 return
             try:
@@ -104,6 +104,10 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None):
                     with lock:
                         engine.commit(word, req["history"], req["message"])
                     result = {"ok": True}
+                elif self.path == "/api/v1/punctuate":
+                    with lock:
+                        result = engine.punctuate(req["history"], req["message"])
+                    result = {"id": req["id"], **result}
                 elif self.path == "/api/predict":
                     with lock:
                         result = engine.predict_v0(req["history"], req["message"], req["groups"])

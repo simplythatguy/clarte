@@ -136,3 +136,20 @@ Added by the v1 engine; every field above keeps its meaning.
 - **Commit.** `POST /api/v1/commit` now also learns a name the lexicon holds when the name is rare as a word
   (Omer, Priya), so that name comes first in later messages. Everyday words that are also names (will, may)
   are still not learned.
+
+## `POST /api/v1/punctuate` (NAT-38, compatible)
+
+The message written as it should be spoken, so the voice (ElevenLabs or the system voice) gives a question
+a question's intonation and pauses at commas. Request: `id`, `history` and `message`, as for `/predict`.
+
+```json
+{ "id": 9, "available": true, "text": "Are you okay?", "end": "?" }
+```
+
+- `text`: the words in their display forms ("I", "Priya"), sentence case, with the marks the rescorer's
+  language model places: an end mark always (`.`, `?` or `!`), and inside the message commas, sentence
+  breaks and quotes when they make the turn clearly more likely. `end` is the last end mark.
+- `available` is false without the torch rescorer (`smol135-ft`); `text` then has only a final `.`, and
+  the app uses its own rule ("?" after a question word).
+- About 370 ms p50, 930 ms p95 on a laptop CPU, so the app asks while the message is ready to speak and,
+  at Speak, waits at most 700 ms for an answer still on its way.

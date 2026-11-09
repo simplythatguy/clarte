@@ -997,3 +997,26 @@ engine. Every word produced exactly. 53 sentences cost no more than spelling eac
 all through Done → Other words: unseen names (okafor, amal), slang the engine ranks low (nah, idk, sus, rizz),
 y'all, and up. The UI fixes it found: Other words now lists words of the groups typed, not of the accepted
 word's spelling, and an accepted slip correction keeps the groups typed, so Spell can reach the intended word.
+
+## Punctuation for the spoken sentence (NAT-38, 2026-11-08)
+
+`bench/punct_eval.py` on DailyDialog's validation split (60 conversations; the person's 125 one-sentence
+turns of 2–20 words, stripped to their words; smol135-ft). Latency p50 358 ms, p95 907 ms on a laptop CPU.
+
+The model under-writes marks: it prices a comma about 3.6 nats below none, so a positive margin inserts
+none. The comma margin (precision matters more than recall, since a wrong comma is a wrong pause):
+
+| comma_margin | precision | recall |
+|--|--|--|
+| 1.0 (first default) | – | 0% |
+| −2.5 | 67% | 4% |
+| −3.0 | 80% | 9% |
+| −3.5 | 88% | 16% |
+| **−4.5** | **84%** | **36%** |
+
+At the defaults (`comma_margin` −4.5, `exclaim_margin` −1.0): the end mark is right 95.2% of the time;
+"?" recall 98%, precision 93%; "." recall 95%, precision 98%. DailyDialog has one "!" in these turns, so
+`exclaim_margin` was set on a hand-made probe (ten exclamations, eight statements, one partner question):
+exclamations put "!" between −1.0 and +2.0 nats of "." ("oh no" aside, at −3.3), statements at −1.4 or
+below. At −1.0, 8 of the 10 exclamations end in "!", and 1 of DailyDialog's 83 statements does (2 at −1.2).
+Quotes are not measured: these turns have almost none.

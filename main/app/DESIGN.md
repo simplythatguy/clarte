@@ -133,6 +133,14 @@ On Welcome, **Get started** is the tall ink card over Q4 and Q8 (still with "Sta
 
 **Keyboard and mouse** skips calibration and starts no camera, the same as Use the mouse after a camera failure. With keyboard and mouse a click or keys 1–8 select, and hovering never does (owner's standing rule). So the pointer no longer feeds the gaze engine in a keyboard-and-mouse session, and it never does on Welcome or calibration, where the eyes cannot select yet and only a mouse could dwell. Elsewhere, without a calibrated tracker (`?onboarding=off`), the pointer still stands in for the eyes, and like the eyes it only previews.
 
+## Spoken with punctuation (owner, 2026-11-08, NAT-38)
+
+The voice changes its intonation and pauses with punctuation, so Speak says the message as the engine punctuates it: "are you okay" is spoken, and kept in the thread, as "Are you okay?". The engine's language model places the end mark, and commas, sentence breaks and quotes inside the message (`POST /api/v1/punctuate`, `main/engine/CONTRACT.md`). Nothing about the punctuation is shown while composing; the person selects words, not marks.
+
+- **Asked ahead.** The app asks while the message is ready to speak (words accepted, no groups typed, nothing being heard or spoken), so the answer is usually cached by the time Speak is selected. An answer still on its way holds the voice at most 700 ms.
+- **Fallback.** With no engine, a slow one, or a rescorer that cannot punctuate, the rule in `src/prediction/punctuate.ts` writes sentence case and ends with "?" after a question word, else ".".
+- **Nothing lost.** If the message changes, or groups are typed, during that wait, Speak does nothing; the person sees Speak again and selects it on the message as it now is.
+
 ## Open questions for the owner
 
 1. The eyes follow the mouse pointer, as in the reference. With a real eye tracker there is no pointer; should they follow the looked-at card instead?

@@ -43,7 +43,8 @@ import { Calibration } from './Calibration.tsx';
 import { PHASES, makerFor, seedFor, type PhaseName } from './debug.ts';
 import { listenToPartner, resetScript, type Speech } from './voice.ts';
 import { configureSound, duck, play, unlockOnGesture } from './core/sound.ts';
-import { longest, sentence } from './text.ts';
+import { longest } from './text.ts';
+import { prefetchPunctuation, spokenText } from './prediction/punctuate.ts';
 import { fitCards } from './fit.ts';
 import { Swap } from './Swap.tsx';
 import { Companion } from './Companion.tsx';
@@ -423,6 +424,15 @@ export function App() {
     return () => clearTimeout(timer);
   }, [spokenTurn]);
 
+  // Punctuation for the message as it stands is asked ahead, while it is ready to speak (NAT-38).
+  const punctuating = useRef(false);
+  const readyMessage = state.screen.kind === 'talk' && !state.composition.pending.length && state.live.kind !== 'listening' && state.live.kind !== 'speaking'
+    ? state.composition.words.map((w) => w.text) : [];
+  const readyKey = JSON.stringify(readyMessage);
+  useEffect(() => {
+    if (readyMessage.length) prefetchPunctuation(historyOf(stateRef.current), readyMessage);
+  }, [readyKey, state.turns.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const startSpeaking = useCallback((text: string, turnId: number | null, holder: boolean) => {
     token.current += 1;
     dispatch({ type: 'speak-start', text, turnId, holder, token: token.current });
@@ -436,7 +446,22 @@ export function App() {
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
       case 'options': dispatch({ type: 'open-options', words: fn.words }); play('control'); return;
       case 'no-match': return;
-      case 'speak': startSpeaking(sentence(messageText(s.composition)), null, false); return;
+      case 'speak': {
+        // The message is spoken as the engine punctuates it (NAT-38), so the voice asks a question
+        // as one. The answer is usually cached already; a late one holds the voice at most 700 ms.
+        if (punctuating.current) return;
+        const message = s.composition.words.map((w) => w.text);
+        const asked = messageText(s.composition);
+        punctuating.current = true;
+        void spokenText(historyOf(s), message).then((text) => {
+          punctuating.current = false;
+          const now = stateRef.current;
+          // Nothing else may have happened meanwhile: the same message, still not spoken.
+          if (messageText(now.composition) !== asked || now.composition.pending.length || now.live.kind === 'speaking') return;
+          startSpeaking(text, null, false);
+        });
+        return;
+      }
       case 'stop-speaking':
         // Stopping is a repair: the draft comes back to the composer and nothing joins the thread.
         dispatch({ type: 'speak-cancel' });
