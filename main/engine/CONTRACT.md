@@ -67,7 +67,7 @@ Added by the v1 engine; every field above keeps its meaning.
   (`smol135-ft`, `qwen2.5-0.5b` or `none`).
 - `POST /api/predict` returns `likely`, `choose`, `short`, `ghost`, `candidates` and `ms` as v0 did;
   `likely[0]` is the same word as `/api/v1/predict`'s first word.
-- Requests are processed one at a time inside the server (one lock around the engine); concurrent
+- Requests are processed one at a time inside the server (predictions before punctuation, NAT-52); concurrent
   clients queue. The server binds its port only after every model is loaded and warmed.
 
 ## Round 2 additions (compatible)
@@ -153,6 +153,12 @@ a question's intonation and pauses at commas. Request: `id`, `history` and `mess
   the app uses its own rule ("?" after a question word).
 - About 370 ms p50, 930 ms p95 on a laptop CPU, so the app asks while the message is ready to speak and,
   at Speak, waits at most 700 ms for an answer still on its way.
+- Punctuation never holds up a prediction (NAT-52). The engine still runs one request at a time, but
+  `/predict` and `/commit` go first: punctuation starts only when none is waiting, and pauses between the
+  words it scores to let one through. A prediction waits at most one of those steps.
+- The newest punctuation request wins: an older one still waiting or running stops at its next step and
+  answers `{"available": false, "superseded": true}`. The app asks for the message as it stands, so an older
+  request is for a message that has since changed, and Speak never waits behind it.
 
 ## `POST /api/v1/transcribe` (NAT-49, compatible)
 

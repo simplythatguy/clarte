@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node scripts/selftest.ts && node scripts/test-options.ts && node scripts/test-centre.ts && node scripts/test-partner.ts",
+    "test": "node scripts/selftest.ts && node scripts/test-options.ts && node scripts/test-centre.ts && node scripts/test-partner.ts && node scripts/test-punctuate.ts",
     "test:ui:centre": "node scripts/test-sound-parity.mjs && node scripts/test-centre-ui.mjs",
     "test:ui": "node scripts/test-options-ui.mjs",
     "dev": "vite --port 5200 --strictPort",

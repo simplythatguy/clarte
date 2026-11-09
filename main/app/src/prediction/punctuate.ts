@@ -29,12 +29,28 @@ const QUESTION = new Set(['what', 'who', 'whom', 'whose', 'where', 'when', 'why'
   'do', 'does', 'did', 'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'have', 'has', 'had',
   "isn't", "aren't", "wasn't", "weren't", "don't", "doesn't", "didn't", "can't", "couldn't", "won't", "wouldn't", "shouldn't"]);
 
-/** The rule used without the engine: sentence case, "?" after a question word, else "."; text already ending in a mark keeps it. */
+/**
+ * Words that open a turn and take a comma after them, and that the question check looks past (NAT-52): "hello
+ * what is your name" is "Hello, what is your name?". Only words that are openers whatever follows: not "no" ("no
+ * problem"), "well" ("well done"), "so" ("so much") or "thanks" ("thanks for coming").
+ */
+const OPENERS = new Set(['hello', 'hi', 'hey', 'yes', 'yeah', 'okay', 'ok', 'oh']);
+const bare = (word: string) => word.toLowerCase().replace(/[^a-z']/g, '');
+
+/**
+ * The rule used when the engine's punctuation is not there in time: sentence case, a comma after an opener,
+ * "?" when the first word after the openers is a question word, else "."; text already ending in a mark keeps it.
+ */
 export function punctuateLocally(message: string[]): string {
-  const text = sentence(message.join(' '));
+  const words = message.join(' ').trim().split(/\s+/).filter(Boolean);
+  let open = 0;
+  while (open < words.length - 1 && OPENERS.has(bare(words[open]))) open += 1;
+  // "Hello there" and "hi there" are one greeting, not a greeting and then a word.
+  if (open > 0 && bare(words[open]) === 'there') open = 0;
+  if (open > 0 && !/[,.?!]$/.test(words[open - 1])) words[open - 1] += ',';
+  const text = sentence(words.join(' '));
   if (!text || /[.?!]["”]?$/.test(text)) return text;
-  const first = (message.join(' ').trim().split(/\s+/)[0] ?? '').toLowerCase().replace(/[^a-z']/g, '');
-  return text + (QUESTION.has(first) ? '?' : '.');
+  return text + (QUESTION.has(bare(words[open] ?? '')) ? '?' : '.');
 }
 
 function remember(key: Key, text: string): void {

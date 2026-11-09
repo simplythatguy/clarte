@@ -528,12 +528,13 @@ class Engine:
         return {"likely": likely, "choose": choose, "short": short,
                 "ghost": likely[0] if likely else "", "candidates": likely}
 
-    def punctuate(self, history, message):
-        """The message written as a sentence with punctuation, for the voice (NAT-38, engine/punctuate.py)."""
+    def punctuate(self, history, message, pause=lambda: None):
+        """The message written as a sentence with punctuation, for the voice (NAT-38, engine/punctuate.py). `pause` is
+        called between its steps so a waiting prediction can go first (NAT-52)."""
         if getattr(self, "punctuator", None) is None:
             from .punctuate import Punctuator
             self.punctuator = Punctuator(self, self.params.get("punctuate"))
-        return self.punctuator.punctuate(history, message)
+        return self.punctuator.punctuate(history, message, pause)
 
     def close(self):
         self.v0.close()

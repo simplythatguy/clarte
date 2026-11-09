@@ -19,6 +19,11 @@ margin, else ".". An open quote is closed at the end. Words are written in their
 
 Only the torch rescorer (smol135-ft) can do this; without it the request answers `available: false` and
 the app falls back to its own rule for the end mark.
+
+It runs as background work (NAT-52): between the gaps it scores it calls `pause()`, which lets a prediction that
+arrived meanwhile use the engine first. A prediction re-runs the rescorer's shared prompt cache, so punctuation
+keeps its own copy of the conversation's keys and values (the tensors themselves, which the cache replaces rather
+than edits) and never reads the shared one after it has begun.
 """
 import time
 
@@ -54,16 +59,17 @@ class Punctuator:
         """The conversation so far, run once through the model: its cache, length and next-token log probabilities."""
         return self.lm._prefix(self.lm.prompt(history, []))
 
-    def _forward(self, kv, n, seqs):
-        """Log probabilities after every position of each token sequence, against the cached prompt.
-        Sequences are right-padded; a causal model never lets a position see the padding after it."""
+    def _forward(self, legacy, n, seqs):
+        """Log probabilities after every position of each token sequence, against the cached prompt (`legacy`: its
+        keys and values per layer). Sequences are right-padded; a causal model never lets a position see the padding
+        after it."""
         torch = self.lm.torch
         from transformers.cache_utils import DynamicCache
         B, T = len(seqs), max(len(s) for s in seqs)
         ids = torch.full((B, T), self.lm.pad, dtype=torch.long, device=self.lm.device)
         for i, s in enumerate(seqs):
             ids[i, :len(s)] = torch.tensor(s, device=self.lm.device)
-        cache = DynamicCache(ddp_cache_data=[(k.expand(B, -1, -1, -1), v.expand(B, -1, -1, -1)) for k, v in kv.to_legacy_cache()])
+        cache = DynamicCache(ddp_cache_data=[(k.expand(B, -1, -1, -1), v.expand(B, -1, -1, -1)) for k, v in legacy])
         pos = torch.arange(n, n + T, device=self.lm.device).unsqueeze(0).expand(B, -1)
         out = self.lm.net(input_ids=ids, position_ids=pos, past_key_values=cache, use_cache=False)
         return torch.log_softmax(out.logits.float(), -1)       # [B, T, V]
@@ -81,12 +87,12 @@ class Punctuator:
         return " ".join(out)
 
     # ---- scoring ---------------------------------------------------------------
-    def _score(self, kv, n, last, texts):
+    def _score(self, legacy, n, last, texts):
         """Log probability of each text (with its end of turn) after the cached prompt."""
         tok = self.lm.tokenizer
         newline = tok.encode("\n", add_special_tokens=False)
         seqs = [tok.encode(" " + t, add_special_tokens=False) + newline for t in texts]
-        full = self._forward(kv, n, seqs)
+        full = self._forward(legacy, n, seqs)
         out = []
         for i, ids in enumerate(seqs):
             lp = float(last[ids[0]])
@@ -95,7 +101,8 @@ class Punctuator:
             out.append(lp)
         return out
 
-    def punctuate(self, history, message):
+    def punctuate(self, history, message, pause=lambda: None):
+        """`pause` is called between scoring steps; it may let other work use the engine (NAT-52)."""
         t0 = time.perf_counter()
         p = self.params
         engine = self.engine
@@ -113,6 +120,7 @@ class Punctuator:
         torch = self.lm.torch
         with torch.inference_mode():
             kv, n, last = self._prompt(history)
+            legacy = tuple(kv.to_legacy_cache())     # our own copy: a prediction may re-run the shared cache in a pause
             quote_open = False
             inner = n_words <= p["max_words"]
             for g in range(n_words - 1 if inner else 0):
@@ -133,7 +141,8 @@ class Punctuator:
                     if o:
                         op[g + 1] = True
                     texts.append(self.render(words, mk, op, cl))
-                scores = self._score(kv, n, last, texts)
+                pause()
+                scores = self._score(legacy, n, last, texts)
                 base = scores[0]
                 best, best_gain = 0, 0.0
                 for k, ((m, o, c), s) in enumerate(zip(options, scores)):
@@ -157,7 +166,8 @@ class Punctuator:
                 mk = marks[:]
                 mk[-1] = m
                 texts.append(self.render(words, mk, opens, closes))
-            s_dot, s_q, s_ex = self._score(kv, n, last, texts)
+            pause()
+            s_dot, s_q, s_ex = self._score(legacy, n, last, texts)
             end = "."
             if s_q - s_dot > p["question_margin"] and s_q - p["question_margin"] >= s_ex - p["exclaim_margin"]:
                 end = "?"

@@ -459,6 +459,9 @@ export function App() {
   const readyMessage = state.screen.kind === 'talk' && !state.composition.pending.length && state.live.kind !== 'listening' && state.live.kind !== 'speaking'
     ? state.composition.words.map((w) => w.text) : [];
   const readyKey = JSON.stringify(readyMessage);
+  // Asked the moment the message is ready, so the answer has the most time to arrive before Speak. Asking early
+  // costs nothing (NAT-52): the engine runs predictions first, and a newer punctuation request replaces an older
+  // one for a message that has since changed.
   useEffect(() => {
     if (readyMessage.length) prefetchPunctuation(historyOf(stateRef.current), readyMessage);
   }, [readyKey, state.turns.length]); // eslint-disable-line react-hooks/exhaustive-deps

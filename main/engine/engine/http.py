@@ -1,16 +1,92 @@
-"""HTTP boundary: validation (from v0, with PR 15's request ids), one lock around the engine.
+"""HTTP boundary: validation (from v0, with PR 15's request ids), one request at a time in the engine, predictions
+before punctuation (`EngineLock`, NAT-52).
 
 `/api/v1/transcribe` (NAT-49) takes raw audio, not JSON, and runs outside the engine's lock: hearing the partner
 never holds up a prediction."""
 import json
 import threading
 import time
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .transcribe import MAX_SECONDS, RATE, pcm16
 
 MAX_BODY = 256 * 1024
 MAX_AUDIO = RATE * MAX_SECONDS * 2      # 30 s of 16 kHz 16-bit mono PCM
+
+
+class Superseded(Exception):
+    """A newer background request arrived: this one's answer is out of date, so it stops."""
+
+
+class EngineLock:
+    """The engine runs one request at a time, and a prediction never waits behind punctuation (NAT-52).
+
+    Predictions and commits are urgent: they take the engine in turn. Punctuation is background work: it starts only
+    when no urgent request is waiting, and between the words it scores it calls `pause()`, which hands the engine to
+    any urgent request that arrived meanwhile and takes it back once none is left. A prediction then waits at most
+    one punctuation step (tens of milliseconds) instead of the whole message (hundreds; seconds for a long one).
+
+    The newest background request wins: the app asks for the message as it stands, so an older request (a message
+    since changed) stops with `Superseded` at its next pause, or before it starts, instead of making Speak wait."""
+
+    def __init__(self):
+        self._engine = threading.Lock()
+        self._state = threading.Condition()
+        self._urgent = 0              # urgent requests waiting for or holding the engine
+        self._background = 0          # background requests so far; the latest one's number is the one that may run
+
+    @contextmanager
+    def urgent(self):
+        with self._state:
+            self._urgent += 1
+        try:
+            with self._engine:
+                yield
+        finally:
+            with self._state:
+                self._urgent -= 1
+                self._state.notify_all()
+
+    def _take_for_background(self, mine):
+        while True:
+            with self._state:
+                self._state.wait_for(lambda: self._urgent == 0 or self._background != mine)
+                if self._background != mine:
+                    raise Superseded
+            self._engine.acquire()
+            if self._background != mine:
+                self._engine.release()
+                raise Superseded
+            if self._urgent == 0:
+                return
+            self._engine.release()    # an urgent request arrived between the check and the lock: it goes first
+
+    @contextmanager
+    def background(self):
+        with self._state:
+            self._background += 1
+            mine = self._background
+            self._state.notify_all()  # an older background request waiting for its turn gives up now
+        self._take_for_background(mine)
+        held = [True]
+
+        def pause():
+            """Let urgent requests through, then carry on; stop if a newer background request has arrived."""
+            if self._background != mine:
+                raise Superseded
+            if self._urgent == 0:
+                return
+            self._engine.release()
+            held[0] = False
+            self._take_for_background(mine)
+            held[0] = True
+
+        try:
+            yield pause
+        finally:
+            if held[0]:
+                self._engine.release()
 
 
 def clean_request(body, need_groups=True):
@@ -48,7 +124,7 @@ def clean_request(body, need_groups=True):
 
 
 def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None, transcriber=None):
-    lock = threading.Lock()
+    lock = EngineLock()
     page_bytes = page.read_bytes() if page is not None and page.is_file() else b"<!doctype html><title>Clarte prediction v1</title><p>POST /api/v1/predict"
 
     class Handler(BaseHTTPRequestHandler):
@@ -134,18 +210,22 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None, transcribe
             try:
                 start = time.perf_counter()
                 if self.path == "/api/v1/commit":
-                    with lock:
+                    with lock.urgent():
                         engine.commit(word, req["history"], req["message"])
                     result = {"ok": True}
                 elif self.path == "/api/v1/punctuate":
-                    with lock:
-                        result = engine.punctuate(req["history"], req["message"])
+                    try:
+                        with lock.background() as pause:
+                            result = engine.punctuate(req["history"], req["message"], pause)
+                    except Superseded:
+                        # A newer punctuation request came in: this message changed, so its answer is not needed.
+                        result = {"available": False, "superseded": True, "text": "", "end": ""}
                     result = {"id": req["id"], **result}
                 elif self.path == "/api/predict":
-                    with lock:
+                    with lock.urgent():
                         result = engine.predict_v0(req["history"], req["message"], req["groups"])
                 else:
-                    with lock:
+                    with lock.urgent():
                         result = engine.predict(req["history"], req["message"], req["groups"], req["limit"], req["offset"],
                                                 req["complete"])
                     result = {"id": req["id"], **result}
