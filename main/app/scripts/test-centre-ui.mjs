@@ -11,7 +11,7 @@ const results=[],errors=[];
 const trackerStub=`export * from '/src/eyes/session.ts?centre-real';export const eyesDrive=()=>true;export const faceInView=()=>true;export const eyesStatus=()=>({kind:'tracking',calibratedAt:1});export const useEyesStatus=eyesStatus;export const cancelRun=async()=>{};export const prepareRun=async()=>{};export const startEyes=async()=>{};`;
 async function pageFor(gaze=false,denied=false){
  const page=await browser.newPage({viewport:{width:1440,height:900}});
- page.setDefaultNavigationTimeout(60000);
+ page.setDefaultNavigationTimeout(60000);page.setDefaultTimeout(15000);
  page.on('pageerror',e=>errors.push(e.message));
  if(gaze)await page.route('**/src/eyes/session.ts',route=>route.fulfill({contentType:'application/javascript',body:trackerStub}));
  await page.addInitScript(({denied})=>{
@@ -35,7 +35,7 @@ async function pageFor(gaze=false,denied=false){
 async function typeWant(p){for(const key of ['8','5','6','8'])await p.keyboard.press(key);await p.locator('.centre-word').waitFor();}
 async function gazeAt(p,x,y){await p.evaluate(({x,y})=>{clearInterval(window.__sample);const e=window.clarteDebug.engine;e.configure({holdMs:0,smoothing:1,deadBand:0});e.sample(x,y);window.__sample=setInterval(()=>e.sample(x,y),25)},{x,y});}
 try{
- const p=await pageFor();
+ console.log('pointer');const p=await pageFor();
  assert.equal(await p.locator('.centre-word').count(),0);
  await typeWant(p);await p.mouse.move(700,300);await p.waitForTimeout(1900);
  assert.equal(await p.evaluate(()=>window.clarteDebug.phase()),'composing-options');
@@ -54,7 +54,7 @@ try{
  results.push('Pointer: no shortcut before entry, no dwell acceptance or microphone capture, one click accepts once without speech; original outline/handles unchanged.');
  await p.close();
 
- const g=await pageFor(true);await typeWant(g);
+ console.log('gaze');const g=await pageFor(true);await typeWant(g);
  await g.waitForFunction(()=>typeof window.__level==='function');
  await gazeAt(g,100,650);await g.waitForTimeout(120);await g.evaluate(()=>window.__level(.06));await gazeAt(g,700,300);
  await g.waitForFunction(()=>document.querySelector('.centre-word')?.hasAttribute('data-centre-ready'));
@@ -68,12 +68,12 @@ try{
  await g.getByRole('button',{name:'Speak',exact:true}).waitFor();
  assert.equal(await g.locator('.rest-entering .word:not(.in-progress)').first().innerText(),'Want');
  assert.equal(await g.evaluate(()=>window.__spoken),0);
- await g.waitForFunction(()=>window.__stops>0);await g.waitForTimeout(1100);
+ assert.equal(await g.evaluate(()=>window.__captures),1,'centre and card controls share one microphone');await g.waitForTimeout(1100);
  assert.equal(await g.evaluate(()=>window.clarteDebug.phase()),'composing-ready');
- results.push('Synthetic gaze + real Web Audio graph: readiness waits without auto-accepting in dwell mode; late ranking stays frozen; one tone onset accepts the displayed word once and releases capture.');
+ results.push('Synthetic gaze + real Web Audio graph: readiness waits without auto-accepting in dwell mode; late ranking stays frozen; one tone onset accepts the displayed word once through the shared matcher and microphone.');
  await g.close();
 
- const denied=await pageFor(true,true);await typeWant(denied);await denied.getByText('Sound confirmation unavailable. Use Options.',{exact:true}).waitFor();
+ console.log('denied');const denied=await pageFor(true,true);await typeWant(denied);await denied.getByText('Sound confirmation unavailable. Use Options.',{exact:true}).waitFor();
  await gazeAt(denied,700,300);await denied.waitForTimeout(1900);assert.equal(await denied.evaluate(()=>window.clarteDebug.phase()),'composing-options');
  await denied.getByRole('button',{name:/^Options:/}).click();await denied.waitForFunction(()=>window.clarteDebug.phase()==='options');
  assert.equal(await denied.locator('.rest-entering .centre-word').count(),0);

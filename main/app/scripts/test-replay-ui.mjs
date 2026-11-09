@@ -5,7 +5,7 @@ try {
  const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});
  page.setDefaultTimeout(15000); page.setDefaultNavigationTimeout(60000); const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{window.utterances=[];Object.defineProperty(speechSynthesis,'getVoices',{value:()=>[{lang:'en-US'}]});Object.defineProperty(speechSynthesis,'speak',{value:u=>{window.utterances.push({text:u.text,rate:u.rate,lang:u.lang});u.onstart?.();setTimeout(()=>u.onend?.(),300);}});});
- await page.goto('http://127.0.0.1:5210/?input=mouse&onboarding=off&engine=off',{waitUntil:'domcontentloaded',timeout:60000});
+ await page.goto(`${process.argv[2] ?? 'http://localhost:5200'}/?input=mouse&onboarding=off&engine=off`,{waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>window.clarteDebug); 
  for(const key of ['8','5','6','8'])await page.keyboard.press(key);
  await page.getByRole('button',{name:/^Options:/}).click();

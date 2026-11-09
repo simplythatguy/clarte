@@ -242,7 +242,8 @@ export class GazeEngine {
     if (this.settings.soundActions.includes(s.action)) {
       if (source !== 'sound' || s.kind !== 'previewed' || this.lostSince !== null
         || !this.point || this.now - this.lastSampleAt > this.settings.staleMs
-        || this.actionFor(this.currentQuadrant)?.id !== s.action) return;
+        || this.actionFor(this.currentQuadrant)?.id !== s.action
+        || this.actionFor(this.rawQuadrant)?.id !== s.action) return;
     }
     this.select(s.action, at);
   }
