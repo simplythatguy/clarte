@@ -108,7 +108,8 @@ export function seedFor(name: PhaseName, base: State): State {
     case 'listening':
       return { ...withTurns(clean, HISTORY), live: { kind: 'listening', transcript: 'Do you want to go outside for a bit? It is', token: 0 } };
     case 'suggested':
-      return talk;
+      // A suggestion is only a social formula (NAT-53), so the partner thanks the person here.
+      return withTurns(clean, [...HISTORY, { who: 'partner', text: 'Thank you for telling me. I will bring you a warm blanket.' }]);
     case 'composing-pending':
       return { ...talk, dismissed: talk.nextId - 1, composition: typeGroupsOf(message(['i', 'would', 'love', 'to', 'go']), 'outs') };
     case 'composing-reopened':

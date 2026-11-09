@@ -61,6 +61,7 @@ Run these in `main/app` while `./clarte ui` runs:
 
 - `src/App.tsx` routes every selection and holds the launch flow, including the Get started countdown and whether the voice pages are done.
 - `src/model.ts` holds the state, the reducer and what Q1 and Q4 offer.
+- `src/suggest.ts` picks the suggested reply Q4 offers after the partner speaks: only a social formula (a greeting back, "You're welcome", a goodbye, "I'm okay, thanks" for a plain "How are you?"), never an answer to a question about the person (NAT-53).
 - `src/words.ts` orders the inline prediction and Options choices. During grouped typing Q4 always opens Options, including when just one word is predicted. Choosing a word there accepts it; opening Options never accepts or speaks. The chooser snapshots its list until Back or acceptance, so a late response cannot change the selected word.
 
 - `src/prediction/` holds the engine client and the local decoder. Rebuild its tables from `engine/models` with `scripts/build-*.mjs`.
