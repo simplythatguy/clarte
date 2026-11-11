@@ -9,3 +9,5 @@ __pycache__/
 # Run outputs and training data.
 bench/results/
 data/lora/
+# Locally trained phrase weights and their source-data receipts (not redistributable by default).
+models/dialogue/

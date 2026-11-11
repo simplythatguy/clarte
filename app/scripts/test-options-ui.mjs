@@ -12,6 +12,8 @@ const errors = [];
 const results = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  // Word-policy fixtures must neither depend on nor train the person's phrase database.
+  await page.route('**/api/phrases', (route) => route.fulfill({ json: [] }));
   page.setDefaultNavigationTimeout(60000);
   page.on('pageerror', error => errors.push(error.message));
   const open = async () => {

@@ -1,3 +1,4 @@
+// phrase prediction model implementation and file using that model
 /**
  * App state: the conversation thread, what is live right now, the message being composed, and
  * which screen is showing. One reducer owns every change; the two contextual slots (Q1 and Q4) are
@@ -14,6 +15,7 @@ import {
 import type { GroupId } from './core/decoder.ts';
 import type { SoundLevel } from './core/sound.ts';
 import { suggestReply } from './suggest.ts';
+import { phraseText } from './phrase-text.ts';
 import type { PredictRequest, Prediction, Role } from './prediction/prediction.ts';
 import type { PartnerSource } from './voice.ts';
 import type { Pacing, Source } from './myvoice/service.ts';
@@ -32,7 +34,7 @@ export type Screen =
   | { kind: 'talk' }
   | { kind: 'menu'; page: MenuPage; at?: number }
   /** A snapshot of the choices being reviewed; late predictions cannot change a pick's meaning. */
-  | { kind: 'options'; at: number; words: string[] }
+  | { kind: 'options'; at: number; words: string[]; phrases?: string[]; next?: boolean }
   /** The first run (Onboarding.tsx): Welcome, then calibration, then voice cloning. */
   | { kind: 'welcome' }
   /** Eye calibration; `then` is where it leads once a calibration is in use. */
@@ -115,7 +117,7 @@ export type Action =
   | { type: 'accept'; word: string; rank: number }
   /** Accept one word of the Options screen and return to the conversation. */
   | { type: 'accept-word'; word: string; rank: number }
-  | { type: 'open-options'; words: string[] }
+  | { type: 'open-options'; words: string[]; phrases?: string[]; next?: boolean }
   | { type: 'delete' }
   | { type: 'use-suggestion'; text: string }
   | { type: 'dismiss-suggestion' }
@@ -130,6 +132,7 @@ export type Action =
   | { type: 'say-again-expired' }
   | { type: 'screen'; screen: Screen }
   | { type: 'phrase'; text: string }
+  | { type: 'accept-phrase'; text: string }
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'replace'; state: State };
 
@@ -158,7 +161,7 @@ export function optionsRequestOf(state: State): PredictRequest {
 }
 
 /** What the engine (or the local decoder standing in) says right now: the word card's answer and the Options list. */
-export type Words = { prediction: Prediction; options: string[] };
+export type Words = { prediction: Prediction; options: string[]; phrases?: string[] };
 
 /** The partner turn a reply is owed to: the last turn, if it is the partner's (floor-holders skipped). */
 export function owedTurn(state: State): Turn | null {
@@ -188,7 +191,7 @@ export type PrimaryFn =
   | { kind: 'stop-speaking' }
   | { kind: 'say-again'; turnId: number }
   /** Open the chooser even when the model strongly favours just one of these words. */
-  | { kind: 'options'; words: string[] };
+  | { kind: 'options'; words: string[]; phrases?: string[]; next?: boolean };
 
 export type SecondFn =
   | { kind: 'delete'; word: boolean }
@@ -206,12 +209,16 @@ export function slotsFor(state: State, words: Words): Slots {
   if (live.kind === 'speaking') return { primary: { kind: 'stop-speaking' }, second: { kind: 'none' }, groups: false };
   if (c.pending.length) {
     return {
-      primary: words.options.length ? { kind: 'options', words: words.options } : { kind: 'no-match', groups: c.pending.length },
+      primary: words.options.length ? { kind: 'options', words: words.options, phrases: words.phrases } : { kind: 'no-match', groups: c.pending.length },
       second: { kind: 'delete', word: c.reopened },
       groups: true,
     };
   }
   if (c.words.length) return { primary: { kind: 'speak' }, second: { kind: 'delete', word: false }, groups: true };
+  if (state.settings.suggestions && words.phrases?.length) return {
+    primary: { kind: 'options', words: words.phrases, phrases: words.phrases, next: true },
+    second: { kind: 'menu' }, groups: true,
+  };
   if (live.kind === 'spoken') return { primary: { kind: 'say-again', turnId: live.turnId }, second: { kind: 'menu' }, groups: true };
   const suggestion = suggestionFor(state);
   if (suggestion) return { primary: { kind: 'suggestion', text: suggestion }, second: { kind: 'dismiss' }, groups: true };
@@ -221,7 +228,7 @@ export function slotsFor(state: State, words: Words): Slots {
 export function primaryKey(fn: PrimaryFn): string {
   switch (fn.kind) {
     case 'suggestion': return `suggestion:${fn.text}`;
-    case 'options': return `options:${JSON.stringify(fn.words)}`;
+    case 'options': return `options:${JSON.stringify([fn.words, fn.phrases ?? [], fn.next ?? false])}`;
     case 'say-again': return `say-again:${fn.turnId}`;
     default: return fn.kind;
   }
@@ -263,8 +270,8 @@ function compose(state: State, event: Parameters<typeof reduceComposition>[1]): 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'open-options':
-      return state.composition.pending.length && action.words.length
-        ? { ...state, screen: { kind: 'options', at: 0, words: [...action.words] } }
+      return (state.composition.pending.length || (action.next && !state.composition.words.length && ['quiet', 'spoken'].includes(state.live.kind))) && action.words.length
+        ? { ...state, screen: { kind: 'options', at: 0, words: [...action.words], phrases: [...(action.phrases ?? [])], next: action.next } }
         : state;
     case 'group': {
       // Typing over a suggestion dismisses it for this partner turn; typing ends the Say again window.
@@ -326,6 +333,8 @@ export function reducer(state: State, action: Action): State {
       return { ...state, screen: action.screen };
     case 'phrase':
       return { ...compose(state, { type: 'phrase', text: action.text }), screen: { kind: 'talk' }, live: state.live.kind === 'spoken' ? { kind: 'quiet' } : state.live };
+    case 'accept-phrase':
+      return { ...compose({ ...state, composition: EMPTY_COMPOSITION }, { type: 'phrase', text: phraseText(action.text) }), screen: { kind: 'talk' }, live: { kind: 'quiet' } };
     case 'settings':
       return { ...state, settings: { ...state.settings, ...action.patch } };
     case 'replace':

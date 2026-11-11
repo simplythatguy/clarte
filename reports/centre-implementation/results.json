@@ -1,0 +1,9 @@
+{
+  "results": [
+    "Pointer: no shortcut before entry, no dwell acceptance or microphone capture, one click accepts once without speech; original outline/handles unchanged.",
+    "Synthetic gaze + real Web Audio graph: readiness waits without auto-accepting in dwell mode; late ranking stays frozen; one tone onset accepts the displayed word once through the shared matcher and microphone.",
+    "Denied microphone never falls back to centre dwell; Options remains available and the outgoing word is inert."
+  ],
+  "errors": [],
+  "limits": "Camera stream is stubbed; audio is a synthetic oscillator through a real MediaStream and analyser. No participant or real-room sound accuracy measured."
+}

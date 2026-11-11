@@ -63,6 +63,8 @@ Every launch starts the same way (owner, 2026-11-08):
 
 ## Input
 
+Personal phrase suggestions learn from the person's completed spoken messages and their own previous phrase. Eight starter phrases are included. See [Personal phrases](app/PHRASES.md) for ranking, storage and checks.
+
 - **Eyes**, by default. Looks come from the webcam tracker. A look never selects (owner, 2026-11-08: no dwell): a steady look closes the line round a card and waits, and the person's **sound**, Space or Enter, a click or a switch selects it.
 - **The person's sound** (DEC-128). The person says "yeah" to select a card their look has armed. **Menu › Settings › My sound** teaches Clarté their own "yeah" in about 30 seconds; after that only their "yeah" selects, and other people talking, someone beside them, claps, coughs and traffic do not (`src/listen/`). Before it is taught, a generic rule stands in: a voiced sound that rises clearly out of the room. The microphone is raw (no echo cancellation, noise suppression or automatic gain), and listening pauses while the partner is heard or Clarté speaks. Without a calibrated tracker the pointer stands in for the eyes, except on Welcome and calibration.
 - **Keyboard and mouse.** **Keyboard and mouse** on Welcome, `?input=mouse`, or **Use the mouse** after a camera failure: no camera. A click or keys 1 to 8 select; hovering never does.

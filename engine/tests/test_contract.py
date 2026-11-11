@@ -39,6 +39,9 @@ class FakeEngine:
     def commit(self, word, history, message):
         self.commits.append(word)
 
+    def rank_phrases(self, history, phrases):
+        return {'available': True, 'phrases': [{'text': p, 'probability': 1/len(phrases)} for p in phrases]}
+
 
 def start(engine, port):
     ready = threading.Event()
@@ -118,6 +121,18 @@ class FakeHttp(unittest.TestCase):
         self.assertEqual((status, body["ok"]), (200, True))
         self.assertEqual(self.engine.commits, ["priya"])
         self.assertEqual(post(self.port, "/api/v1/commit", {"word": ""})[0], 400)
+
+    def test_phrase_endpoint(self):
+        # Clarte API integration for the Vertanen ASSETS '17 dialogue-model adaptation:
+        # "Towards Improving Predictive AAC using Crowdsourced Dialogues and Partner Context".
+        # https://doi.org/10.1145/3132525.3134814
+        status, body = post(self.port, '/api/v1/phrases', {'id': 31, 'history': [['partner', 'Tea?']], 'phrases': ['Yes.', 'No.']})
+        self.assertEqual(status, 200)
+        self.assertEqual(body['id'], 31)
+        self.assertTrue(body['available'])
+        self.assertEqual([p['text'] for p in body['phrases']], ['Yes.', 'No.'])
+        for phrases in ([], [''], [3], ['x']*65):
+            self.assertEqual(post(self.port, '/api/v1/phrases', {'phrases': phrases})[0], 400)
 
     def test_v0_shape_and_health(self):
         status, body = post(self.port, "/api/predict", {"groups": "3"})

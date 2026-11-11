@@ -1,3 +1,4 @@
+// phrase prediction model implementation and file using that model
 /**
  * The conversation, drawn in the Q2–Q3 rest zone.
  *
@@ -30,6 +31,7 @@ type Props = {
   composition: Composition;
   /** The word the card offers for the pending groups, whose letters the typed groups show. */
   word: string | null;
+  phrase?: string;
   wordColours: boolean;
   replayEnabled: boolean;
   onReplay: (turn: Turn) => void;
@@ -122,13 +124,15 @@ function useLeaving(key: string, node: ReactNode): ReactNode {
     const t = setTimeout(() => setLeaving(null), 170);
     return () => clearTimeout(t);
   }, [leaving]);
-  return leaving ? <span className="now-leaving" aria-hidden="true">{leaving.node}</span> : null;
+  return leaving ? <span className="now-leaving" aria-hidden="true" inert>{leaving.node}</span> : null;
 }
 
-export function Thread({ state, turns, live, composition, word, wordColours, centre, replayEnabled, onReplay }: Props) {
+export function Thread({ state, turns, live, composition, word, phrase, wordColours, centre, replayEnabled, onReplay }: Props) {
   const nowRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const highlight = live.kind === 'speaking' && live.turnId !== null ? live : null;
+  const preview = phrase && <span className="phrase-preview"><span className="sr-only">Suggested phrase: </span>
+    {centre?.kind === 'phrase' ? <CentreWord acceptance={centre}>{phrase}</CentreWord> : phrase}</span>;
 
 
   let nowKey = 'empty';
@@ -145,7 +149,11 @@ export function Thread({ state, turns, live, composition, word, wordColours, cen
     now = <span className="now-text"><Spoken text={live.text} word={live.word} /></span>;
   } else if (composition.words.length || composition.pending.length) {
     nowKey = 'compose';
-    now = <span className="now-text"><Message composition={composition} word={word} wordColours={wordColours} centre={centre} /></span>;
+    now = <span className="now-text"><Message composition={composition} word={word} wordColours={wordColours} centre={centre?.kind === 'phrase' ? undefined : centre} />{preview}</span>;
+  }
+  if (!now && phrase && (live.kind === 'quiet' || live.kind === 'spoken')) {
+    nowKey = 'next-phrase';
+    now = <span className="now-text">{preview}</span>;
   }
   const leaving = useLeaving(nowKey, now);
   // Fit: when the live line is taller than its room (long messages, large text), step its type
@@ -197,7 +205,7 @@ export function Thread({ state, turns, live, composition, word, wordColours, cen
   };
   // When its inputs change, and whenever the thread's room or the live text's size changes for any
   // other reason (text size applied by the parent, the webfont arriving, a resize).
-  useLayoutEffect(() => fit.current(), [state, turns, live, composition, wordColours]);
+  useLayoutEffect(() => fit.current(), [state, turns, live, composition, wordColours, phrase, word]);
   useLayoutEffect(() => {
     const ro = new ResizeObserver(() => fit.current());
     const watch = () => {
