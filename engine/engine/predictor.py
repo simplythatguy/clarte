@@ -35,6 +35,7 @@ DEFAULTS = dict(
     savings=0.0,           # 0 = rank by probability; >0 favours longer completions while typing
     composer=False,        # slot 1 from v0's optimal-ghost assignment over the v1 prior (frozen-benchmark policy)
     adapter=None,          # LoRA adapter folder for the MLX rescorer (fetch_models.py / train_lora.py)
+    dialogue_model=None,   # train_dialogue.py checkpoint: optional local whole-phrase ranking
     # branch rule (response "branch": offer words[1] in Q4 instead of Delete); replayed in bench/branch_sim.py
     branch_min_k=1,        # from this many typed groups on
     branch_ratio=0.3,      # p(words[1]) / p(words[0]) at least this
@@ -88,6 +89,22 @@ def everyday(lex):
 class Engine:
     def __init__(self, model="deployable", rescorer="auto", params=None, threads=4):
         self.params = {**DEFAULTS, **(params or {})}
+        self.dialogue_model = None
+        checkpoint = self.params['dialogue_model']
+        if checkpoint is None:
+            default = V0 / 'models' / 'dialogue' / 'phrases.pt'
+            checkpoint = str(default) if default.is_file() else None
+        if checkpoint:
+            import hashlib
+            import json
+            import torch
+            from .dialogue_lm import DialogueLM
+            torch.set_num_threads(threads)
+            checkpoint = Path(checkpoint)
+            receipt = json.loads(checkpoint.with_suffix('.json').read_text())
+            if hashlib.sha256(checkpoint.read_bytes()).hexdigest() != receipt['sha256']:
+                raise ValueError('Dialogue checkpoint hash mismatch')
+            self.dialogue_model = DialogueLM.load(checkpoint, receipt['mix'])
         self.v0 = Predictor(model=model)
         self.v0.start_conversation("v1")
         self.model = self.v0.model
@@ -125,6 +142,17 @@ class Engine:
         self.ghost = GhostComposer(self) if self.params["composer"] else None
 
     # ---- state -------------------------------------------------------------
+    def rank_phrases(self, history, phrases):
+        # Integrates the Clarte adaptation of Keith Vertanen's ASSETS '17 paper,
+        # "Towards Improving Predictive AAC using Crowdsourced Dialogues and Partner Context".
+        # https://doi.org/10.1145/3132525.3134814; saved-phrase ranking is our extension.
+        if self.dialogue_model is None:
+            return {'available': False, 'phrases': []}
+        from .dialogue_lm import tokens
+        if any(len(tokens(text)) > 128 for text in phrases):
+            return {'available': False, 'phrases': []}
+        return {'available': True, 'phrases': self.dialogue_model.rank(history, phrases)}
+
     def start_conversation(self, conv_id="ui"):
         self.session, self.session_last, self.session_display, self.commit_clock = Counter(), {}, {}, 0
         self._prior_key, self._prior = None, None

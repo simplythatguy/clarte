@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { engine, isQuiet } from './gaze.ts';
 import type { CentreSoundState } from './useCentreSound.ts';
 
-export type CentreAcceptance = { word: string; activate(): void; sound: CentreSoundState };
+export type CentreAcceptance = { word: string; kind?: 'phrase'; activate(): void; sound: CentreSoundState };
 
 export function CentreWord({ acceptance, children }: { acceptance: CentreAcceptance; children: ReactNode }) {
   const [looked, setLooked] = useState(false);
@@ -14,10 +14,10 @@ export function CentreWord({ acceptance, children }: { acceptance: CentreAccepta
     setReady(previous => previous === armed ? previous : armed);
   }), [acceptance.sound]);
   return (
-    <span className="word in-progress centre-word" data-centre-looked={looked || undefined} data-centre-ready={(acceptance.sound === 'ready' && ready) || undefined}>
+    <span className={acceptance.kind === 'phrase' ? 'centre-word centre-phrase' : 'word in-progress centre-word'} data-centre-looked={looked || undefined} data-centre-ready={(acceptance.sound === 'ready' && ready) || undefined}>
       {children}
       <button type="button" className="centre-activate" aria-label={`Accept ${acceptance.word}`}
-        aria-description={ready ? 'Ready. Make your sound to accept this word.' : undefined}
+        aria-description={ready ? `Ready. Make your sound to accept this ${acceptance.kind ?? 'word'}.` : undefined}
         onClick={acceptance.activate} />
     </span>
   );

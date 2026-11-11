@@ -39,6 +39,7 @@ import { TITLES, backCard, menuSlots, nextValue, parentOf, trailOf, type Setting
 import { shownWord } from './words.ts';
 import { useWords, wordsNow } from './useWords.ts';
 import { useCentreSound } from './useCentreSound.ts';
+import { completedPersonalPhrase, loadPhrases } from './phrases.ts';
 import { commit, peek } from './prediction/prediction.ts';
 import { Calibration } from './Calibration.tsx';
 import { PHASES, makerFor, seedFor, type PhaseName } from './debug.ts';
@@ -297,10 +298,16 @@ export function App() {
   const primary = useSettled('primary', primaryKey(slots.primary), slots.primary,
     looked === 'accept-centre' ? 'primary' : looked, `${syncs}:${centreContext}`);
   // The typed letters spell the word the card shows, which holds still while gaze rests on it.
-  const typedWord = primary.value.kind === 'options' ? primary.value.words[0] ?? shown : shown;
-  const centreEligible = screen.kind === 'talk' && live.kind === 'quiet' && state.composition.pending.length > 0 && Boolean(typedWord);
-  const centreInput = useRef({ eligible: centreEligible, word: typedWord, context: centreContext });
-  centreInput.current = { eligible: centreEligible, word: typedWord, context: centreContext };
+  const settledOptions = primary.value.kind === 'options' ? primary.value : null;
+  const typedWord = settledOptions ? settledOptions.words.find((w) => !settledOptions.phrases?.includes(w)) ?? shown : shown;
+  const phrasePreview = settledOptions?.phrases?.[0] ?? (
+    !state.composition.words.length && !state.composition.pending.length && (live.kind === 'quiet' || live.kind === 'spoken')
+      ? words.phrases?.[0] : undefined);
+  const centreTarget = phrasePreview ?? typedWord;
+  const centreEligible = screen.kind === 'talk' && (live.kind === 'quiet' || live.kind === 'spoken')
+    && Boolean(phrasePreview || (state.composition.pending.length && typedWord));
+  const centreInput = useRef({ eligible: centreEligible, word: typedWord, phrase: phrasePreview, context: centreContext });
+  centreInput.current = { eligible: centreEligible, word: typedWord, phrase: phrasePreview, context: centreContext };
   // Readiness is the engine's preview, which already ends when the eyes are lost past its blink
   // grace. A per-frame face check would restart the ready clock at every blink and reject the
   // sound the person was making.
@@ -309,7 +316,7 @@ export function App() {
     return centreInput.current.eligible && eyesDrive() && snapshot.looked === 'accept-centre'
       && snapshot.action === 'accept-centre' && snapshot.state === 'previewed' && !isGuarded('accept-centre') && !gazeOutside();
   }, () => engine.confirm(performance.now(), 'sound'));
-  useLayoutEffect(() => { engine.cancel(); }, [centreEligible, centreContext, typedWord]);
+  useLayoutEffect(() => { engine.cancel(); }, [centreEligible, centreContext, centreTarget]);
   useEffect(() => {
     const cancel = () => engine.cancel();
     window.addEventListener('blur', cancel);
@@ -459,6 +466,14 @@ export function App() {
 
   // Say again stays offered for a few seconds, and never relabels under the gaze.
   const spokenTurn = live.kind === 'spoken' ? live.turnId : 0;
+  const previousLive = useRef(live);
+  const phraseSession = useRef(crypto.randomUUID());
+  useEffect(() => {
+    const before = previousLive.current;
+    previousLive.current = live;
+    const text = completedPersonalPhrase(before, state);
+    if (text) void loadPhrases(text, `${phraseSession.current}:${spokenTurn}`);
+  }, [live, spokenTurn, state.turns]);
   useEffect(() => {
     if (!spokenTurn) return;
     let timer: ReturnType<typeof setTimeout>;
@@ -524,7 +539,7 @@ export function App() {
       case 'listen': setListenNote(null); token.current += 1; dispatch({ type: 'listen-start', token: token.current }); play('listen-start'); return;
       case 'stop-listening': dispatch({ type: 'listen-stop' }); play('listen-stop'); return;
       case 'suggestion': dispatch({ type: 'use-suggestion', text: fn.text }); play('word'); return;
-      case 'options': dispatch({ type: 'open-options', words: fn.words }); play('control'); return;
+      case 'options': dispatch({ type: 'open-options', words: fn.words, phrases: fn.phrases, next: fn.next }); play('control'); return;
       case 'no-match': return;
       case 'speak': {
         // The message is spoken as the engine punctuates it (NAT-38), so the voice asks a question
@@ -756,6 +771,11 @@ export function App() {
     }
     if (s.screen.kind === 'voice') { voiceAction(action); return; }
     if (s.screen.kind === 'options') {
+      if (action === 'listen-next' && s.screen.next) {
+        dispatch({ type: 'screen', screen: { kind: 'talk' } });
+        runPrimary({ kind: 'listen' });
+        return;
+      }
       // Back, or Options itself again (Q4 keeps it), closes Options.
       if (action === 'back' || action === 'primary') { dispatch({ type: 'screen', screen: { kind: 'talk' } }); play('control'); return; }
       if (action === 'page-prev' || action === 'page-next') {
@@ -765,6 +785,11 @@ export function App() {
       }
       const word = action.startsWith('pick-') ? s.screen.words[Number(action.slice(5))] : undefined;
       if (word) {
+        if (s.screen.phrases?.includes(word)) {
+          dispatch({ type: 'accept-phrase', text: word });
+          play('word');
+          return;
+        }
         // Its rank in the word card's ranking, so Delete reopens the word at the one after it.
         const prediction = peek(requestOf(s));
         const index = prediction.words.findIndex((w) => w.word === word);
@@ -809,7 +834,12 @@ export function App() {
     if (action === 'accept-centre') {
       const centre = centreInput.current;
       const context = JSON.stringify([s.composition.words.map(w => w.text), s.composition.pending]);
-      if (!centre.eligible || !centre.word || s.live.kind !== 'quiet' || !s.composition.pending.length || centre.context !== context) return;
+      if (!centre.eligible || centre.context !== context || !['quiet', 'spoken'].includes(s.live.kind)) return;
+      if (centre.phrase) {
+        dispatch({ type: 'accept-phrase', text: centre.phrase });
+        play('word'); resync(); return;
+      }
+      if (!centre.word || s.live.kind !== 'quiet' || !s.composition.pending.length) return;
       const prediction = peek(requestOf(s));
       const index = prediction.words.findIndex(w => w.word === centre.word);
       const rank = index < 0 ? 0 : prediction.offset + index;
@@ -913,7 +943,7 @@ export function App() {
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
-          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} phrase={phrasePreview} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
         </div>
         <section className="thread thread-title" aria-label="My sound">
           <p className="page-trail">{[...trailOf('settings'), 'My sound'].join(' › ')}</p>
@@ -939,7 +969,26 @@ export function App() {
       action: `pick-${i}`, tone: 'surface', icon: <Check />, label: `Accept ${word}`, bodyKey: `pick-${i}:${word}`,
       body: <span className="card-label is-word" style={{ ['--len' as string]: word.length }}>{word}</span>,
     }));
-    const paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
+    let paged = pageList(views, screen.at, ['q5', 'q6', 'q7', 'q8']);
+    if (screen.phrases?.length) {
+      const count = screen.phrases.length;
+      const first = screen.at === 0;
+      const offset = first ? 0 : count + (screen.at - 1) * 2;
+      const visible = views.slice(offset, offset + (first ? count : 2));
+      const row: Slots = {};
+      visible.forEach((view, i) => { row[(['q5', 'q6', 'q7'] as SlotName[])[i]] = view; });
+      const nav = (action: string, label: string, disabled: boolean): SlotView => ({
+        action, tone: 'surface', disabled, label, bodyKey: action,
+        body: <span className="card-label">{label}</span>,
+      });
+      if (!first) row.q7 = nav('page-prev', 'Previous', false);
+      row.q8 = nav('page-next', 'More words', offset + visible.length >= views.length);
+      if (screen.next) row.q8 = {
+        action: 'listen-next', tone: 'surface', icon: <Mic />, label: 'Listen', bodyKey: 'listen-next',
+        body: <span className="card-label">Listen</span>,
+      };
+      paged = { slots: row, strip: null };
+    }
     const pFace = primaryFace(primary.value, listenNote, speakNote, viaGoogle);
     slotViews = {
       q1: backCard('Home'),
@@ -948,7 +997,7 @@ export function App() {
     };
     strip = paged.strip;
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} phrase={phrasePreview} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />;
   } else if (screen.kind === 'menu') {
     // The menu opens over the conversation, which stays in place, blurred.
     const paged = menuSlots(screen.page, settings, screen.at);
@@ -960,7 +1009,7 @@ export function App() {
     rest = (
       <>
         <div className="thread-behind" inert aria-hidden="true">
-          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
+          <Thread state={null} turns={state.turns} live={live} composition={state.composition} word={typedWord} phrase={phrasePreview} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled} />
         </div>
         <section className="thread thread-title" aria-label={title}>
           {/* The path above the title (owner, 2026-11-08), once there is more than the page itself. */}
@@ -988,8 +1037,9 @@ export function App() {
       };
     }
     restKey = 'thread';
-    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled}
-      centre={centreEligible && typedWord ? { word: typedWord, activate: () => activate('accept-centre'), sound: centreSound } : undefined} />;
+    rest = <Thread state={status} turns={state.turns} live={live} composition={state.composition} word={typedWord} phrase={phrasePreview} wordColours={settings.wordColours} onReplay={replayTurn} replayEnabled={replayEnabled}
+      centre={centreEligible && centreTarget ? { word: centreTarget, kind: phrasePreview ? 'phrase' : undefined,
+        activate: () => activate('accept-centre'), sound: centreSound } : undefined} />;
   }
 
   // The companion (owner, 2026-11-08) floats at the centre only while the middle holds no text at
@@ -997,7 +1047,7 @@ export function App() {
   // it to dock at Q2's top-left.
   const composing = state.composition.words.length > 0 || state.composition.pending.length > 0;
   const liveText = (live.kind === 'listening' && live.transcript.trim() !== '') || live.kind === 'speaking' || composing;
-  const blank = screen.kind === 'talk' && !liveText && state.turns.length === 0;
+  const blank = screen.kind === 'talk' && !liveText && !phrasePreview && state.turns.length === 0;
   const still = settings.orbMotion === 'still';
   // The Cloud (NAT-42) takes the conversation's state as its mood, and pulses on each word heard or spoken.
   const mood: OrbMood = screen.kind !== 'talk' && screen.kind !== 'options' ? 'idle'

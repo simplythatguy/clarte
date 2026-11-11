@@ -204,13 +204,22 @@ def serve(engine, host="127.0.0.1", port=8765, page=None, ready=None, transcribe
                     engine.start_conversation()
                 self.send(200, b'{"ok":true}')
                 return
-            if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit", "/api/v1/punctuate"):
+            if self.path not in ("/api/v1/predict", "/api/predict", "/api/v1/commit", "/api/v1/punctuate", "/api/v1/phrases"):
                 self.send(404, b'{"error":"Not found"}')
                 return
             try:
                 body = self.body()
                 req = clean_request(body)
-                if self.path == "/api/v1/commit":
+                if self.path == '/api/v1/phrases':
+                    phrases = body.get('phrases')
+                    if (not isinstance(phrases, list) or not 1 <= len(phrases) <= 64 or
+                            any(not isinstance(s, str) or not s.strip() or len(s) > 2000 for s in phrases)):
+                        raise ValueError('phrases must contain 1–64 nonempty strings of at most 2000 characters')
+                if self.path == '/api/v1/phrases':
+                    with lock.urgent():
+                        result = engine.rank_phrases(req['history'], phrases)
+                    result = {'id': req['id'], **result}
+                elif self.path == "/api/v1/commit":
                     word = body.get("word")
                     if not isinstance(word, str) or not word.strip() or len(word) > 64:
                         raise ValueError("word must be a non-empty string of at most 64 characters")

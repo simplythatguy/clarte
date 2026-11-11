@@ -73,6 +73,10 @@ next-word top-1 21/30 (round 1: 16/30). Coverage: RESULTS.md round 2.
 
 ## Design
 
+Saved-phrase ranking can additionally use a local recurrent dialogue model trained with partner
+turns, following a Clarte adaptation of Vertanen (ASSETS 2017). Training, provenance, runtime and
+limitations: [DIALOGUE_PHRASES.md](DIALOGUE_PHRASES.md). Word ranking remains separate.
+
 ```
 request ──► v0 prior (MKN counts + ARPA 4-gram + fine-tuned SmolLM2-135M, 66,501 words)
         ──► spread onto the 866,363-word lexicon (wordfreq backoff for the 54k extra words; round 4 adds

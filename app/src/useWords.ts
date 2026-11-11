@@ -13,12 +13,17 @@ import { discover, engineOrigin, fetchPrediction, keyOf, peek, subscribe, type P
 import { optionsRequestOf, requestOf, type State, type Words } from './model.ts';
 import { GROUP_IDS, type GroupId } from './core/decoder.ts';
 import { optionsOf } from './words.ts';
+import { loadPhrases, phraseChoices, phraseContextKey, rankContextPhrases, subscribePhrases } from './phrases.ts';
 
 /** The answer the state calls for now, without fetching: for reducers, callbacks and the debug hook. */
 export function wordsNow(state: State): Words {
-  if (!state.composition.pending.length) return { prediction: peek(requestOf(state)), options: [] };
+  if (state.screen.kind === 'options') return {
+    prediction: peek(requestOf(state)), phrases: state.screen.phrases, options: state.screen.words,
+  };
+  const phrases = phraseChoices(state);
+  if (!state.composition.pending.length) return { prediction: peek(requestOf(state)), phrases, options: phrases };
   const prediction = peek(requestOf(state));
-  return { prediction, options: optionsOf(state.composition, prediction, peek(optionsRequestOf(state))) };
+  return { prediction, phrases, options: [...new Set([...phrases, ...optionsOf(state.composition, prediction, peek(optionsRequestOf(state)))])] };
 }
 
 /** The request the word card makes once `group` is selected (selecting a group resets the rank to 0). */
@@ -32,9 +37,13 @@ export function useWords(state: State, lookedGroup: GroupId | null = null): Word
   const [, bump] = useState(0);
   useEffect(() => subscribe(() => bump((n) => n + 1)), []);
   useEffect(() => discover(), []);
+  useEffect(() => subscribePhrases(() => bump((n) => n + 1)), []);
+  useEffect(() => { void loadPhrases(); }, []);
   const typing = state.composition.pending.length > 0;
   const req = requestOf(state);
   const options = optionsRequestOf(state);
+  const phraseKey = JSON.stringify([phraseContextKey(state), state.screen.kind, state.settings.suggestions]);
+  useEffect(() => { void rankContextPhrases(state); }, [phraseKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const composing = state.screen.kind === 'talk';
   useEffect(() => {
     if (!typing && !composing) return;

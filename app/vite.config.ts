@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import type { Plugin } from 'vite';
+import { phraseApi } from './phrase-api.mjs';
 
 const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
@@ -18,7 +19,7 @@ const soundLog = (): Plugin => ({
 });
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), soundLog()],
+  plugins: [react(), tailwindcss(), soundLog(), phraseApi()],
   // shadcn's alias: `@/components/ui/...` resolves to src/components/ui.
   resolve: { alias: { '@': page('src') } },
   server: { port: 5200, strictPort: true },

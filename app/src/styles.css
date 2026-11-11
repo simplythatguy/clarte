@@ -698,13 +698,13 @@ body {
 /* The word in progress is the selected object, as in the editor reference: a hairline either side
    with a handle on each, and no line joining them (owner, 2026-11-08). The lines are side borders
    whose width the negative margin takes back, so the word sits exactly where it would without them. */
-.now .word.in-progress {
+.now .word.in-progress, .now .centre-phrase {
   position: relative;
   border-inline: 1.5px solid var(--select-line);
   padding: 0.1em;
   margin: 0 calc(-0.1em - 1.5px);
 }
-.now .word.in-progress::before, .now .word.in-progress::after {
+.now .word.in-progress::before, .now .word.in-progress::after, .now .centre-phrase::before, .now .centre-phrase::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -715,8 +715,9 @@ body {
   background: var(--ink);
   pointer-events: none;
 }
-.now .word.in-progress::before { left: -6.25px; }
-.now .word.in-progress::after { right: -6.25px; }
+.now .word.in-progress::before, .now .centre-phrase::before { left: -6.25px; }
+.now .word.in-progress::after, .now .centre-phrase::after { right: -6.25px; }
+.now .centre-phrase { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
 
 .now .centre-word { --centre-focus: #0071E3; }
 /* Centre acceptance keeps the existing outline/handles; only their feedback colour changes. */
@@ -844,3 +845,4 @@ button.turn-replay:focus-visible { outline: 2px solid currentColor; outline-offs
 .thread[data-compose-centred] > .history, .thread[data-compose-centred] > .rule { display: none; }
 .thread[data-compose-centred] > .now { grid-row: 2; min-height: 0; justify-content: center; }
 .thread[data-compose-centred] > .centre-note { position: absolute; bottom: 0; left: 40px; right: 40px; }
+.phrase-preview { display: block; color: var(--ink-3); font-size: 0.8em; margin-top: 0.4em; }

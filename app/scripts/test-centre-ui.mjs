@@ -13,6 +13,8 @@ async function pageFor(gaze=false,denied=false){
  const page=await browser.newPage({viewport:{width:1440,height:900}});
  page.setDefaultNavigationTimeout(60000);page.setDefaultTimeout(15000);
  page.on('pageerror',e=>errors.push(e.message));
+ // Word acceptance fixtures must not read or train the installation's personal phrases.
+ await page.route('**/api/phrases',route=>route.fulfill({contentType:'application/json',body:'[]'}));
  if(gaze)await page.route('**/src/eyes/session.ts',route=>route.fulfill({contentType:'application/javascript',body:trackerStub}));
  await page.addInitScript(({denied})=>{
   window.__spoken=0;window.speechSynthesis.speak=()=>window.__spoken++;
@@ -30,6 +32,7 @@ async function pageFor(gaze=false,denied=false){
  },{denied});
  await page.goto(`${origin}/?${gaze?'':'input=mouse&'}onboarding=off&engine=off`,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>Boolean(window.clarteDebug));
+ await page.waitForFunction(()=>document.querySelectorAll('.centre-word').length===0);
  return page;
 }
 async function typeWant(p){for(const key of ['8','5','6','8'])await p.keyboard.press(key);await p.locator('.centre-word').waitFor();}
