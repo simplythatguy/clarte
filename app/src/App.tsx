@@ -109,6 +109,9 @@ function migrate(saved: Settings): Settings {
   return settings;
 }
 
+/** Temporarily true: the first run does not show the "make your voice" pages. */
+const SKIP_FIRST_RUN_VOICE = true;
+
 /**
  * Whether the person has finished the first run's voice pages (Continue after making a voice, or
  * Not now); later launches then go from calibration straight to the conversation. A store saved
@@ -601,7 +604,9 @@ export function App() {
   const getStarted = useCallback(() => {
     if (stateRef.current.screen.kind !== 'welcome') return;
     play('control');
-    const done = voiceDone();
+    // Temporarily skipped for natHacks judging (owner, 2026-11-09): the first run goes from
+    // calibration straight to the conversation. Menu › My voice still opens the voice pages.
+    const done = SKIP_FIRST_RUN_VOICE || voiceDone();
     dispatch({ type: 'screen', screen: mouseOnly.current ? (done ? { kind: 'talk' } : FIRST_VOICE) : { kind: 'calibration', then: done ? 'talk' : 'voice' } });
   }, []);
   /** Keyboard and mouse: no camera and no calibration; clicks and keys select for the session. */

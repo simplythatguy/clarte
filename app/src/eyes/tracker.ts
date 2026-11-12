@@ -25,7 +25,8 @@ export const WORKER_INIT = {
   debug: true,
   normalizeCrop: false,
   fixes: { freezePose: true },
-  limits: { maxSamples: 200, minSamples: 24, minTargets: 8 },
+  // Temporarily 12 samples and 7 of 8 dots for the demo video (owner, 2026-11-09): one weak dot no longer fails the run (was 24 and 8).
+  limits: { maxSamples: 200, minSamples: 12, minTargets: 7 },
   blend: { geometricShareMax: 0.2 },
 } as const;
 

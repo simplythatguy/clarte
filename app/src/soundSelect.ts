@@ -43,7 +43,7 @@ export async function startSoundSelect(onSound: () => void, enabled: () => boole
       const on = enabled();
       const fires = on && (!requireReadyOnset || onsetAt(event) >= readySince) && verdict.accept && event.at - last >= REFRACTORY_S;
       if (fires) { last = event.at; onSound(); }
-      import.meta.hot?.send('clarte:sound', { at: +event.at.toFixed(2), taught: Boolean(profile), accept: verdict.accept, reason: verdict.reason, distance: verdict.distance, enabled: on, fired: fires, peak: Math.round(event.stats.peakDb), settings: microphone.settings });
+      import.meta.hot?.send('clarte:sound', { at: +event.at.toFixed(2), taught: Boolean(profile), accept: verdict.accept, reason: verdict.reason, distance: verdict.distance, enabled: on, fired: fires, peak: Math.round(event.stats.peakDb), stats: event.stats, ended: event.ended, settings: microphone.settings });
     },
   });
   return { stop() { stopListening(); offProfile(); } };

@@ -22,7 +22,8 @@ import { SavedCalibrationStore, calibrationCompatibility, type CalibrationGeomet
 import { quadrantRect, type QuadrantId, type Viewport } from '../core/quadrants.ts';
 import type { GazeEngine } from '../core/gaze.ts';
 
-export const TIMING = { introMs: 2000, moveMs: 600, waitMs: 300, collectMs: 1000 } as const;
+// Temporarily 1600 ms a dot for the demo video (owner, 2026-11-09): a slow camera or a blink no longer fails the run (was 1000).
+export const TIMING = { introMs: 2000, moveMs: 600, waitMs: 300, collectMs: 1600 } as const;
 const DOT_MS = TIMING.moveMs + TIMING.waitMs + TIMING.collectMs;
 /** Q1 Q2 Q3 Q4, then Q8 Q7 Q6 Q5: the dot never jumps across the screen. */
 export const ORDER: readonly QuadrantId[] = ['Q1', 'Q2', 'Q3', 'Q4', 'Q8', 'Q7', 'Q6', 'Q5'];

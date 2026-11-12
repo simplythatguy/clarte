@@ -56,7 +56,7 @@ type Geometry = { dx: number; dy: number; scale: number };
 function measure(root: HTMLElement, body: HTMLElement, ball: HTMLElement): Geometry {
   const r = root.getBoundingClientRect();
   const b = body.getBoundingClientRect();
-  // The Cloud's box is the visible orb (its canvas overflows it for the wobble and halo).
+  // The Cloud's box is the visible orb (its canvas overflows it for the swell and lean).
   const svgHeight = ball.offsetWidth / ASPECT;
   const edgeY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--edge-y')) || 40;
   const home = { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2 };
