@@ -14,7 +14,7 @@ import { HOP, MEL_BANDS, RATE, type Frame } from './features.ts';
 const FRAME_MS = (HOP / RATE) * 1000;
 const FLOOR_FRAMES = 150; // 1.5 s
 const BEFORE_FRAMES = 30; // 300 ms
-const RISE_DB = 9;
+const RISE_DB = 6; // Temporarily 6 for the demo video (owner, 2026-11-09): quieter sounds and whispers start events (was 9).
 const ONSET_FRAMES = 3;
 const END_DROP_DB = 15;
 const END_FRAMES = 8;

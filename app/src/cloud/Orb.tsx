@@ -2,86 +2,46 @@
  * The orb: the one object on the conversation screen (owner concept, 2026-11-07). A soft gradient
  * blob in the centre rest zone (Q2–Q3), drawn by one small WebGL fragment shader:
  *
- *  - shape: a circle whose radius is modulated by three low harmonics (2, 3 and 5 lobes) drifting
- *    at different rates, which gives the slow organic loop of the owner's Lottie reference
- *    (about one full change of shape every 24 s, 0.04 Hz, well under the 0.2 Hz the HIG warns
- *    about);
- *  - fill: light orange (owner, 2026-11-07): four colour points from light orange to near white
- *    blended by inverse distance, drifting inside the shape, with a white rim towards the lower
- *    left and a soft edge, like the health-app orb;
- *  - every palette's deepest orange keeps relative luminance at or above 0.57, and the moods only
- *    shift hue within light orange (peach, coral, apricot, tangerine), so the screen's luminance stays
- *    near constant (BRIEF, RESEARCH §4) and ink text on the orb keeps its contrast.
+ *  - shape: a round ball, as UI v1's was (owner, 2026-11-10, after a trial of the logo's cloud
+ *    outline). Only its face differs from v1's: the sketched dots and smile (SketchFace.tsx) in
+ *    place of v1's two long eyes;
+ *  - fill (owner, 2026-11-09): UI v1's mesh gradient: Paper's MeshGradient (@paper-design/shaders
+ *    0.0.82, distortion 0.8, swirl 0.1, speed 1) with v1's five colours, ported into this shader so
+ *    it rides the lean and swell. The orb's box maps to the gradient's square as v1's ball did.
+ *    v1's shading comes with it: a shadow on the edge all round, deeper at the lower right, and a
+ *    faint light at the upper left. The edge is crisp, with no halo, as v1's clipped ball was. The
+ *    colours no longer change with the mood.
  *
  * It is interactive, never ambient-only:
- *  - mood: the conversation state tints it (idle peach, listening coral, replying apricot,
- *    speaking green), cross-faded over 600 ms by Motion; the state pill stays the text twin;
- *  - speaking (owner, 2026-11-07): while Clarte speaks the orb is livelier: its lobes deepen,
- *    it wobbles about 2.4x faster, a quick ripple runs round its edge, each spoken word swells it
- *    up to 7%, and it is drawn at a stronger opacity (80%). It calms back over 0.9 s when speech ends;
+ *  - speaking (owner, 2026-11-07): while Clarte speaks the orb is livelier: its gradient flows
+ *    about 2.4x faster and each spoken word swells it up to 7%. It calms back over 0.9 s when
+ *    speech ends;
  *  - lean (owner, 2026-11-07): it leans towards the card gaze is on (a letter group, a word
- *    choice, Delete on the right, any action): the body shifts about 45 px that way and bulges on
- *    that side. It aims at the card's centre, never the raw gaze point, and eases there at its own
- *    unhurried pace (time constant 1.2 s); over a rest zone it drifts back to centre. The wobble
- *    keeps its speed throughout;
+ *    choice, Delete on the right, any action): the body shifts about 45 px that way, staying
+ *    round. It aims at the card's centre, never the raw gaze point, and eases there at its own
+ *    unhurried pace (time constant 1.2 s); over a rest zone it drifts back to centre;
+ *  - look (owner, 2026-11-10): while gaze is on a letter group the face turns towards that card,
+ *    from wherever the orb is on screen (in the middle it looks down; docked at the top left it
+ *    looks down and to the right). Otherwise it follows the person in front of the camera (NAT-47).
+ *    A look from the caller wins: the companion's flight, and calibration, where it looks straight
+ *    ahead;
  *  - pulse: each new word heard from the partner, and each word as it is spoken, swells it a
  *    little and lets it settle on a spring.
- * Under reduced motion or Orb motion "Still" the shape never moves or leans; only the mood colour
- * cross-fades.
+ * Under reduced motion or Orb motion "Still" the gradient holds still and it never leans.
  *
  * In main (NAT-42, owner 2026-11-08) the Cloud is a square drop-in for the mesh-gradient ball: the
- * visible orb fills its box exactly and the canvas overflows it by the room the wobble, lean and
- * halo need, so the companion's flight and the calibration orb place it as they placed the ball.
+ * visible orb fills its box exactly and the canvas overflows it by the room the swell and lean
+ * need, so the companion's flight and the calibration orb place it as they placed the ball.
  *
- * The canvas renders at a fraction of device pixels (the orb is soft, so detail is not lost) and
- * the frame loop stops whenever nothing is changing (Still, or a hidden tab).
+ * The frame loop stops whenever nothing is changing (Still, or a hidden tab).
  */
 import { useEffect, useRef } from 'react';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import type { ReactNode } from 'react';
-import { engine } from '../gaze.ts';
+import { engine, GROUP_ACTIONS } from '../gaze.ts';
 import { faceMirror, subscribeFace } from '../eyes/expression.ts';
-import type { PaletteKind } from '../variant.ts';
 
 export type OrbMood = 'idle' | 'listening' | 'composing' | 'speaking';
-
-type Palette = [string, string, string, string];
-
-/**
- * Four colour points per mood, from light orange to near white: the deepest orange at relative
- * luminance 0.57 or more. Style 8 has no dark theme (owner, 2026-11-07).
- */
-const LIGHT: Record<OrbMood, Palette> = {
-    // Light orange on white (owner, 2026-11-07): the moods stay within it.
-    idle: ['#FFC49C', '#FFE4D0', '#FFD5B6', '#FFF7F0'],
-    listening: ['#FFB9A0', '#FFDDD0', '#FFCDBA', '#FFF6F2'],
-    composing: ['#FFCB8E', '#FFE8C8', '#FFDBAE', '#FFF9EE'],
-    // Speaking turns green (owner, 2026-11-07), matched in lightness to the oranges.
-    speaking: ['#BCEBCA', '#E0F6E7', '#CDF0D7', '#F7FDF9'],
-};
-
-/**
- * Style 7's Vibrant palette (light theme): the same moods, more saturated. On each mood's deepest
- * point ink keeps at least 6.9:1 and secondary ink 4.4–5.7:1 (Listening's coral is the lowest);
- * the orb is drawn at 72%, so these are minimums.
- */
-const VIBRANT: Record<OrbMood, Palette> = {
-  idle: ['#FF9A52', '#FFC79E', '#FFAE70', '#FFE9D8'],
-  listening: ['#FF7F66', '#FFB8A8', '#FF9A85', '#FFE6E0'],
-  composing: ['#FFA83D', '#FFD08A', '#FFBC5E', '#FFF0D6'],
-  speaking: ['#3DD27A', '#9BE8B8', '#6BDD97', '#E2F9EA'],
-};
-
-/** The four colour points for a mood and palette. */
-export function orbPalette(mood: OrbMood, palette: PaletteKind): Palette {
-  return palette === 'vibrant' ? VIBRANT[mood] : LIGHT[mood];
-}
-
-function rgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
-}
-const flat = (p: Palette) => p.flatMap(rgb);
 
 const VERTEX = `
 attribute vec2 a_pos;
@@ -92,61 +52,81 @@ const FRAGMENT = `
 precision highp float;
 uniform vec2 u_res;
 uniform float u_time;
+// The gradient's own clock: seconds since the orb appeared, frozen when Still.
+uniform float u_flow;
 uniform float u_swell;
 uniform float u_radius;
-uniform vec3 u_c0;
-uniform vec3 u_c1;
-uniform vec3 u_c2;
-uniform vec3 u_c3;
 uniform vec2 u_lean;
-uniform float u_energy;
-uniform float u_halo;
 varying vec2 v_uv;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
-float weight(vec2 p, vec2 q) { vec2 d = p - q; return 1.0 / (dot(d, d) + 0.06); }
+// UI v1's ball (prototypes/UI/v1/s1/src/components/ui/shader-svg.tsx): Paper's MeshGradient,
+// @paper-design/shaders 0.0.82, ported line for line at its defaults (distortion 0.8, swirl 0.1,
+// no grain) with v1's five colours.
+vec2 rotate(vec2 uv, float th) { return mat2(cos(th), sin(th), -sin(th), cos(th)) * uv; }
+vec2 meshPosition(float i, float t) {
+  float a = i * 0.37;
+  float b = 0.6 + fract(i / 3.0) * 0.9;
+  float c = 0.8 + fract((i + 1.0) / 4.0);
+  return 0.5 + 0.5 * vec2(sin(t * b + a), cos(t * c + a * 1.5));
+}
+vec3 meshColour(int i) {
+  if (i == 0) return vec3(1.0, 0.702, 0.851);     // #FFB3D9 pastel pink
+  if (i == 1) return vec3(0.529, 0.808, 0.922);   // #87CEEB sky blue
+  if (i == 2) return vec3(0.290, 0.565, 0.886);   // #4A90E2 medium blue
+  if (i == 3) return vec3(0.855, 0.867, 0.890);   // #DADDE3 grey-white
+  return vec3(0.925, 0.933, 0.945);               // #ECEEF1 pale grey-white
+}
+// uv: 0 to 1 across the gradient's square; time in seconds at speed 1.
+vec3 mesh(vec2 uv, float time) {
+  float t = 0.5 * (time + 41.5);
+  float radius = smoothstep(0.0, 1.0, length(uv - 0.5));
+  float center = 1.0 - radius;
+  for (float i = 1.0; i <= 2.0; i++) {
+    uv.x += 0.8 * center / i * sin(t + i * 0.4 * smoothstep(0.0, 1.0, uv.y)) * cos(0.2 * t + i * 2.4 * smoothstep(0.0, 1.0, uv.y));
+    uv.y += 0.8 * center / i * cos(t + i * 2.0 * smoothstep(0.0, 1.0, uv.x));
+  }
+  vec2 uvRotated = rotate(uv - 0.5, -3.0 * 0.1 * radius) + 0.5;
+  vec3 color = vec3(0.0);
+  float total = 0.0;
+  for (int i = 0; i < 5; i++) {
+    float dist = pow(length(uvRotated - meshPosition(float(i), t)), 3.5);
+    float weight = 1.0 / (dist + 1e-3);
+    color += meshColour(i) * weight;
+    total += weight;
+  }
+  return color / max(1e-4, total);
+}
 
 void main() {
   vec2 frag = v_uv * u_res;
   float s = min(u_res.x, u_res.y) * 0.5;
   vec2 p = (frag - u_res * 0.5) / s;
-  // Lean: the body shifts a little towards the looked-at card and bulges on that side.
+  // Lean: the body shifts a little towards the looked-at card.
   p -= u_lean * 0.16;
   float t = u_time;
-  float a = atan(p.y, p.x);
-  float lean = length(u_lean);
-  vec2 ld = lean > 0.0001 ? u_lean / lean : vec2(0.0);
-  float toward = max(0.0, dot(vec2(cos(a), sin(a)), ld));
-  // Energy (speaking): the slow lobes deepen and a quick ripple runs round the edge.
-  float e = u_energy;
-  float amp = 1.0 + 0.8 * e;
-  float r = u_radius * (1.0 + u_swell) * (1.0 + 0.12 * lean * toward * toward) * (1.0
-    + amp * 0.070 * sin(2.0 * a + 0.26 * t + 1.3)
-    + amp * 0.045 * sin(3.0 * a - 0.19 * t + 0.4)
-    + amp * 0.022 * sin(5.0 * a + 0.31 * t + 2.1)
-    + e * 0.018 * sin(7.0 * a + 1.9 * t));
+  // A round ball, as UI v1's was (owner, 2026-11-10: back to the ball, keeping the sketched face).
+  float r = u_radius * (1.0 + u_swell);
   float d = length(p) / r;
 
-  vec2 q0 = r * (vec2(-0.38, 0.34) + 0.22 * vec2(sin(0.17 * t), cos(0.13 * t)));
-  vec2 q1 = r * (vec2(0.42, 0.28) + 0.22 * vec2(cos(0.15 * t + 1.0), sin(0.19 * t)));
-  vec2 q2 = r * (vec2(0.30, -0.42) + 0.22 * vec2(sin(0.12 * t + 2.0), cos(0.16 * t + 0.5)));
-  vec2 q3 = r * (vec2(-0.42, -0.30) + 0.22 * vec2(cos(0.14 * t + 3.0), sin(0.11 * t + 1.5)));
-  float w0 = weight(p, q0), w1 = weight(p, q1), w2 = weight(p, q2), w3 = weight(p, q3);
-  vec3 col = (u_c0 * w0 + u_c1 * w1 + u_c2 * w2 + u_c3 * w3) / (w0 + w1 + w2 + w3);
+  // v1's ball maps its square box onto the gradient; here the orb's box does, riding the lean and swell.
+  float R = r;
+  vec3 col = mesh(p / (2.0 * R) + 0.5, u_flow);
 
-  // A lighter rim towards the lower left, as if lit from there.
+  // v1's shading, lit from the upper left. Its shadow lies on the edge all round, a little deeper at
+  // the lower right: v1 drew it as a radial gradient centred at (-0.08, 0.14) of the radius with
+  // radius 1.16, so each edge point keeps the depth v1's ball had in that direction.
   vec2 dir = p / max(length(p), 1e-4);
-  float rim = smoothstep(0.55, 1.0, d) * (0.5 + 0.5 * dot(dir, normalize(vec2(-0.75, -0.55))));
-  col = mix(col, vec3(1.0), clamp(rim, 0.0, 1.0) * 0.55);
-  // A slightly deeper core, so the orb has depth rather than reading as a flat disc.
-  col = mix(col, col * 0.94, (1.0 - smoothstep(0.0, 0.7, d)) * 0.5);
+  float sd = d * length(dir - vec2(-0.08, 0.14)) / 1.16;
+  float shade = sd < 0.92 ? 0.08 * clamp((sd - 0.72) / 0.20, 0.0, 1.0) : 0.08 + 0.08 * clamp((sd - 0.92) / 0.08, 0.0, 1.0);
+  col = mix(col, vec3(0.063, 0.094, 0.188), shade); // #101830
+  float light = 0.22 * clamp(1.0 - length(p / R - vec2(-0.32, 0.48)) / 0.84, 0.0, 1.0);
+  col = mix(col, vec3(1.0), light);
 
-  // A soft but defined edge, and a faint halo in the orb's own colour (never white, which would
-  // read as a smudge on the light canvas).
-  float body = 1.0 - smoothstep(0.9, 1.0, d);
-  float halo = (1.0 - smoothstep(1.0, 1.35, d)) * 0.22 * u_halo;
-  float alpha = max(body, halo);
+  // A crisp, antialiased edge, as v1's clipped ball had: about a pixel and a half wide.
+  float aa = 1.5 / (s * r);
+  float alpha = 1.0 - smoothstep(1.0 - aa, 1.0, d);
   col += (hash(frag + fract(t)) - 0.5) / 255.0; // dither against banding
   gl_FragColor = vec4(col * alpha, alpha);
 }`;
@@ -162,11 +142,8 @@ type Props = {
   pulse: number;
   /** Orb motion "Still": never drift or pulse. */
   still: boolean;
-  palette: PaletteKind;
   /** Lean towards the card gaze is on (off for the calibration target, whose centre must hold). */
   lean?: boolean;
-  /** The faint halo past the edge (off where white must show round the orb, as in calibration). */
-  halo?: boolean;
   /** Where the face looks, -1…1 per axis at full reach (up to ±2.6 for a big glance); null at rest. */
   look?: { x: number; y: number } | null;
   /** The Cloud's face, carried on the body: it rides the lean, the drift and the swell. */
@@ -183,24 +160,26 @@ const FACE_DROP = 0.3;
 /** How far the face travels with the look, as a share of the radius per unit, and how fast. */
 const LOOK_REACH = 0.08;
 const LOOK_TAU = 0.12;
+/** The furthest the face moves from its place, as a share of the radius. */
+const FACE_REACH = 0.4;
 
-export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = true, look = null, children }: Props) {
+/** How far the face turns towards a looked-at letter group, in look units (about 0.26 of the radius). */
+const GROUP_LOOK = 3.2;
+
+export function Orb({ mood, pulse, still, lean: leans = true, look = null, children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const faceRef = useRef<HTMLDivElement>(null);
   const leansRef = useRef(leans);
   leansRef.current = leans;
-  const haloRef = useRef(halo);
-  haloRef.current = halo;
   // The face's look, eased towards its target in the frame loop.
   const lookRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  /** A look from the caller (the companion's flight) wins over following the person (NAT-47). */
+  /** A look from the caller (the companion's flight, calibration) wins over everything else. */
   const lookSetRef = useRef(false);
-  const api = useRef<{ wake(): void; setMood(p: Palette, instant: boolean): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void } | null>(null);
+  const api = useRef<{ wake(): void; setEnergy(v: number): void; kick(): void; setStill(v: boolean): void } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const gl = canvas?.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, preserveDrawingBuffer: true });
-    // preserveDrawingBuffer: calibration's ghost trail (GuideOrb.tsx) copies the last frame with drawImage.
+    const gl = canvas?.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
     if (!canvas || !gl) return;
 
     const compile = (type: number, src: string) => {
@@ -222,8 +201,7 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     const u = (name: string) => gl.getUniformLocation(prog, name);
-    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uLean = u('u_lean'), uEnergy = u('u_energy'), uHalo = u('u_halo');
-    const uCols = [u('u_c0'), u('u_c1'), u('u_c2'), u('u_c3')];
+    const uRes = u('u_res'), uTime = u('u_time'), uSwell = u('u_swell'), uRadius = u('u_radius'), uLean = u('u_lean'), uFlow = u('u_flow');
 
     // Live values. `time` advances by `speed` (1 while moving, 0 when Still). `lean` follows
     // `leanTarget` slowly: towards the card gaze is on, back to centre over a rest zone.
@@ -235,17 +213,13 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     // 0 at rest, 1 while speaking: faster, deeper motion and bigger word swells.
     let energy = 0;
     let stillMode = false;
-    let haloOn = haloRef.current;
     let lookAt: [number, number] = [0, 0];
-    let colours = flat(LIGHT.idle);
-    let from = colours;
-    let to = colours;
-    let mix = 1;
     const running = new Set<AnimationPlaybackControls>();
     const track = (c: AnimationPlaybackControls) => { running.add(c); void c.finished.then(() => { running.delete(c); wake(); }, () => running.delete(c)); wake(); return c; };
 
     const resize = () => {
-      const scale = Math.min(window.devicePixelRatio || 1, 2) * 0.6;
+      // Full device pixels (up to 2x): the edge is crisp, as v1's clipped ball was.
+      const scale = Math.min(window.devicePixelRatio || 1, 2);
       const w = Math.max(1, Math.round(canvas.clientWidth * scale));
       const h = Math.max(1, Math.round(canvas.clientHeight * scale));
       // Resizing clears the canvas. Redraw at once (below), in the same frame, or a growing or
@@ -262,30 +236,32 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
       wake();
     };
 
-    // The face rides the body: the lean's shift, a slow drift in step with the wobble, a slight
+    // The face rides the body: the lean's shift, a slow drift, a slight
     // sway, and the pulse's swell. It is still whenever the orb is (Still, reduced motion).
     let half = 1;
     const placeFace = () => {
       const el = faceRef.current;
       if (!el) return;
       const r = half * ORB_RADIUS;
-      const x = lean[0] * FACE_LEAN * half + 0.035 * r * Math.sin(0.26 * time + 1.3) + lookAt[0] * LOOK_REACH * r;
-      const y = FACE_DROP * r - lean[1] * FACE_LEAN * half + 0.03 * r * Math.cos(0.19 * time + 0.4) + lookAt[1] * LOOK_REACH * r;
+      let x = lean[0] * FACE_LEAN * half + 0.035 * r * Math.sin(0.26 * time + 1.3) + lookAt[0] * LOOK_REACH * r;
+      let y = -lean[1] * FACE_LEAN * half + 0.03 * r * Math.cos(0.19 * time + 0.4) + lookAt[1] * LOOK_REACH * r;
+      // The lean and the look add up; a face can only turn so far round the ball, so both eyes stay inside it.
+      const far = Math.hypot(x, y) / (FACE_REACH * r);
+      if (far > 1) { x /= far; y /= far; }
+      y += FACE_DROP * r;
       const turn = 2.5 * Math.sin(0.15 * time) + lean[0] * 4;
       el.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${turn.toFixed(2)}deg) scale(${(1 + swell).toFixed(4)})`;
     };
 
     const draw = () => {
       placeFace();
-      colours = from.map((v, i) => v + (to[i] - v) * mix);
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, time);
       gl.uniform1f(uSwell, swell);
       gl.uniform1f(uRadius, ORB_RADIUS);
       gl.uniform2f(uLean, lean[0], lean[1]);
-      gl.uniform1f(uEnergy, frozen() ? 0 : energy);
-      gl.uniform1f(uHalo, haloOn ? 1 : 0);
-      uCols.forEach((loc, i) => gl.uniform3f(loc, colours[i * 3], colours[i * 3 + 1], colours[i * 3 + 2]));
+      // v1's gradient starts at its own first frame; it flows on the orb's clock (faster while speaking).
+      gl.uniform1f(uFlow, time - 18);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -297,16 +273,15 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
       frame = 0;
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
-      // Speaking runs the wobble about 2.4x faster (still under 0.2 Hz).
+      // Speaking runs the gradient about 2.4x faster.
       time += dt * speed * (1 + 1.4 * energy);
       const k = 1 - Math.exp(-dt / LEAN_TAU);
       lean = [lean[0] + (leanTarget[0] - lean[0]) * k, lean[1] + (leanTarget[1] - lean[1]) * k];
       // The look is quicker than the lean: eyes move before bodies.
       const kl = 1 - Math.exp(-dt / LOOK_TAU);
-      // Otherwise the face follows the person in front of the camera (NAT-47, eyes/expression.ts).
-      const lt = frozen() ? { x: 0, y: 0 } : lookSetRef.current ? lookRef.current : faceMirror().look ?? { x: 0, y: 0 };
+      // Otherwise it looks at the letter group gaze is on, or follows the person (NAT-47).
+      const lt = frozen() ? { x: 0, y: 0 } : lookSetRef.current ? lookRef.current : group ? towards(group) : faceMirror().look ?? { x: 0, y: 0 };
       lookAt = [lookAt[0] + (lt.x - lookAt[0]) * kl, lookAt[1] + (lt.y - lookAt[1]) * kl];
-      haloOn = haloRef.current;
       const settling = Math.hypot(leanTarget[0] - lean[0], leanTarget[1] - lean[1]) > 0.002
         || Math.hypot(lt.x - lookAt[0], lt.y - lookAt[1]) > 0.002;
       draw();
@@ -326,6 +301,14 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     // an action. It follows the card's centre, never the raw gaze point (a chased cursor), and it
     // moves at the orb's own slow pace (LEAN_TAU), whatever the dwell is doing.
     let lookedAt: string | null = null;
+    // The letter group gaze is on, if any. Its direction is measured every frame, as the orb flies and docks.
+    let group: Element | null = null;
+    const towards = (card: Element) => {
+      const t = card.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+      const dx = t.left + t.width / 2 - (c.left + c.width / 2), dy = t.top + t.height / 2 - (c.top + c.height / 2);
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: (dx / len) * GROUP_LOOK, y: (dy / len) * GROUP_LOOK };
+    };
     const aimAt = (action: string | null) => {
       if (frozen() || !action || !leansRef.current) { leanTarget = [0, 0]; wake(); return; }
       const target = document.querySelector(`[data-action="${CSS.escape(action)}"]`);
@@ -343,18 +326,12 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     const unsubscribe = engine.subscribe((s) => {
       if (s.looked === lookedAt) return;
       lookedAt = s.looked;
+      group = lookedAt && GROUP_ACTIONS.has(lookedAt) ? document.querySelector(`.card[data-group][data-action="${CSS.escape(lookedAt)}"]`) : null;
       aimAt(lookedAt);
     });
 
     api.current = {
       wake,
-      setMood(p, instant) {
-        from = colours;
-        to = flat(p);
-        if (instant) { mix = 1; colours = to; wake(); return; }
-        mix = 0;
-        track(animate(0, 1, { duration: 0.6, ease: [0.2, 0, 0, 1], onUpdate: (v) => { mix = v; } }));
-      },
       setEnergy(v) {
         if (energy === v) return;
         // Up quickly as speech starts; down more slowly as it ends, so the orb calms rather than stops.
@@ -395,12 +372,7 @@ export function Orb({ mood, pulse, still, palette, lean: leans = true, halo = tr
     };
   }, []);
 
-  const first = useRef(true);
-  useEffect(() => {
-    api.current?.setMood(orbPalette(mood, palette), first.current);
-    api.current?.setEnergy(mood === 'speaking' ? 1 : 0);
-    first.current = false;
-  }, [mood, palette]);
+  useEffect(() => { api.current?.setEnergy(mood === 'speaking' ? 1 : 0); }, [mood]);
   useEffect(() => { api.current?.setStill(still); }, [still]);
   useEffect(() => { api.current?.setStill(still); }, [leans]); // re-aim (or centre) the lean
   const lx = look ? Math.max(-2.6, Math.min(2.6, look.x)) : 0;

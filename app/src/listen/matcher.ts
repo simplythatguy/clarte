@@ -147,9 +147,15 @@ function isImpact(s: EventStats): boolean {
 /** Generic judgement before anyone has enrolled: a voiced sound that is not an impact. */
 export function judgeGeneric(event: SoundEvent): Verdict {
   const s = event.stats;
-  if (isImpact(s)) return { accept: false, reason: 'impact' };
-  if (s.voiced < 0.3) return { accept: false, reason: 'unvoiced' };
-  if (s.riseDb < 12) return { accept: false, reason: 'faint' };
+  // Temporarily much more sensitive for the demo video (owner, 2026-11-09). A voiced sound is never
+  // an impact; only a short unvoiced burst is (was: any sharp sound under 160 ms). A voiced sound
+  // needs 6 dB over the room (was 12); an unvoiced one (a whisper) 7 dB and 90 ms (was never).
+  if (s.voiced < 0.3 && isImpact(s) && s.durationMs < 90) return { accept: false, reason: 'impact' };
+  if (s.voiced < 0.3) {
+    if (s.riseDb >= 7 && s.durationMs >= 90) return { accept: true, reason: 'whisper' };
+    return { accept: false, reason: s.riseDb < 7 ? 'faint' : 'unvoiced' };
+  }
+  if (s.riseDb < 6) return { accept: false, reason: 'faint' };
   return { accept: true, reason: 'voiced' };
 }
 

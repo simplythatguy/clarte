@@ -6,13 +6,12 @@
  * Backend quadrants (owner, 2026-11-08): Get started is a tall ink card over Q4 and Q8, so a look
  * at either selects it, and the words and the orb are centred in the three columns to its left.
  * During calibration the card slides off to the right; the calibration page's Try again slides back
- * in its place. Keyboard and mouse is quiet text, not a card, at the foot of Q6 under the words: the
- * people who use it point and click, and the page should lead everyone else to try calibration.
+ * in its place. Welcome has no Keyboard and mouse choice (owner, 2026-11-09): the page leads
+ * everyone to calibration. `?input=mouse` and Use the mouse after a camera failure still skip it.
  *
  * Before calibration the eyes cannot select yet, so Get started counts down from 20 s and selects
  * itself, unless a key, a click or a mouse movement shows the person can select another way (App:
- * useAutoStart). Keyboard and mouse skips calibration: the session runs on clicks and keys 1–8,
- * with no camera and no selection by dwell.
+ * useAutoStart).
  */
 import type { ReactNode } from 'react';
 import type { Slots, SlotView } from './Tile.tsx';
@@ -35,8 +34,6 @@ export const tallCard = (action: string, label: string, icon: ReactNode, hint?: 
 export function welcomeSlots(autoStart: number | null): Slots {
   return {
     q4: tallCard('get-started', 'Get started', <ArrowRight />, autoStart === null ? undefined : `Starts in ${autoStart} s`),
-    // Owner, 2026-11-08: not a button, and subtle, so the eye goes to Get started.
-    q6: { action: 'keyboard-mouse', tone: 'surface', className: 'card-quiet', bodyKey: 'keyboard-mouse', body: <span className="card-label">Keyboard and mouse</span> },
   };
 }
 
